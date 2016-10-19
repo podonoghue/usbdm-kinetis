@@ -1,0 +1,12 @@
+Output: NC Drill Files
+Type  : NC Drill
+From  : PCB Document [USBDM_Kinets.PcbDoc]
+   Generated File[USBDM_Kinets.TXT]
+   Generated File[USBDM_Kinets.LDP]
+   Generated File[USBDM_Kinets.DRR]
+
+
+Files Generated   : 3
+Documents Printed : 0
+
+Finished Output Generation At 6:22:28 PM On 24/08/2016
