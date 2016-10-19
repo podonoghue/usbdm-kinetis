@@ -1,4 +1,4 @@
-# T962a Hardware (PCB Designs)
+# usbdm-kinetis
 ====
 PCB designs for Kinetis based USBDM.  
 These are Altium designer projects.  
