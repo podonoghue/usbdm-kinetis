@@ -68,40 +68,40 @@
 //!
 void bdm_targetVddSense(void) {
 
-#if (HW_CAPABILITY&CAP_VDDSENSE)
-   CLEAR_VDD_SENSE_FLAG(); // Clear Vdd Change Event
-
-   if (VDD_SENSE) {  // Vdd rising
-      // Needs to be done on non-interrupt thread?
-      switch (cable_status.target_type) {
-#if (HW_CAPABILITY&CAP_BDM)    	  
-         case    T_HC12:
-         case    T_HCS08:
-         case    T_RS08:
-         case    T_CFV1:
-            (void)bdmHCS_powerOnReset();
-            break;
-#endif
-#if (HW_CAPABILITY&CAP_CFVx_HW)
-         case    T_CFVx:
-            (void)bdmCF_powerOnReset();
-            break;
-#endif
-         case    T_JTAG:
-         case    T_EZFLASH:
-         case    T_MC56F80xx:
-         case    T_ARM_JTAG:
-         case    T_OFF:
-         default:
-            break;
-      }
-      }
-   else { // Vdd falling
-      VDD_OFF();   // Turn off Vdd in case it's an overload
-      }
-   // Update power status
-   (void)bdm_checkTargetVdd();
-#endif // CAP_VDDSENSE
+//#if (HW_CAPABILITY&CAP_VDDSENSE)
+//   CLEAR_VDD_SENSE_FLAG(); // Clear Vdd Change Event
+//
+//   if (VDD_SENSE) {  // Vdd rising
+//      // Needs to be done on non-interrupt thread?
+//      switch (cable_status.target_type) {
+//#if (HW_CAPABILITY&CAP_BDM)
+//         case    T_HC12:
+//         case    T_HCS08:
+//         case    T_RS08:
+//         case    T_CFV1:
+//            (void)bdmHCS_powerOnReset();
+//            break;
+//#endif
+//#if (HW_CAPABILITY&CAP_CFVx_HW)
+//         case    T_CFVx:
+//            (void)bdmCF_powerOnReset();
+//            break;
+//#endif
+//         case    T_JTAG:
+//         case    T_EZFLASH:
+//         case    T_MC56F80xx:
+//         case    T_ARM_JTAG:
+//         case    T_OFF:
+//         default:
+//            break;
+//      }
+//      }
+//   else { // Vdd falling
+//      VDD_OFF();   // Turn off Vdd in case it's an overload
+//      }
+//   // Update power status
+//   (void)bdm_checkTargetVdd();
+//#endif // CAP_VDDSENSE
 }
 
 #ifdef CLEAR_RESET_SENSE_FLAG
@@ -163,27 +163,30 @@ void FTM0_IRQHandler(void) {
 //!
 USBDM_ErrorCode bdm_checkTargetVdd(void) {
 #if (HW_CAPABILITY&CAP_VDDSENSE)
-   if (bdm_targetVddMeasure() > VDD_2v) {
-      redLedOn();
+   if (TargetVdd::vddOK()) {
+      PowerLed::on();
       if (bdm_option.targetVdd == BDM_TARGET_VDD_OFF)
          cable_status.power = BDM_TARGET_VDD_EXT;
       else
          cable_status.power = BDM_TARGET_VDD_INT;
    }
    else {
-      redLedOff();
+      PowerLed::off();
       if (bdm_option.targetVdd == BDM_TARGET_VDD_OFF)
          cable_status.power = BDM_TARGET_VDD_NONE;
       else {
-    	 // Possible overload
          cable_status.power = BDM_TARGET_VDD_ERR;
-         VDD_OFF();
+#if (HW_CAPABILITY&CAP_VDDCONTROL)
+    	 // Possible overload
+//         VDD_OFF();
+#endif
       }
    }
 #else
    // No target Vdd sensing - assume external Vdd is present
    cable_status.power = BDM_TARGET_VDD_EXT;
 #endif // CAP_VDDSENSE
+
    if ((cable_status.power == BDM_TARGET_VDD_NONE) ||
        (cable_status.power == BDM_TARGET_VDD_ERR))
       return BDM_RC_VDD_NOT_PRESENT;
@@ -481,50 +484,14 @@ USBDM_ErrorCode bdm_cycleTargetVdd(uint8_t mode) {
 
 //!  Measures Target Vdd
 //!
-//!  @return
-//!  8-bit value representing the Target Vdd, N ~ (N/255) * 5V \n
-//!  On JM60 hardware the internal ADC is used.
-//!  JB16/UF32 doesn't have an ADC so an external comparator is used.  In this case this routine only
-//!  returns an indication if Target Vdd is present [255 => Vdd present, 0=> Vdd not present].
+//!  @return 8-bit value representing the Target Vdd, N ~ (N/255) * 5V \n
 //!
 uint16_t bdm_targetVddMeasure(void) {
-
 #if ((HW_CAPABILITY&CAP_VDDSENSE) == 0)
    // No Target Vdd measurement - Assume external Vdd supplied
    return 255;
-#elif defined(VDD_MEASURE_CHANNEL)
-	#if (VDD_MEASURE_CHANNEL==5)
-	   int timeout = 1000;
-	
-	   ADCCFG = ADCCFG_ADLPC_MASK|ADCCFG_ADIV1_MASK|ADCCFG_ADIV0_MASK|
-				ADCCFG_ADLSMP_MASK|ADCCFG_ADIV1_MASK|ADCCFG_ADIV0_MASK|ADCCFG_ADICLK0_MASK;
-	   APCTL1_ADPC5 = 1;  // Using channel 5
-	   ADCSC2 = 0;        // Single software triggered conversion
-	   ADCSC1 = 5;        // Trigger single conversion on Channel
-	   while ((timeout-->0) && (ADCSC1_COCO == 0)) {
-	   }
-	#elif (VDD_MEASURE_CHANNEL==9)
-	   int timeout = 1000;
-	
-	   ADCCFG = ADCCFG_ADLPC_MASK|ADCCFG_ADIV1_MASK|ADCCFG_ADIV0_MASK|
-				ADCCFG_ADLSMP_MASK|ADCCFG_ADIV1_MASK|ADCCFG_ADIV0_MASK|ADCCFG_ADICLK0_MASK;
-	   APCTL2 = APCTL2_ADPC9_MASK; // Using channel 9
-	   ADCSC2 = 0;                 // Single software triggered conversion
-	   ADCSC1 = 9;                 // Trigger single conversion on Channel
-	   while ((timeout-->0) && (ADCSC1_COCO == 0)) {
-	   }
-	#else
-	#error "Invalid VDD_MEASURE_CHANNEL definition"
-	#endif
-
-#ifdef VDD_HAS_DIVIDER
-	   return VDD_HAS_DIVIDER*ADCR;
 #else
-	   return ADCR;
-#endif
-#else
-   // Simple yes/no code as JB16/JS16/JB8 doesn't have a ADC
-   return (checkTargetVdd()?255:0); 
+   return TargetVdd::readRawVoltage();
 #endif
 }
 
