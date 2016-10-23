@@ -1,4 +1,4 @@
-# usbdm-kinetis
+# USBDM Kinetis (PCB Designs)
 ====
 PCB designs for Kinetis based USBDM.  
 These are Altium designer projects.  

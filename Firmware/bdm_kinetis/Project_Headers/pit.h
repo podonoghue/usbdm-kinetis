@@ -193,6 +193,7 @@ public:
     *  Enable/Disable the PIT channel
     *
     *  @param channel   Channel to enable
+    *  @param enable    Whether to enable or disable channel
     */
    static void enableChannel(const uint8_t channel, bool enable=true) {
       if (enable) {
