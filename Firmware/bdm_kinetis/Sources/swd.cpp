@@ -21,6 +21,7 @@
    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
    \endverbatim
 
+   \verbatim
    Change History
    +=========================================================================================================
    | 27 Jul 2016 | Kinetis version                                                          V4.12.1.120 - pgo
@@ -166,8 +167,8 @@ static void setCTAR1Value(uint32_t ctar) {
  *
  * @return parity value
  */
-__attribute__((naked))
-static uint8_t calcParity(const uint32_t data __attribute__((unused))) {
+static uint8_t __attribute__((naked)) calcParity(const uint32_t data) {
+   (void)data;
    __asm__ volatile (
          "eor.w r0, r0, r0, lsr #16  \n\t"
          "eor.w r0, r0, r0, lsr #8   \n\t"
@@ -367,7 +368,7 @@ static USBDM_ErrorCode rx32_parity(uint32_t &receive) {
  * Note: This will only have effect the next time a CTAR is changed
  */
 USBDM_ErrorCode setSpeed(uint32_t frequency) {
-   spiBaudValue = USBDM::Spi::calculateDividers(frequency, SpiInfo::getClockFrequency());
+   spiBaudValue = USBDM::Spi::calculateDividers(SpiInfo::getClockFrequency(), frequency);
    return BDM_RC_OK;
 }
 
@@ -379,7 +380,7 @@ USBDM_ErrorCode setSpeed(uint32_t frequency) {
  * @note This may differ from set speed due to limited range of speeds available
  */
 uint32_t getSpeed() {
-   return USBDM::Spi::calculateSpeed(spiBaudValue, SpiInfo::getClockFrequency());
+   return USBDM::Spi::calculateSpeed(SpiInfo::getClockFrequency(), spiBaudValue);
 }
 
 /**
@@ -392,7 +393,7 @@ void initialise() {
    // Configure SPI pins
    SpiInfo::initPCRs();
 
-   *SpiInfo::clockReg = SpiInfo::clockMask;
+   *SpiInfo::clockReg |= SpiInfo::clockMask;
 
    setSpeed(15000000);
 
@@ -580,7 +581,7 @@ USBDM_ErrorCode writeReg(uint8_t command, const uint32_t data) {
 /**
  *  Read register of Access Port
  *
- *  @param 32-bit address \n
+ *  @param address 32-bit address \n
  *     A[31:24] => DP-AP-SELECT[31:24] (AP # Select) \n
  *     A[7:4]   => DP-AP-SELECT[7:4]   (Bank select within AP) \n
  *     A[3:2]   => APACC[3:2]          (Register select within bank)
@@ -614,7 +615,7 @@ USBDM_ErrorCode readAPReg(const uint32_t address, uint32_t &buff) {
 /**
  *  Write Access Port register
  *
- *  @param 16-bit address \n
+ *  @param address 16-bit address \n
  *     A[15:8]  => DP-AP-SELECT[31:24] (AP # Select) \n
  *     A[7:4]   => DP-AP-SELECT[7:4]   (Bank select within AP) \n
  *     A[3:2]   => APACC[3:2]          (Register select within bank)
@@ -1269,7 +1270,7 @@ static USBDM_ErrorCode coreRegisterOperation(uint32_t DCRSRvalue) {
  *  Read target register
  *
  *  @param regNo    Number of register to read
- *  @param outptr   Where to place data read (in big-endian order)
+ *  @param data     Where to place data read (in big-endian order)
  *
  *  @return error code
  */

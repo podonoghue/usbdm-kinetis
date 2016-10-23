@@ -340,7 +340,7 @@ DebugSubCommands subCommand = (DebugSubCommands)commandBuffer[2];
          return Swd::kinetisMassErase();
 
       case   BDM_DBG_SWD:  //!< - Test ARM-SWD functions
-         return BDM_RC_CF_ILLEGAL_COMMAND; //swd_test(&returnSize, commandBuffer+1);
+         return Swd::connect();
 #endif
 #if (TARGET_CAPABILITY & CAP_ARM_SWD) && defined(ERASE_KINETIS)
 

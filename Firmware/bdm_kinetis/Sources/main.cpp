@@ -21,7 +21,9 @@
 
 /** Check error code from USBDM API function
  *
- * @param rc - error code to access
+ * @param rc - error code to report
+ * @param file - Filename to report
+ * @param lineNum - Line number to report
  *
  * An error message is printed with line # and the program exited if
  * rc indicates any error
@@ -90,6 +92,7 @@ void testMassErase() {
 void initialise() {
    Reset::initialise();
    UsbLed::initialise();
+   PowerLed::initialise();
    TargetVdd::initialise();
    Swd_enable::setOutput();
    Swd_enable::high();

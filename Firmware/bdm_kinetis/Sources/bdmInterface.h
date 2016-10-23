@@ -15,12 +15,12 @@
 /**
  * Represents a bidirectional signal e.g. 74LVC1T45 buffer
  * Assumes 2 signals: output/input, direction (0=>in, 1=>out)
- * It is desirable that there be a 1K series resistor on inOut
+ * It is desirable that there be a 1K series resistor on Data
  *
- * @tparam inOut  GPIO connected to receiver input
- * @tparam dir    GPIO connected to direction control
+ * @tparam Data  GPIO connected to transceiver input/output
+ * @tparam Direction    GPIO connected to direction control
  */
-template<class inOut, class dir>
+template<class Data, class Direction>
 class Lvc1t45 {
 private:
 
@@ -33,20 +33,20 @@ public:
     */
    static void initialise() {
       // Set pin as input
-      inOut::setInput();
+      Data::setInput();
 
       // Direction low => input
-      dir::low();
-      dir::setOutput();
+      Direction::low();
+      Direction::setOutput();
    }
    /**
     * Drive signal high\n
     * Assumes series resistor for any I/O drive overlap
     */
    static void high() {
-      inOut::high();
-      inOut::setOutput();
-      dir::high();
+      Data::high();
+      Data::setOutput();
+      Direction::high();
    }
    /**
     * Drive signal high
@@ -54,15 +54,15 @@ public:
     * @note Assumes driver already enabled
     */
    static void _high() {
-      inOut::high();
+      Data::high();
    }
    /**
     * Drive signal low
     */
    static void low() {
-      inOut::low();
-      inOut::setOutput();
-      dir::high();
+      Data::low();
+      Data::setOutput();
+      Direction::high();
    }
    /**
     * Drive signal low
@@ -70,15 +70,15 @@ public:
     * @note Assumes driver already enabled
     */
    static void _low() {
-      inOut::low();
+      Data::low();
    }
    /**
     * Disable Transceiver (high-impedance)\n
     * Actually sets to input
     */
    static void highZ() {
-      dir::low();
-      inOut::setInput();
+      Direction::low();
+      Data::setInput();
    }
    /**
     * Read value from receiver
@@ -86,9 +86,9 @@ public:
     * @return value on pin
     */
    static bool read() {
-      dir::low();
-      inOut::setInput();
-      return inOut::read();
+      Direction::low();
+      Data::setInput();
+      return Data::read();
    }
    /**
     * Read value from receiver
@@ -98,7 +98,7 @@ public:
     * @note Assumes already set as input
     */
    static bool _read() {
-      return inOut::read();
+      return Data::read();
    }
 };
 

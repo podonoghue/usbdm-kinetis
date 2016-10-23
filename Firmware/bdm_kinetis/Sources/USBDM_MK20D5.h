@@ -12,37 +12,64 @@
 #ifndef _CONFIGURE_H_
 #define _CONFIGURE_H_
 
-#define __LITTLE_ENDIAN__
-
 #include "utilities.h"
-
 #include "bdmInterface.h"
 
+/**
+ * GPIO for Activity LED
+ */
 class UsbLed : public USBDM::GpioD<7> {
 public:
+   /** Initialise activity LED */
    static void initialise() {
       setOutput();
       off();
    }
+   /** Turn on activity LED */
    static void on() {
       high();
    }
+   /** Turn off activity LED */
    static void off() {
       low();
    }
 };
+
+/**
+ * GPIO for Power LED\n
+ * Dummy class
+ */
+class PowerLed {
+public:
+   /** Initialise power LED */
+   static void initialise() {
+   }
+   /** Turn on power LED */
+   static void on() {
+   }
+   /** Turn off power LED */
+   static void off() {
+   }
+};
+
+/**
+ * ADC channel for target Vdd measurement
+ */
 class TargetVdd : USBDM::Adc0Channel<12> {
 private:
+   static constexpr int   externalDivider = 2;
    /**
     * Conversion factor for ADC reading to input voltage\n
     * 3.3V range, 10 bit conversion, 2:1 voltage divider on input
+    * V = ADCValue * scaleFactor
     */
-   static constexpr float scaleFactor = 3.3/1024/2;
+   static constexpr float scaleFactor = (externalDivider*3.3)/255;
 
-   /** Minimum input voltage as an ADC reading \n
-    *  1.5 V
+   /**
+    * Minimum input voltage as an ADC reading \n
+    *  1.5 V as ADC reading
     */
-   static constexpr int   threshold = (int)(1.5*scaleFactor);
+   static constexpr int   threshold = (int)(1.5/scaleFactor);
 
 public:
    /**
@@ -50,7 +77,15 @@ public:
     */
    static void initialise() {
       enable();
-      setResolution(USBDM::resolution_12bit_se);
+      setResolution(USBDM::resolution_8bit_se);
+   }
+   /**
+    * Read target Vdd
+    *
+    * @return Target Vdd as an integer in the range 0-255 => 0-5V
+    */
+   static int readRawVoltage() {
+      return round(readAnalogue()*(externalDivider*3.3/5));
    }
    /**
     * Read target Vdd
@@ -68,8 +103,15 @@ public:
    }
 };
 
+/**
+ * GPIO controlling some SWD outputs
+ */
 using Swd_enable = USBDM::GpioC<4>;
-using Reset      = Lvc1t45<USBDM::GpioC<1>, USBDM::GpioC<0>>;
+
+/**
+ * 3-State I/O for reset signal
+ */
+using Reset = Lvc1t45<USBDM::GpioC<1>, USBDM::GpioC<0>>;
 
 #include <swd.h>
 
@@ -91,7 +133,7 @@ using Reset      = Lvc1t45<USBDM::GpioC<1>, USBDM::GpioC<0>>;
 #define HW_CAPABILITY       (CAP_RST_OUT|CAP_RST_IN|CAP_SWD_HW|CAP_CDC|CAP_CORE_REGS|CAP_VDDCONTROL)
 #define TARGET_CAPABILITY   (CAP_RST   |CAP_ARM_SWD|CAP_CDC|CAP_VDDCONTROL)
 #else
-#define HW_CAPABILITY       (CAP_RST_OUT|CAP_RST_IN|CAP_SWD_HW|CAP_CDC|CAP_CORE_REGS)
+#define HW_CAPABILITY       (CAP_RST_OUT|CAP_RST_IN|CAP_SWD_HW|CAP_CDC|CAP_CORE_REGS|CAP_VDDSENSE)
 #define TARGET_CAPABILITY   (CAP_RST   |CAP_ARM_SWD|CAP_CDC)
 #endif
 

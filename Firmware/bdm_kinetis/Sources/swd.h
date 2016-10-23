@@ -21,6 +21,7 @@
    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
    \endverbatim
 
+   \verbatim
    Change History
    +=========================================================================================================
    | 27 Jul 2016 | Kinetis version                                                          V4.12.1.120 - pgo
@@ -313,7 +314,7 @@ USBDM_ErrorCode writeReg(uint8_t command, const uint8_t data[4]) {
 /**
  *  Read register of Access Port
  *
- *  @param 32-bit address \n
+ *  @param address 32-bit address \n
  *     A[31:24] => DP-AP-SELECT[31:24] (AP # Select) \n
  *     A[7:4]   => DP-AP-SELECT[7:4]   (Bank select within AP) \n
  *     A[3:2]   => APACC[3:2]          (Register select within bank)
@@ -350,7 +351,7 @@ USBDM_ErrorCode readAPReg(uint8_t address[2], uint8_t data[4]) {
 /**
  *  Write Access Port register
  *
- *  @param 16-bit address \n
+ *  @param address 16-bit address \n
  *     A[15:8]  => DP-AP-SELECT[31:24] (AP # Select) \n
  *     A[7:4]   => DP-AP-SELECT[7:4]   (Bank select within AP) \n
  *     A[3:2]   => APACC[3:2]          (Register select within bank)
@@ -522,7 +523,7 @@ USBDM_ErrorCode writeMemory(
  *  Read target register
  *
  *  @param regNo    Number of register to read
- *  @param outptr   Where to place data read (in big-endian order)
+ *  @param data     Where to place data read (in big-endian order)
  *
  *  @return error code
  */

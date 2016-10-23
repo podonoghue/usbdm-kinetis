@@ -3,7 +3,7 @@
 
    This file processes the commands received over the USB link from the host
 
-   \verbatim
+\verbatim
 
    USBDM
    Copyright (C) 2007  Peter O'Donoghue
@@ -21,12 +21,13 @@
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-   \endverbatim
+\endverbatim
 
+\verbatim
    Change History
    +=========================================================================================================
    | 27 Jul 2013 | Now returns BDM_RC_TARGET_BUSY on register reads while executing         V4.10.6.230 - pgo
-   | 27 Jul 2013 | Added f_CMD_READ_ALL_CORE_REGS()                                     V4.10.6     - pgo
+   | 27 Jul 2013 | Added f_CMD_READ_ALL_CORE_REGS()                                         V4.10.6     - pgo
    | 22 Oct 2012 | Added modifyDHCSR() and associated changes                               V4.9.5
    | 30 Aug 2012 | ARM-JTAG & ARM-SWD Changes                                               V4.9.5
    +=========================================================================================================
@@ -55,9 +56,9 @@ namespace Swd {
  */
 USBDM_ErrorCode f_CMD_CONNECT(void) {
    USBDM_ErrorCode rc = Swd::connect();
-//   if (rc == BDM_RC_OK) {
-//      rc = Swd::powerUp();
-//   }
+   //   if (rc == BDM_RC_OK) {
+   //      rc = Swd::powerUp();
+   //   }
    (void)Swd::clearStickyBits();
    return rc;
 }
@@ -204,7 +205,7 @@ USBDM_ErrorCode f_CMD_READ_CREG(void) {
  *   != \ref BDM_RC_OK => various errors
  */
 USBDM_ErrorCode f_CMD_WRITE_MEM(void) {
-	return Swd::writeMemory(commandBuffer[2], commandBuffer[3], Swd::pack32BE(commandBuffer+4), commandBuffer+8);
+   return Swd::writeMemory(commandBuffer[2], commandBuffer[3], Swd::pack32BE(commandBuffer+4), commandBuffer+8);
 }
 
 /**  Read ARM-SWD Memory
@@ -237,19 +238,19 @@ USBDM_ErrorCode f_CMD_READ_MEM(void) {
 
 // Maps register index into magic number for ARM device register number
 static const uint8_t regIndexMap[] = {
-   ARM_RegR0, ARM_RegR1, ARM_RegR2, ARM_RegR3, ARM_RegR4, ARM_RegR5, ARM_RegR6, ARM_RegR7,
-   ARM_RegR8, ARM_RegR9, ARM_RegR10, ARM_RegR11, ARM_RegR12, ARM_RegSP, ARM_RegLR, ARM_RegPC,
-   ARM_RegxPSR, ARM_RegMSP,  ARM_RegPSP, ARM_RegMISC,
-   ARM_RegFPSCR,
-   ARM_RegFPS0+0x00, ARM_RegFPS0+0x01, ARM_RegFPS0+0x02, ARM_RegFPS0+0x03,
-   ARM_RegFPS0+0x04, ARM_RegFPS0+0x05, ARM_RegFPS0+0x06, ARM_RegFPS0+0x07,
-   ARM_RegFPS0+0x08, ARM_RegFPS0+0x09, ARM_RegFPS0+0x0A, ARM_RegFPS0+0x0B,
-   ARM_RegFPS0+0x0C, ARM_RegFPS0+0x0D, ARM_RegFPS0+0x0E, ARM_RegFPS0+0x0F,
-   ARM_RegFPS0+0x10, ARM_RegFPS0+0x11, ARM_RegFPS0+0x12, ARM_RegFPS0+0x13,
-   ARM_RegFPS0+0x14, ARM_RegFPS0+0x15, ARM_RegFPS0+0x16, ARM_RegFPS0+0x17,
-   ARM_RegFPS0+0x18, ARM_RegFPS0+0x19, ARM_RegFPS0+0x1A, ARM_RegFPS0+0x1B,
-   ARM_RegFPS0+0x1C, ARM_RegFPS0+0x1D, ARM_RegFPS0+0x1E, ARM_RegFPS0+0x1F,
-   };
+      ARM_RegR0, ARM_RegR1, ARM_RegR2, ARM_RegR3, ARM_RegR4, ARM_RegR5, ARM_RegR6, ARM_RegR7,
+      ARM_RegR8, ARM_RegR9, ARM_RegR10, ARM_RegR11, ARM_RegR12, ARM_RegSP, ARM_RegLR, ARM_RegPC,
+      ARM_RegxPSR, ARM_RegMSP,  ARM_RegPSP, ARM_RegMISC,
+      ARM_RegFPSCR,
+      ARM_RegFPS0+0x00, ARM_RegFPS0+0x01, ARM_RegFPS0+0x02, ARM_RegFPS0+0x03,
+      ARM_RegFPS0+0x04, ARM_RegFPS0+0x05, ARM_RegFPS0+0x06, ARM_RegFPS0+0x07,
+      ARM_RegFPS0+0x08, ARM_RegFPS0+0x09, ARM_RegFPS0+0x0A, ARM_RegFPS0+0x0B,
+      ARM_RegFPS0+0x0C, ARM_RegFPS0+0x0D, ARM_RegFPS0+0x0E, ARM_RegFPS0+0x0F,
+      ARM_RegFPS0+0x10, ARM_RegFPS0+0x11, ARM_RegFPS0+0x12, ARM_RegFPS0+0x13,
+      ARM_RegFPS0+0x14, ARM_RegFPS0+0x15, ARM_RegFPS0+0x16, ARM_RegFPS0+0x17,
+      ARM_RegFPS0+0x18, ARM_RegFPS0+0x19, ARM_RegFPS0+0x1A, ARM_RegFPS0+0x1B,
+      ARM_RegFPS0+0x1C, ARM_RegFPS0+0x1D, ARM_RegFPS0+0x1E, ARM_RegFPS0+0x1F,
+};
 /**  Read all core registers
  *
  *  @note
@@ -273,21 +274,21 @@ USBDM_ErrorCode f_CMD_READ_ALL_CORE_REGS(void) {
    uint8_t  command[4];
    returnSize = 1;
    if (commandBuffer[2] != 0) {
-	   // Check flag is zero
-	   return BDM_RC_ILLEGAL_PARAMS;
+      // Check flag is zero
+      return BDM_RC_ILLEGAL_PARAMS;
    }
    while (regIndex<=endRegister) {
       rc = Swd::readCoreRegister(regIndexMap[regIndex], command);
       if (rc != BDM_RC_OK) {
          return rc;
-	   }
-	   // Write to buffer (target format - Little-endian ARM)
-	   *outputPtr++ = command[3];
-	   *outputPtr++ = command[2];
-	   *outputPtr++ = command[1];
-	   *outputPtr++ = command[0];
-	   returnSize += 4;
-	   regIndex++;
+      }
+      // Write to buffer (target format - Little-endian ARM)
+      *outputPtr++ = command[3];
+      *outputPtr++ = command[2];
+      *outputPtr++ = command[1];
+      *outputPtr++ = command[0];
+      returnSize += 4;
+      regIndex++;
    }
    return BDM_RC_OK;
 }
