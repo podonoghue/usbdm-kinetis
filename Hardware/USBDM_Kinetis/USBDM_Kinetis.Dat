@@ -1,8 +1,8 @@
-Field=Comment~String~Comment~100|Field=Description~String~Description~100|Field=Designator~String~Designator~100|Field=Footprint~String~Footprint~100|Field=LibRef~String~LibRef~100|Field=Quantity~Integer~Quantity~100|Field=Farnell PN~String~Farnell PN~100|Field=Digikey~String~Digikey~100|ReportField=Currency~<none>|ReportField=ProductionQuantity~1|ReportField=ProjectFileName~USBDM_Kinetis.PrjPcb|ReportField=ProjectFullPath~C:\Users\podonoghue\Documents\Development\USBDM\PCB\USBDM_Kinetis_V2\USBDM_Kinetis.PrjPcb|ReportField=Title~Bill of Materials For Project [USBDM_Kinetis.PrjPcb] (No PCB Document Selected)|ReportField=TotalQuantity~52|ReportField=ReportTime~7:12:06 PM|ReportField=ReportDate~24/08/2016|ReportField=ReportDateTime~24/08/2016 7:12:06 PM|ReportField=OutputName~Bill of Materials|ReportField=OutputType~BOM_PartType|ReportField=GeneratorName~BOM|ReportField=GeneratorDescription~Bill of Materials|ReportField=VariantName~None|ReportField=Address1~|ReportField=Address2~|ReportField=Address3~|ReportField=Address4~|ReportField=Application_BuildNumber~|ReportField=ApprovedBy~|ReportField=Author~|ReportField=CheckedBy~|ReportField=CompanyName~|ReportField=CurrentDate~|ReportField=CurrentTime~|ReportField=Date~|ReportField=DocumentFullPathAndName~|ReportField=DocumentName~|ReportField=DocumentNumber~|ReportField=DrawnBy~|ReportField=Engineer~|ReportField=ImagePath~|ReportField=ModifiedDate~|ReportField=Organization~|ReportField=ProjectName~|ReportField=Revision~2.0|ReportField=Rule~|ReportField=SheetNumber~|ReportField=SheetTotal~|ReportField=Time~|ReportField=Title~|ReportField=DataSourceFileName~USBDM_Kinetis.PrjPcb|ReportField=DataSourceFullPath~C:\Users\podonoghue\Documents\Development\USBDM\PCB\USBDM_Kinetis_V2\USBDM_Kinetis.PrjPcb
+Field=Comment~String~Comment~100|Field=Description~String~Description~100|Field=Designator~String~Designator~100|Field=Footprint~String~Footprint~100|Field=LibRef~String~LibRef~100|Field=Quantity~Integer~Quantity~100|Field=Farnell PN~String~Farnell PN~100|Field=Digikey~String~Digikey~100|ReportField=Currency~<none>|ReportField=ProductionQuantity~1|ReportField=ProjectFileName~USBDM_Kinetis.PrjPcb|ReportField=ProjectFullPath~C:\Users\podonoghue\Documents\Development\Kinetis_BDM\Hardware\USBDM_Kinetis\USBDM_Kinetis.PrjPcb|ReportField=Title~Bill of Materials For Project [USBDM_Kinetis.PrjPcb] (No PCB Document Selected)|ReportField=TotalQuantity~52|ReportField=ReportTime~3:19:34 PM|ReportField=ReportDate~27/10/2016|ReportField=ReportDateTime~27/10/2016 3:19:34 PM|ReportField=OutputName~Bill of Materials|ReportField=OutputType~BOM_PartType|ReportField=GeneratorName~BOM|ReportField=GeneratorDescription~Bill of Materials|ReportField=VariantName~None|ReportField=Address1~|ReportField=Address2~|ReportField=Address3~|ReportField=Address4~|ReportField=Application_BuildNumber~|ReportField=ApprovedBy~|ReportField=Author~|ReportField=CheckedBy~|ReportField=CompanyName~|ReportField=CurrentDate~|ReportField=CurrentTime~|ReportField=Date~|ReportField=DocumentFullPathAndName~|ReportField=DocumentName~|ReportField=DocumentNumber~|ReportField=DrawnBy~|ReportField=Engineer~|ReportField=ImagePath~|ReportField=ModifiedDate~|ReportField=Organization~|ReportField=ProjectName~|ReportField=Revision~2.0|ReportField=Rule~|ReportField=SheetNumber~|ReportField=SheetTotal~|ReportField=Time~|ReportField=Title~|ReportField=DataSourceFileName~USBDM_Kinetis.PrjPcb|ReportField=DataSourceFullPath~C:\Users\podonoghue\Documents\Development\Kinetis_BDM\Hardware\USBDM_Kinetis\USBDM_Kinetis.PrjPcb
 100nF|Capacitor|C1, C5, C7, C8, C9, C10, C13, C14|CCNP1608-0603|Cap|8||
 4u7F/16V|Capacitor SMT 0805|C2, C12|CCNP2012-0805|Cap_CCNP_0805|2|2496988|
-4u7/6V|Capacitor SMT 0603|C3|CCNP1608-0603|Cap_CCNP_0603|1||
-1uF|Capacitor SMT|C4|CCNP1608-0603|Cap|1|1186187|
+1uF|Capacitor SMT|C3|CCNP1608-0603|Cap|1|1186187|
+4u7/6V|Capacitor SMT 0603|C4|CCNP1608-0603|Cap_CCNP_0603|1||
 2u2F|Capacitor SMT 0603|C6|CCNP1608-0603|Cap_CCNP_0603|1||
 10nF|Capacitor|C11|CCNP1608-0603|Cap|1||
 LED Red|LED (Red 0603)|D1|CD1608-0603|LED SMT,Red-0603|1||
@@ -15,11 +15,10 @@ SWD2X5|SWD Connector 2x5-Pin|P3|SWD-2x5|SWD2X5|1||
 1K|Resistor SMT|R1, R19|CR1608-0603|Res|2|1632490|
 33R|Resistor|R2, R4|CR1608-0603|Res|2||
 2K2|Resistor SMT|R3, R16, R20|CR1608-0603|Res|3|1632490|
-100K|Resistor SMT|R5, R14, R17|CR1608-0603|Res|3|9332405|
+100K|Resistor SMT, Resistor, Resistor SMT, Resistor SMT|R5, R11, R14, R17|CR1608-0603|Res, Res_CR0603, Res, Res|4|9332405, [NoValue], [NoParam], [NoParam]|
 47R|Resistor SMT|R6, R8, R12, R15, R18|CR1608-0603|Res|5|1632490|
 470R|Resistor SMT|R7|CR1608-0603|Res|1|1632490|
 10K|Resistor SMT|R9, R10|CR1608-0603|Res|2|1632490|
-DNP|Resistor|R11|CR1608-0603|Res_CR0603|1||
 0R|Resistor|R13|CR1608-0603|Res_CR0603|1||
 SW-PB-SMT-B3U|Switch OMRON B3U series|S1|SW_SMT_PB2-B3U|SW-PB-SMT-B3U|1|1333652|
 TP|Test Point|TP1|TP|TP|1||
