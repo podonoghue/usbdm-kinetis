@@ -143,58 +143,6 @@ DItemRevisionGUID=
 DocumentPath=Project Outputs for USBDM_Kinetis\USBDM_Kinetis.TXT
 DItemRevisionGUID=
 
-[GeneratedDocument15]
-DocumentPath=Project Outputs for USBDM_Kinetis\USBDM_Kinets.DRR
-DItemRevisionGUID=
-
-[GeneratedDocument16]
-DocumentPath=Project Outputs for USBDM_Kinetis\USBDM_Kinets.EXTREP
-DItemRevisionGUID=
-
-[GeneratedDocument17]
-DocumentPath=Project Outputs for USBDM_Kinetis\USBDM_Kinets.GBL
-DItemRevisionGUID=
-
-[GeneratedDocument18]
-DocumentPath=Project Outputs for USBDM_Kinetis\USBDM_Kinets.GBO
-DItemRevisionGUID=
-
-[GeneratedDocument19]
-DocumentPath=Project Outputs for USBDM_Kinetis\USBDM_Kinets.GBS
-DItemRevisionGUID=
-
-[GeneratedDocument20]
-DocumentPath=Project Outputs for USBDM_Kinetis\USBDM_Kinets.GKO
-DItemRevisionGUID=
-
-[GeneratedDocument21]
-DocumentPath=Project Outputs for USBDM_Kinetis\USBDM_Kinets.GTL
-DItemRevisionGUID=
-
-[GeneratedDocument22]
-DocumentPath=Project Outputs for USBDM_Kinetis\USBDM_Kinets.GTO
-DItemRevisionGUID=
-
-[GeneratedDocument23]
-DocumentPath=Project Outputs for USBDM_Kinetis\USBDM_Kinets.GTS
-DItemRevisionGUID=
-
-[GeneratedDocument24]
-DocumentPath=Project Outputs for USBDM_Kinetis\USBDM_Kinets.LDP
-DItemRevisionGUID=
-
-[GeneratedDocument25]
-DocumentPath=Project Outputs for USBDM_Kinetis\USBDM_Kinets.REP
-DItemRevisionGUID=
-
-[GeneratedDocument26]
-DocumentPath=Project Outputs for USBDM_Kinetis\USBDM_Kinets.RUL
-DItemRevisionGUID=
-
-[GeneratedDocument27]
-DocumentPath=Project Outputs for USBDM_Kinetis\USBDM_Kinets.TXT
-DItemRevisionGUID=
-
 [Configuration1]
 Name=Default Configuration
 ParameterCount=0

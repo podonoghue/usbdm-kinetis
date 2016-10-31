@@ -1,5 +1,5 @@
 ---------------------------------------------------------------------------
-NCDrill File Report For: USBDM_Kinetis.PcbDoc   27/10/2016  3:32:05 PM
+NCDrill File Report For: USBDM_Kinetis.PcbDoc   31/10/2016  10:39:45 PM
 ---------------------------------------------------------------------------
 
 Layer Pair : Top Layer to Bottom Layer
@@ -7,12 +7,11 @@ ASCII RoundHoles File : USBDM_Kinetis.TXT
 
 Tool         Hole Size           Hole Type     Hole Count Plated       Tool Travel
 ---------------------------------------------------------------------------
-T1        13mil (0.3302mm)         Round          22               5.90 Inch (149.98 mm)
-T2        15mil (0.381mm)          Round          50               8.15 Inch (206.95 mm)
-T3        23.6mil (0.59944mm)      Round          24               2.58 Inch (65.47 mm)
-T4        31.5mil (0.8001mm)       Round          3                0.16 Inch (4.00 mm)
-T5        35.4mil (0.89916mm)      Round          7                0.77 Inch (19.52 mm)
+T1        13mil (0.3302mm)         Round          87               13.72 Inch (348.48 mm)
+T2        23.6mil (0.59944mm)      Round          24               3.04 Inch (77.12 mm)
+T3        31.5mil (0.8001mm)       Round          3                0.16 Inch (4.00 mm)
+T4        35.4mil (0.89916mm)      Round          7                0.81 Inch (20.56 mm)
 ---------------------------------------------------------------------------
-Totals                                            106              17.56 Inch (445.92 mm)
+Totals                                            121              17.72 Inch (450.15 mm)
 
-Total Processing Time (hh:mm:ss) : 00:00:00
+Total Processing Time (hh:mm:ss) : 00:00:01
