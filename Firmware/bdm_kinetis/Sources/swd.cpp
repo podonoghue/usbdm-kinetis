@@ -49,7 +49,7 @@ static constexpr uint32_t  SWD_DP_ABORT_CLEAR_STICKY_ERRORS = 0x0000001E;
 static constexpr uint32_t  SWD_DP_ABORT_ABORT_AP            = 0x00000001;
 
 // Masks for SWD_RD_DP_STATUS
-static constexpr uint32_t  SWD_RD_DP_STATUS_ANYERROR        = 0x000000B2;
+//static constexpr uint32_t  SWD_RD_DP_STATUS_ANYERROR        = 0x000000B2;
 
 // Masks for SWD_WR_DP_CONTROL
 static constexpr uint32_t  SWD_WR_DP_CONTROL_POWER_REQ = (1<<30)|(1<<28);
@@ -66,7 +66,7 @@ static constexpr uint32_t ARM_AHB_AP_BANK0 = Swd::AHB_AP_NUM;
 //   static constexpr uint32_t  AHB_DRW_REGNUM    = (0xC);  // DRW register bank+register number
 
 static constexpr uint32_t  SWD_RD_AHB_CSW = SWD_RD_AP_REG0; // SWD command for reading AHB-CSW
-static constexpr uint32_t  SWD_RD_AHB_TAR = SWD_RD_AP_REG1; // SWD command for reading AHB-TAR
+//static constexpr uint32_t  SWD_RD_AHB_TAR = SWD_RD_AP_REG1; // SWD command for reading AHB-TAR
 static constexpr uint32_t  SWD_RD_AHB_DRW = SWD_RD_AP_REG3; // SWD command for reading AHB-DRW
 
 static constexpr uint32_t  SWD_WR_AHB_CSW = SWD_WR_AP_REG0; // SWD command for writing AHB-CSW
@@ -75,12 +75,12 @@ static constexpr uint32_t  SWD_WR_AHB_DRW = SWD_WR_AP_REG3; // SWD command for w
 
 // AHB-AP (MEM-AP) CSW Register masks
 static constexpr uint32_t  AHB_AP_CSW_INC_SINGLE    = (1<<4);
-static constexpr uint32_t  AHB_AP_CSW_INC_PACKED    = (2<<4);
-static constexpr uint32_t  AHB_AP_CSW_INC_MASK      = (3<<4);
+//static constexpr uint32_t  AHB_AP_CSW_INC_PACKED    = (2<<4);
+//static constexpr uint32_t  AHB_AP_CSW_INC_MASK      = (3<<4);
 static constexpr uint32_t  AHB_AP_CSW_SIZE_BYTE     = (0<<0);
 static constexpr uint32_t  AHB_AP_CSW_SIZE_HALFWORD = (1<<0);
 static constexpr uint32_t  AHB_AP_CSW_SIZE_WORD     = (2<<0);
-static constexpr uint32_t  AHB_AP_CSW_SIZE_MASK     = (7<<0);
+//static constexpr uint32_t  AHB_AP_CSW_SIZE_MASK     = (7<<0);
 
 static uint32_t getcswValue(int size) {
    static const uint32_t cswValues[5] = {
@@ -97,7 +97,7 @@ static uint32_t getcswValue(int size) {
 static constexpr uint32_t  SWD_ACK_OK       = 0x1;
 static constexpr uint32_t  SWD_ACK_WAIT     = 0x2;
 static constexpr uint32_t  SWD_ACK_FAULT    = 0x4;
-static constexpr uint32_t  SWD_ACK_PROTOCOL = 0x7;
+//static constexpr uint32_t  SWD_ACK_PROTOCOL = 0x7;
 
 // Select for BKGD/SWD_DIR - Tx
 static constexpr uint32_t TX_MASK   = SPI_PUSHR_PCS(1<<1);
@@ -666,16 +666,16 @@ USBDM_ErrorCode abortAP(void) {
 
 static constexpr uint32_t  MDM_AP_STATUS                     = 0x01000000;
 static constexpr uint32_t  MDM_AP_CONTROL                    = 0x01000004;
-static constexpr uint32_t  MDM_AP_IDR                        = 0x010000FC;
+//static constexpr uint32_t  MDM_AP_IDR                        = 0x010000FC;
 
 static constexpr uint32_t  MDM_AP_CONTROL_MASS_ERASE_REQUEST = (1<<0);
-static constexpr uint32_t  MDM_AP_CONTROL_DEBUG_REQUEST      = (1<<2);
+//static constexpr uint32_t  MDM_AP_CONTROL_DEBUG_REQUEST      = (1<<2);
 static constexpr uint32_t  MDM_AP_CONTROL_RESET_REQUEST      = (1<<3);
-static constexpr uint32_t  MDM_AP_CONTROL_VLLDBGREQ          = (1<<5);
-static constexpr uint32_t  MDM_AP_CONTROL_VLLDBGACK          = (1<<6);
-static constexpr uint32_t  MDM_AP_CONTROL_LLS_VLLSx_ACK      = (1<<7);
+//static constexpr uint32_t  MDM_AP_CONTROL_VLLDBGREQ          = (1<<5);
+//static constexpr uint32_t  MDM_AP_CONTROL_VLLDBGACK          = (1<<6);
+//static constexpr uint32_t  MDM_AP_CONTROL_LLS_VLLSx_ACK      = (1<<7);
 
-static constexpr uint32_t  MDM_AP_STATUS_FLASH_READY         = (1<<1);
+//static constexpr uint32_t  MDM_AP_STATUS_FLASH_READY         = (1<<1);
 static constexpr uint32_t  MDM_AP_STATUS_SECURE              = (1<<2);
 static constexpr uint32_t  MDM_AP_STATUS_MASS_ERASE_ENABLE   = (1<<5);
 

@@ -18,12 +18,12 @@ extern USBDM_ErrorCode  optionalReconnect(uint8_t when);
 
 //! Target status
 typedef struct {
-   TargetType_t        target_type:8;  //!< Target type \ref TargetType_t
-   AcknMode_t          ackn:8;         //!< Target supports ACKN see \ref AcknMode_t
-   ResetMode_t         reset:8;        //!< Target has been reset, see \ref ResetMode_T
-   SpeedMode_t         speed:8;        //!< Target speed determination method, see \ref SpeedMode_t
+   TargetType_t        target_type:8;  //!< Target type TargetType_t
+   AcknMode_t          ackn:8;         //!< Target supports ACKN see AcknMode_t
+   ResetMode_t         reset:8;        //!< Target has been reset, see ResetMode_T
+   SpeedMode_t         speed:8;        //!< Target speed determination method, see SpeedMode_t
    TargetVddState_t    power:8;        //!< Target Vdd state
-   TargetVppSelect_t   flashState:8;   //!< State of RS08 Flash programming,  see \ref FlashState_t
+   TargetVppSelect_t   flashState:8;   //!< State of RS08 Flash programming,  see FlashState_t
    uint16_t            sync_length;    //!< Length of the target SYNC pulse in 60MHz ticks
    uint16_t            wait150_cnt;    //!< Time for 150 BDM cycles in bus cycles of the MCU divided by N
    uint16_t            wait64_cnt;     //!< Time for 64 BDM cycles in bus cycles of the MCU divided by N

@@ -137,7 +137,7 @@ extern void dputs(char *msg);
 //==========================================================================================
 //! Software Version Information
 //
-#define VERSION_MAJOR 4 
+#define VERSION_MAJOR 4
 #define VERSION_MINOR 12
 #define VERSION_MICRO 1
 #define VERSION_STR "4.12.1"

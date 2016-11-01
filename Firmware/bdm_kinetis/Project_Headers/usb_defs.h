@@ -4,8 +4,7 @@
 #include <stdint.h>
 #include "utilities.h"
 
-#pragma pack(push)
-#pragma pack(1)
+#pragma pack(push, 1)
 //! Device Descriptor 
 typedef struct {
    uint8_t           bLength;             //!<  Size of this Descriptor in Bytes
@@ -83,9 +82,10 @@ typedef struct {
 } DeviceQualifierDescriptor;
 
 //! Endpoint direction masks
-enum {EP_OUT=0x00, //!< Endpoint is OUT (host -> node)
-	  EP_IN=0x80   //!< Endpoint is IN (node -> host)
-	  };
+enum {
+   EP_OUT=0x00, //!< Endpoint is OUT (host -> node)
+   EP_IN=0x80   //!< Endpoint is IN (node -> host)
+};
 
 /*----------------------------------------------------------------------------
 ** USB Status Codes
@@ -286,34 +286,126 @@ typedef struct {
 #define DTR_MASK (1<<0)
 #define RTS_MASK (1<<1)
 
-typedef struct {
+struct MS_CompatibleIdFeatureDescriptor {
    uint32_t lLength;                 //!< Size of this Descriptor in Bytes
    uint16_t wVersion;                //!< Version
    uint16_t wIndex;                  //!< Index (must be 4)
    uint8_t  bnumSections;            //!< Number of sections
-   uint8_t  bReserved1[7];	          //!< 
+   uint8_t  bReserved1[7];           //!<
    //------------- Section ----------//
-	uint8_t  bInterfaceNum;           //!< 
-	uint8_t  bReserved2;              //!<
-	uint8_t  bCompatibleId[8];        //!<
-	uint8_t  bSubCompatibleId[8];     //!<
-	uint8_t  bReserved3[6];
-	
-} MS_CompatibleIdFeatureDescriptor;
+   uint8_t  bInterfaceNum;           //!<
+   uint8_t  bReserved2;              //!<
+   uint8_t  bCompatibleId[8];        //!<
+   uint8_t  bSubCompatibleId[8];     //!<
+   uint8_t  bReserved3[6];
 
-typedef struct {
-   uint32_t lLength;                //!< Size of this Descriptor in Bytes
-   uint16_t wVersion;               //!< Version
-   uint16_t wIndex;                 //!< Index (must be 5)
-   uint16_t bnumSections;           //!< Number of property sections
-   //-------------------- Section --------------//
-   uint32_t lPropertySize;          //!< Size of property section
-   uint32_t ldataType;              //!< Data type (1 = Unicode REG_SZ etc
-   uint16_t wNameLength;            //!< Length of property name
-   uint8_t  bName[40];
-   uint32_t wPropertyLength;        //!< Length of property data
-   uint8_t  bData[78];
-} MS_PropertiesFeatureDescriptor;
+};
+
+struct MS_PropertiesFeatureDescriptor;
+
+// Data packet odd/even indicator
+typedef bool Data0_1;
+constexpr Data0_1 DATA0=false; //!< DATA0 indicator
+constexpr Data0_1 DATA1=true;  //!< DATA1 indicator
+
+// Data packet odd/even indicator
+typedef bool EvenOdd;
+constexpr EvenOdd EVEN=false; //!< Even Buffer
+constexpr EvenOdd ODD =true;  //!< Odd Buffer
+
+/**
+ * Structure representing a BDT entry in USB controller
+ */
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+// Little-endian on Kinetis
+struct BdtEntry {
+   union {
+      volatile uint8_t bits:8;   // Access a bit masks
+      volatile struct {          // BDT setup access
+         uint8_t :2;
+         uint8_t bdt_stall:1;
+         uint8_t dts:1;
+         uint8_t ninc:1;
+         uint8_t keep:1;
+         uint8_t data0_1:1;
+         uint8_t own:1;
+      } setup;
+      volatile struct {          // BDT result access
+         uint8_t :2;
+         uint8_t tok_pid:4;
+         uint8_t data0_1:1;
+         uint8_t own:1;
+      } result;
+   } u;
+   volatile uint8_t  :8;
+   volatile uint16_t bc;          // Byte count
+   volatile uint32_t addr;        // Buffer address
+};
+#else
+// Big-endian (Used on Coldfire)
+struct BdtEntry {
+   union {
+      struct {
+         uint8_t rsvd:2;
+         uint8_t bdt_stall:1;
+         uint8_t dts:1;
+         uint8_t ninc:1;
+         uint8_t keep:1;
+         uint8_t data0_1:1;
+         uint8_t own:1;
+      } setup;           // BDT setup access
+      struct {
+         uint8_t rsvd:2;
+         uint8_t tok_pid:4;
+         uint8_t data0_1:1;
+         uint8_t own:1;
+      } result;          // BDT result access
+      uint8_t bits;      // Access as bit masks
+   } u;
+   uint8_t  rsvd2:8;
+   uint16_t bc:16;       // Byte count
+   uint32_t addr;        // Buffer address
+};
+#endif
+
+struct EndpointBdtEntry {
+   BdtEntry rxEven;
+   BdtEntry rxOdd;
+   BdtEntry txEven;
+   BdtEntry txOdd;
+} ;
+
+// Bit masks for fields in BdtEntry
+constexpr uint8_t BDTEntry_OWN_MASK   = (1<<7);   //!< Mask for OWN bit in BDT
+constexpr uint8_t BDTEntry_DATA0_MASK = (0<<6);   //!< Mask for DATA1 bit in BDT (dummy)
+constexpr uint8_t BDTEntry_DATA1_MASK = (1<<6);   //!< Mask for DATA0 bit in BDT
+constexpr uint8_t BDTEntry_KEEP_MASK  = (1<<5);   //!< KEEP
+constexpr uint8_t BDTEntry_NINC_MASK  = (1<<4);   //!< NINC
+constexpr uint8_t BDTEntry_DTS_MASK   = (1<<3);   //!< Mask for DTS bit in BDT
+constexpr uint8_t BDTEntry_STALL_MASK = (1<<2);   //!< Stall endpoint
+
+/**
+ * USB device states
+ */
+enum DeviceConnectionStates {
+   USBpowered,
+   USBattached,
+   USBdefault,
+   USBaddressed,
+   USBconfigured,
+   USBsuspended
+};
+
+/**
+ * Structure for SetLineCoding/GetLineCoding
+ */
+struct LineCodingStructure {
+   uint32_t dwDTERate;     //!< data rate (littleEndian format)
+   uint8_t  bCharFormat;   //!< character format
+   uint8_t  bParityType;   //!< parity type
+   uint8_t  bDataBits;     //!< number of bits
+};
 
 #pragma pack(pop)
+
 #endif /* _USBDefs_H_  */

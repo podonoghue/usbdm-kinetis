@@ -216,6 +216,14 @@ void testReset() {
    }
 }
 
+namespace USBDM {
+extern void idleLoop();
+};
+
+//char debugBuffer[200] = {0};
+//char logBuffer[128] = {0};
+//char logIndex = 0;
+
 int main() {
 
    // Need to initialise for debug UART0
@@ -226,11 +234,12 @@ int main() {
 
    PRINTF("Target Vdd = %f\n", TargetVdd::readVoltage());
 
-   USBDM::Usb0::initialise();
-   commandLoop();
+   USBDM::UsbImplementation::initialise();
+//   commandLoop();
 
-   CHECK(testmem());
+//   CHECK(testmem());
    //   CHECK(testMassErase());
+   USBDM::idleLoop();
 
    for(;;) {
       __asm__("nop");

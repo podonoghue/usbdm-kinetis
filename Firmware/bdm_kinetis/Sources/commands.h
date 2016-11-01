@@ -37,7 +37,7 @@ static constexpr int  MAX_COMMAND_SIZE = 254;
 //!
 //! The following values are the 1st byte in each command.  \n
 //! Other parameters are as shown below. \n
-//! Each command returns a status value (see \ref  USBDM_ErrorCode) as the first byte
+//! Each command returns a status value (see  USBDM_ErrorCode) as the first byte
 //! followed by any results as indicated below.
 //!
 typedef enum {
@@ -45,10 +45,10 @@ typedef enum {
    CMD_USBDM_GET_COMMAND_RESPONSE  = 0,   //!< Status of last/current command
    CMD_USBDM_SET_TARGET            = 1,   //!< Set target,  @param [2] 8-bit target value @ref TargetType_t
    CMD_USBDM_SET_VDD               = 2,   //!< Set target Vdd (immediate effect)
-   CMD_USBDM_DEBUG                 = 3,   //!< Debugging commands (parameter determines actual command) @param [2]  Debug command see \ref DebugSubCommands
+   CMD_USBDM_DEBUG                 = 3,   //!< Debugging commands (parameter determines actual command) @param [2]  Debug command see DebugSubCommands
    CMD_USBDM_GET_BDM_STATUS        = 4,   //!< Get BDM status\n @return [1] 16-bit status value reflecting BDM status
-   CMD_USBDM_GET_CAPABILITIES      = 5,   //!< Get capabilities of BDM, see \ref HardwareCapabilities_t
-   CMD_USBDM_SET_OPTIONS           = 6,   //!< Set BDM options, see \ref BDM_Options_t
+   CMD_USBDM_GET_CAPABILITIES      = 5,   //!< Get capabilities of BDM, see HardwareCapabilities_t
+   CMD_USBDM_SET_OPTIONS           = 6,   //!< Set BDM options, see BDM_Options_t
 //   CMD_USBDM_GET_SETTINGS        = 7,   //!< Get BDM setting
    CMD_USBDM_CONTROL_PINS          = 8,   //!< Directly control BDM interface levels
    // Reserved 7..11
@@ -79,7 +79,7 @@ typedef enum {
 
    CMD_USBDM_WRITE_CONTROL_REG     = 21,  //!< Write to target Control register
 
-   CMD_USBDM_TARGET_RESET          = 22,  //!< Reset target @param [2] \ref TargetMode_t
+   CMD_USBDM_TARGET_RESET          = 22,  //!< Reset target @param [2] TargetMode_t
    CMD_USBDM_TARGET_STEP           = 23,  //!< Perform single step
    CMD_USBDM_TARGET_GO             = 24,  //!< Start code execution
    CMD_USBDM_TARGET_HALT           = 25,  //!< Stop the CPU and bring it into background mode
@@ -531,7 +531,7 @@ typedef enum {
    HCS08_DRegBKPT = 0x0, //!< Breakpoint register
 } HCS08_DRegisters_t;
 
-//! regNo Parameter for \ref USBDM_ReadDReg() with RS08 target (BKPT)
+//! regNo Parameter for USBDM_ReadDReg() with RS08 target (BKPT)
 //!
 typedef enum {
    RS08_DRegBKPT = 0x0, //!< Breakpoint register
@@ -626,7 +626,7 @@ typedef enum {
    ICP_RC_VERIFY_ERR  = 3,    //!< Verify failed
 } ICP_ErrorCode_t;
 
-//! Target Status bit masks for \ref CMD_USBDM_GET_BDM_STATUS\n
+//! Target Status bit masks for CMD_USBDM_GET_BDM_STATUS\n
 //! \verbatim
 //!     9       8       7       6       5        4       3       2       1       0
 //! +-------+-------+-------+-------+--------+-------+-------+-------+-------+-------+
@@ -720,7 +720,7 @@ typedef enum {
    PIN_RELEASE        = -1,   //!< Release all pins (go to default for current target)
 } PinLevelMasks_t ;
 
-//! Debugging sub commands (used with \ref CMD_USBDM_DEBUG )
+//! Debugging sub commands (used with CMD_USBDM_DEBUG )
 //! @note Not for general use! (Dangerous - don't try turning on VPP with the wrong chip!)
 typedef enum  {
   BDM_DBG_ACKN             = 0,  //!< - Test ACKN
@@ -751,7 +751,7 @@ typedef enum  {
 //!
 typedef enum {
    ICP_GET_RESULT    =  1,                   //!< Get result of last command
-                                             //!< @return [0] 8-bit Error code, see \ref  ICP_ErrorCode_t
+                                             //!< @return [0] 8-bit Error code, see  ICP_ErrorCode_t
    ICP_ERASE_PAGE    =  2,                   //!< Erase page (must be within a single Flash memory page)
                                              //!<   @param 16-bit Address within Flash page to erase
    ICP_PROGRAM_ROW   =  3,                   //!< Program row (must be within a single Flash memory row)
@@ -765,7 +765,7 @@ typedef enum {
    ICP_REBOOT        =  5,                   //!< Reboot device - device immediately reboots so contact is lost!
    ICP_GET_VER       =  CMD_USBDM_GET_VER,   //!< Get version - must be common to both modes
                                              //!< @return [0] 16-bit Version number major.minor
-                                             //!< @return Error code, see \ref  ICP_ErrorCode_t
+                                             //!< @return Error code, see  ICP_ErrorCode_t
 } ICPCommandCodes;
 
 void setBDMBusy(void);

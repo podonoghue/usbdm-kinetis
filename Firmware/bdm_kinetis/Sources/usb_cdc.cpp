@@ -5,23 +5,19 @@
  *      Author: podonoghue
  */
 #include <string.h>
+#include "usb_cdc.h"
 #include "derivative.h" /* include peripheral declarations */
 #include "system.h"
-#include "CDC.h"
-#include "USB.h"
+#include "usb.h"
 #include "utilities.h"
 #include "configure.h"
 #include "uart.h"
 
 using UartInfo = USBDM::Uart1Info;
 
-static void uartCallback(uint8_t status);
-
 namespace USBDM {
 extern void checkUsbCdcTxData();
 };
-
-#if (HW_CAPABILITY&CAP_CDC)
 
 #define CDC_TX_BUFFER_SIZE (16)  // Should equal end-point buffer size
 static char txBuffer[CDC_TX_BUFFER_SIZE];
@@ -117,7 +113,7 @@ static int cdc_getTxBuffer(void) {
    uint8_t ch;
    if (txBufferCount == 0) {
       // Check data in USB buffer & restart USB Out if needed
-      USBDM::checkUsbCdcTxData();
+//      checkUsbCdcTxData();
    }
    // Need to re-check as above may have copied data
    if (txBufferCount == 0) {
@@ -340,26 +336,6 @@ const LineCodingStructure *cdc_getLineCoding(void) {
 }
 
 /**
- *  Set CDC Line values
- *
- * @param value - Describing desired settings
- */
-void cdc_setControlLineState(uint8_t value) {
-#define LINE_CONTROL_DTR (1<<0)
-#define LINE_CONTROL_RTS (1<<1) // Ignored
-
-   (void) value; // remove warning
-   // Temp fix until I can determine why the value is incorrect
-//   DTR_ACTIVE();
-// if (value & (LINE_CONTROL_DTR|LINE_CONTROL_RTS)) {
-//    DTR_ACTIVE();
-// }
-// else {
-//    DTR_INACTIVE();
-// }
-}
-
-/**
  *  Send CDC break\n
  *
  * @param length - length of break in milliseconds (see note)\n
@@ -385,4 +361,22 @@ void cdc_sendBreak(uint16_t length) {
    }
 }
 
-#endif // (HW_CAPABILITY&CAP_CDC)
+/**
+ *  Set CDC Line values
+ *
+ * @param value - Describing desired settings
+ */
+void cdc_setControlLineState(uint8_t value) {
+#define LINE_CONTROL_DTR (1<<0)
+#define LINE_CONTROL_RTS (1<<1) // Ignored
+
+   (void) value;
+   // TODO
+// if (value & (LINE_CONTROL_DTR|LINE_CONTROL_RTS)) {
+//    DTR_ACTIVE();
+// }
+// else {
+//    DTR_INACTIVE();
+// }
+}
+

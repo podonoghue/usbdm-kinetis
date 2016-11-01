@@ -104,7 +104,7 @@ uint16_t status = 0;
 #endif // (HW_CAPABILITY&CAP_RST_IN)
 #if (HW_CAPABILITY&CAP_VDDSENSE)
    switch (cable_status.power) {    // Target has power ?
-//    case BDM_TARGET_VDD_NONE : status |= S_POWER_NONE; break;
+      case BDM_TARGET_VDD_NONE :  break;
       case BDM_TARGET_VDD_ERR  : status |= S_POWER_ERR;  break;
       case BDM_TARGET_VDD_INT  : status |= S_POWER_INT;  break;
       case BDM_TARGET_VDD_EXT  : status |= S_POWER_EXT;  break;
@@ -1167,60 +1167,61 @@ FunctionPtr commandPtr = f_CMD_ILLEGAL;     // Default to illegal command
 #endif
 }
 
-#if (VERSION_HW!=(HW_JB+TARGET_HARDWARE))
-void commandLoop(void) {
-// Define to discard commands at random for command retry testing
-//#define TESTDISCARD
+//#if (VERSION_HW!=(HW_JB+TARGET_HARDWARE))
+//void commandLoop(void) {
+//// Define to discard commands at random for command retry testing
+////#define TESTDISCARD
+//
+//   static uint8_t commandToggle = 0;
+//
+//#ifdef TESTDISCARD
+//   static uint8_t doneErrorFlag = false;
+//   RTCSC = (2<<RTCSC_RTCLKS_BITNUM)|(8<<RTCSC_RTCPS_BITNUM);
+//   RTCMOD = 0xFF;
+//#endif
+//
+//#if 1
+//   for(;;) {
+//      (void)USBDM::receiveUSBCommand( MAX_COMMAND_SIZE, commandBuffer );
+//#ifdef TESTDISCARD
+//      if (RTCCNT == 128) {
+//        if (!doneErrorFlag) {
+//           doneErrorFlag = true;
+//           continue;
+//        }
+//      }
+//      else
+//        doneErrorFlag = false;
+//#endif
+//      commandToggle = commandBuffer[1] & 0x80;
+//      commandBuffer[1] &= 0x7F;
+//      commandExec();
+//      commandBuffer[0] |= commandToggle;
+//      USBDM::sendUSBResponse( returnSize, commandBuffer );
+//   }
+//#elif 0
+//   for(;;) {
+//      enableInterrupts();
+//      (void)receiveUSBCommand( MAX_COMMAND_SIZE, commandBuffer );
+//      if (commandBuffer[1] == CMD_USBDM_GET_CAPABILITIES)
+//        commandToggle = 0;
+//      commandBuffer[1] &= 0x7F;
+//      size = commandExec();
+//      if (commandToggle)
+//       commandBuffer[0] |= 0x80;
+//      else
+//       commandBuffer[0] &= ~0x80;
+//      commandToggle += 0x80;
+//      sendUSBResponse( size, commandBuffer );
+//   }
+//#else
+//   for(;;) {
+//      enableInterrupts();
+//      (void)receiveUSBCommand( MAX_COMMAND_SIZE, commandBuffer );
+//      size = commandExec();
+//      sendUSBResponse( size, commandBuffer );
+//   }
+//#endif
+//}
 
-   static uint8_t commandToggle = 0;
-
-#ifdef TESTDISCARD
-   static uint8_t doneErrorFlag = false;
-   RTCSC = (2<<RTCSC_RTCLKS_BITNUM)|(8<<RTCSC_RTCPS_BITNUM);
-   RTCMOD = 0xFF;
-#endif
-
-#if 1
-   for(;;) {
-      (void)USBDM::receiveUSBCommand( MAX_COMMAND_SIZE, commandBuffer );
-#ifdef TESTDISCARD
-      if (RTCCNT == 128) {
-        if (!doneErrorFlag) {
-           doneErrorFlag = true;
-           continue;
-        }
-      }
-      else
-        doneErrorFlag = false;
-#endif
-      commandToggle = commandBuffer[1] & 0x80;
-      commandBuffer[1] &= 0x7F;
-      commandExec();
-      commandBuffer[0] |= commandToggle;
-      USBDM::sendUSBResponse( returnSize, commandBuffer );
-   }
-#elif 0
-   for(;;) {
-      enableInterrupts();
-      (void)receiveUSBCommand( MAX_COMMAND_SIZE, commandBuffer );
-      if (commandBuffer[1] == CMD_USBDM_GET_CAPABILITIES)
-        commandToggle = 0;
-      commandBuffer[1] &= 0x7F;
-      size = commandExec();
-      if (commandToggle)
-       commandBuffer[0] |= 0x80;
-      else
-       commandBuffer[0] &= ~0x80;
-      commandToggle += 0x80;
-      sendUSBResponse( size, commandBuffer );
-   }
-#else
-   for(;;) {
-      enableInterrupts();
-      (void)receiveUSBCommand( MAX_COMMAND_SIZE, commandBuffer );
-      size = commandExec();
-      sendUSBResponse( size, commandBuffer );
-   }
-#endif
-}
-#endif
+//#endif
