@@ -34,7 +34,8 @@
    <item key="$signal$PTB1_descriptionSetting"             value="N/C" />
    <item key="$signal$PTB2_descriptionSetting"             value="Vbdm" />
    <item key="$signal$PTB2_muxSetting"                     value="mux0" />
-   <item key="$signal$PTB3_descriptionSetting"             value="N/C" />
+   <item key="$signal$PTB3_descriptionSetting"             value="LED_TVdd" />
+   <item key="$signal$PTB3_muxSetting"                     value="mux1" />
    <item key="$signal$PTC0_descriptionSetting"             value="RST_DIR" />
    <item key="$signal$PTC0_muxSetting"                     value="mux1" />
    <item key="$signal$PTC0_pcrSetting"                     value="3" />

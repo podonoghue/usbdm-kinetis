@@ -1,39 +1,36 @@
 /*! \file
-    \brief ARM-SWD Command processing
-
-   This file processes the commands received over the USB link from the host
-
-\verbatim
-
-   USBDM
-   Copyright (C) 2007  Peter O'Donoghue
-
-   This program is free software; you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation; either version 2 of the License, or
-   (at your option) any later version.
-
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with this program; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-\endverbatim
-
-\verbatim
-   Change History
-   +=========================================================================================================
-   | 27 Jul 2013 | Now returns BDM_RC_TARGET_BUSY on register reads while executing         V4.10.6.230 - pgo
-   | 27 Jul 2013 | Added f_CMD_READ_ALL_CORE_REGS()                                         V4.10.6     - pgo
-   | 22 Oct 2012 | Added modifyDHCSR() and associated changes                               V4.9.5
-   | 30 Aug 2012 | ARM-JTAG & ARM-SWD Changes                                               V4.9.5
-   +=========================================================================================================
-   \endverbatim
+ *  \brief ARM-SWD Command processing
+ *
+ *  This file processes the commands received over the USB link from the host
+ *
+ *  \verbatim
+ *
+ *  USBDM
+ *  Copyright (C) 2007  Peter O'Donoghue
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *  \endverbatim
+ *
+ *  \verbatim
+ *  Change History
+ *  +=========================================================================================================
+ *  | 30 Aug 2016 | Rebuild                                                                             V5.0.0
+ *  +=========================================================================================================
+ *  \endverbatim
  */
-#include <string.h>
+#include <string>
 #include "configure.h"
 #include "commands.h"
 #include "targetDefines.h"
@@ -62,31 +59,31 @@ USBDM_ErrorCode f_CMD_CONNECT(void) {
    (void)Swd::clearStickyBits();
    return rc;
 }
-//! Set communication speed in kHz
-//!
-//! @note
-//!  commandBuffer\n
-//!   - [2..3]  =>  speed in kHz
-//!
-//! @return
-//!    == \ref BDM_RC_OK => success \n
-//!    != \ref BDM_RC_OK => error
-//!
+/*  Set communication speed in kHz
+ *
+ *  @note
+ *   commandBuffer\n
+ *    - [2..3]  =>  speed in kHz
+ *
+ *  @return
+ *     == \ref BDM_RC_OK => success \n
+ *     != \ref BDM_RC_OK => error
+ */
 USBDM_ErrorCode f_CMD_SET_SPEED(void) {
    uint16_t freq = (commandBuffer[2]<<8)|commandBuffer[3]; // Get the new speed
    return Swd::setSpeed(1000*freq);
 }
 
-//! Get communication speed in kHz
-//!
-//! @note
-//!  commandBuffer\n
-//!   - [1..2]  =>  speed in kHz
-//!
-//! @return
-//!    == \ref BDM_RC_OK => success \n
-//!    != \ref BDM_RC_OK => error
-//!
+/*  Get communication speed in kHz
+ *
+ *  @note
+ *   commandBuffer\n
+ *    - [1..2]  =>  speed in kHz
+ *
+ *  @return
+ *     == \ref BDM_RC_OK => success \n
+ *     != \ref BDM_RC_OK => error
+ */
 USBDM_ErrorCode f_CMD_GET_SPEED(void) {
    uint32_t freq = (uint32_t)round(Swd::getSpeed()/1000.0);
    commandBuffer[1] = (uint8_t)(freq>>8);
@@ -234,7 +231,6 @@ USBDM_ErrorCode f_CMD_READ_MEM(void) {
 }
 
 
-// Insufficient memory on some chips!
 
 // Maps register index into magic number for ARM device register number
 static const uint8_t regIndexMap[] = {
@@ -266,7 +262,6 @@ static const uint8_t regIndexMap[] = {
  *    - [1..N]  =>  32-bit register values
  */
 USBDM_ErrorCode f_CMD_READ_ALL_CORE_REGS(void) {
-
    USBDM_ErrorCode  rc;
    uint8_t  regIndex    = commandBuffer[3];
    uint8_t  endRegister = commandBuffer[4];
@@ -306,7 +301,6 @@ USBDM_ErrorCode f_CMD_READ_ALL_CORE_REGS(void) {
  *    - [1..4]  =>  32-bit register value
  */
 USBDM_ErrorCode f_CMD_READ_REG(void) {
-
    returnSize = 5;
    return Swd::readCoreRegister(commandBuffer[3], commandBuffer+1);
 }
@@ -332,7 +326,6 @@ USBDM_ErrorCode f_CMD_WRITE_REG(void) {
  *     != \ref BDM_RC_OK => error         \n
  */
 USBDM_ErrorCode f_CMD_TARGET_STEP(void) {
-
    // Preserve DHCSR_C_MASKINTS value
    return Swd::modifyDHCSR(DHCSR_C_MASKINTS, DHCSR_C_STEP|DHCSR_C_DEBUGEN);
 }
@@ -344,7 +337,6 @@ USBDM_ErrorCode f_CMD_TARGET_STEP(void) {
  *     != \ref BDM_RC_OK => error         \n
  */
 USBDM_ErrorCode f_CMD_TARGET_GO(void) {
-
    return modifyDHCSR(DHCSR_C_MASKINTS, DHCSR_C_DEBUGEN);
 }
 
@@ -355,7 +347,6 @@ USBDM_ErrorCode f_CMD_TARGET_GO(void) {
  *     != \ref BDM_RC_OK => error         \n
  */
 USBDM_ErrorCode f_CMD_TARGET_HALT(void) {
-
    return modifyDHCSR(DHCSR_C_MASKINTS, DHCSR_C_HALT|DHCSR_C_DEBUGEN);
 }
 

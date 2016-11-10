@@ -13,10 +13,7 @@
 #include "delay.h"
 #include "bdmCommon.h"
 
-namespace USBDM {
-void receiveUSBCommand(uint8_t maxSize, uint8_t *buffer);
-void sendUSBResponse( uint8_t size, const uint8_t *buffer);
-};
+#include "usb.h"
 
 //  Buffer for USB command in, result out
 uint8_t   commandBuffer[MAX_COMMAND_SIZE+4];
@@ -1095,6 +1092,8 @@ FunctionPtr commandPtr = f_CMD_ILLEGAL;     // Default to illegal command
    DEBUG_PIN     = 1;
 #endif
 
+   PRINTF("Command = %d\n", command);
+
    // Check if modeless command
    if ((uint8_t)command < sizeof(commonFunctionPtrs)/sizeof(FunctionPtr)) {
       // Modeless command
@@ -1112,7 +1111,7 @@ FunctionPtr commandPtr = f_CMD_ILLEGAL;     // Default to illegal command
    // Note: returnSize & commandBuffer may be updated by command
    //       returnSize has a default value of 1
    //       commandStatus has a default value of BDM_RC_OK
-   //       On error, returnSize is forced to 1
+   //       On error, returnSize is forced to 1 (error code return only)
    returnSize       = 1;
    commandStatus = BDM_RC_OK;
    if (command >= CMD_USBDM_READ_STATUS_REG) {
@@ -1167,61 +1166,43 @@ FunctionPtr commandPtr = f_CMD_ILLEGAL;     // Default to illegal command
 #endif
 }
 
-//#if (VERSION_HW!=(HW_JB+TARGET_HARDWARE))
-//void commandLoop(void) {
-//// Define to discard commands at random for command retry testing
-////#define TESTDISCARD
-//
-//   static uint8_t commandToggle = 0;
-//
-//#ifdef TESTDISCARD
-//   static uint8_t doneErrorFlag = false;
-//   RTCSC = (2<<RTCSC_RTCLKS_BITNUM)|(8<<RTCSC_RTCPS_BITNUM);
-//   RTCMOD = 0xFF;
-//#endif
-//
-//#if 1
-//   for(;;) {
-//      (void)USBDM::receiveUSBCommand( MAX_COMMAND_SIZE, commandBuffer );
-//#ifdef TESTDISCARD
-//      if (RTCCNT == 128) {
-//        if (!doneErrorFlag) {
-//           doneErrorFlag = true;
-//           continue;
-//        }
-//      }
-//      else
-//        doneErrorFlag = false;
-//#endif
-//      commandToggle = commandBuffer[1] & 0x80;
-//      commandBuffer[1] &= 0x7F;
-//      commandExec();
-//      commandBuffer[0] |= commandToggle;
-//      USBDM::sendUSBResponse( returnSize, commandBuffer );
-//   }
-//#elif 0
-//   for(;;) {
-//      enableInterrupts();
-//      (void)receiveUSBCommand( MAX_COMMAND_SIZE, commandBuffer );
-//      if (commandBuffer[1] == CMD_USBDM_GET_CAPABILITIES)
-//        commandToggle = 0;
-//      commandBuffer[1] &= 0x7F;
-//      size = commandExec();
-//      if (commandToggle)
-//       commandBuffer[0] |= 0x80;
-//      else
-//       commandBuffer[0] &= ~0x80;
-//      commandToggle += 0x80;
-//      sendUSBResponse( size, commandBuffer );
-//   }
-//#else
-//   for(;;) {
-//      enableInterrupts();
-//      (void)receiveUSBCommand( MAX_COMMAND_SIZE, commandBuffer );
-//      size = commandExec();
-//      sendUSBResponse( size, commandBuffer );
-//   }
-//#endif
-//}
+/**
+ *   Receive a command over EP1
+ *
+ *   @param maxSize  = max # of bytes to receive
+ *   @param buffer   = ptr to buffer for bytes received
+ *
+ *   @note : Doesn't return until command has been received.
+ *   @note : Format
+ *       - [0]    = size of command (N)
+ *       - [1]    = command
+ *       - [2..N] = parameters
+ *
+ *   =======================================================
+ *   Format
+ *
+ *    Transaction
+ *   +--------------------------+
+ *   |  Size of entire command  |  0 - size
+ *   +--------------------------+
+ *   |  Command byte            |  1
+ *   +--------------------------+
+ *   |                          |  2...N
+ *   | //// DATA ////////////// |
+ *   |                          |
+ *   +--------------------------+
+ *
+ */
 
-//#endif
+void commandLoop(void) {
+   static uint8_t commandSequence = 0;
+
+   for(;;) {
+      (void)USBDM::UsbImplementation::receiveBulkData(MAX_COMMAND_SIZE, commandBuffer);
+      commandSequence = commandBuffer[1] & 0xC0;
+      commandBuffer[1] &= 0x3F;
+      commandExec();
+      commandBuffer[0] |= commandSequence;
+      USBDM::UsbImplementation::sendBulkData(returnSize, commandBuffer);
+   }
+}

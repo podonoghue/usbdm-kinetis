@@ -216,10 +216,6 @@ void testReset() {
    }
 }
 
-namespace USBDM {
-extern void idleLoop();
-};
-
 //char debugBuffer[200] = {0};
 //char logBuffer[128] = {0};
 //char logIndex = 0;
@@ -239,7 +235,9 @@ int main() {
 
 //   CHECK(testmem());
    //   CHECK(testMassErase());
-   USBDM::idleLoop();
+//   USBDM::idleLoop();
+
+   commandLoop();
 
    for(;;) {
       __asm__("nop");

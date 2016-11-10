@@ -36,6 +36,26 @@ public:
 };
 
 /**
+ * GPIO for Target Vdd LED
+ */
+class TVddLed : public USBDM::GpioB<3> {
+public:
+   /** Initialise activity LED */
+   static void initialise() {
+      setOutput();
+      off();
+   }
+   /** Turn on activity LED */
+   static void on() {
+      high();
+   }
+   /** Turn off activity LED */
+   static void off() {
+      low();
+   }
+};
+
+/**
  * GPIO for Power LED\n
  * Dummy class
  */

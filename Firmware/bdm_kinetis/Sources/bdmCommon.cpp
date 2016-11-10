@@ -491,6 +491,7 @@ uint16_t bdm_targetVddMeasure(void) {
    // No Target Vdd measurement - Assume external Vdd supplied
    return 255;
 #else
+   TVddLed::write(TargetVdd::vddOK());
    return TargetVdd::readRawVoltage();
 #endif
 }

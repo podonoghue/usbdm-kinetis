@@ -11,8 +11,8 @@
          -  Modify the \b Linker options for this target so that the Application Filename is unique (change  \b USBDM_JB16 appropriately)
  */
 
-#ifndef _CONFIG_H
-#define _CONFIG_H
+#ifndef _CONFIGURE_H
+#define _CONFIGURE_H
 
 //=================================================================================
 // Debugging options
@@ -137,16 +137,16 @@ extern void dputs(char *msg);
 //==========================================================================================
 //! Software Version Information
 //
-#define VERSION_MAJOR 4
-#define VERSION_MINOR 12
-#define VERSION_MICRO 1
-#define VERSION_STR "4.12.1"
+#define VERSION_MAJOR 5
+#define VERSION_MINOR 0
+#define VERSION_MICRO 0
+#define VERSION_STR "5.0.0"
 #define VERSION_SW  ((VERSION_MAJOR<<4)+VERSION_MINOR)
 
-#define VendorID        (0x16D0)       // Vendor (actually MCS)
-#define ProductID       (0x0567)       // Non-CDC versions
-#define ProductID_CDC   (0x06A5)       // CDC versions
-#define VersionID       (VERSION_SW)   // Reported version (via USB)
+#define VENDOR_ID        (0x16D0)       // Vendor (actually MCS)
+//#define PRODUCT_ID       (0x0567)       // Non-CDC versions
+#define PRODUCT_ID       (0x06A5)       // CDC versions
+#define VERSION_ID       (VERSION_SW)   // Reported version (via USB)
 
 //#define ProductID (0x9999) // Testing
 //#define ProductID (0x06A5) // Alternative number (from MCS)
@@ -274,8 +274,9 @@ extern void dputs(char *msg);
 #define BUS_FREQ     (OSC_FREQ/2)               // Bus freq. derived from oscillator
 #error "UF32 is not supported by this version of the software"
 #elif (CPU == MK20D5)
-#define OSC_FREQ     (96000000UL)               // Oscillator frequency
-#define BUS_FREQ     (OSC_FREQ/2)               // Bus freq. derived from oscillator
+// Not needed
+//#define OSC_FREQ     (96000000UL)               // Oscillator frequency
+//#define BUS_FREQ     (OSC_FREQ/2)               // Bus freq. derived from oscillator
 #elif (CPU == MKL25Z4)
 #define OSC_FREQ     (96000000UL)               // Oscillator frequency
 #define BUS_FREQ     (OSC_FREQ/4)               // Bus freq. derived from oscillator
@@ -284,4 +285,4 @@ extern void dputs(char *msg);
 #define CPU JM60
 #endif
 
-#endif // _CONFIG_H
+#endif // _CONFIGURE_H

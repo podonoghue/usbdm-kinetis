@@ -389,7 +389,8 @@ uint32_t getSpeed() {
  */
 void initialise() {
 
-   PRINTF("initialise()\n");
+   PRINTF("Swd::initialise()\n");
+
    // Configure SPI pins
    SpiInfo::initPCRs();
 
@@ -524,8 +525,6 @@ USBDM_ErrorCode readReg(uint8_t command, uint32_t &data) {
       }
       break;
    } while (true);
-
-   // Error
    txIdle8();
    return rc;
 }

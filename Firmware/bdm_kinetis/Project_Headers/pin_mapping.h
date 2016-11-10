@@ -2922,6 +2922,7 @@ using ftm_p47              = const USBDM::Ftm0Channel<6>;
  * @brief Pins used for Digital Input/Output
  * @{
  */
+using gpio_p30             = const USBDM::GpioB<3>;
 using gpio_p33             = const USBDM::GpioC<0>;
 using gpio_p34             = const USBDM::GpioC<1>;
 using gpio_p35             = const USBDM::GpioC<2>;
@@ -2958,7 +2959,7 @@ extern void mapAllPins();
  *  PTB0                     | -                                           | p27                       | N/C       
  *  PTB1                     | -                                           | p28                       | N/C       
  *  PTB2                     | ADC0_SE12                                   | p29                       | Vbdm       
- *  PTB3                     | -                                           | p30                       | N/C       
+ *  PTB3                     | GPIOB_3                                     | p30                       | LED_TVdd       
  *  PTB16                    | UART0_RX                                    | p31                       | DBG_Rx       
  *  PTB17                    | UART0_TX                                    | p32                       | DBG_Tx       
  *  PTC0                     | GPIOC_0                                     | p33                       | RST_DIR       
@@ -3028,7 +3029,7 @@ extern void mapAllPins();
  *  PTB0                     | -                                           | p27                       | N/C       
  *  PTB1                     | -                                           | p28                       | N/C       
  *  PTB2                     | ADC0_SE12                                   | p29                       | Vbdm       
- *  PTB3                     | -                                           | p30                       | N/C       
+ *  PTB3                     | GPIOB_3                                     | p30                       | LED_TVdd       
  *  PTB16                    | UART0_RX                                    | p31                       | DBG_Rx       
  *  PTB17                    | UART0_TX                                    | p32                       | DBG_Tx       
  *  PTC0                     | GPIOC_0                                     | p33                       | RST_DIR       
@@ -3061,6 +3062,7 @@ extern void mapAllPins();
  *  EXTAL32                  | EXTAL32                                     | p15                       | N/C       
  *  PTD4                     | FTM0_CH4                                    | p45                       | BKGD/SWD_I       
  *  PTD6                     | FTM0_CH6                                    | p47                       | BKGD/SWD_0       
+ *  PTB3                     | GPIOB_3                                     | p30                       | LED_TVdd       
  *  PTC0                     | GPIOC_0                                     | p33                       | RST_DIR       
  *  PTC1                     | GPIOC_1/LLWU_P6                             | p34                       | RST_IO       
  *  PTC2                     | GPIOC_2                                     | p35                       | BKGD/SWD_DIR       
