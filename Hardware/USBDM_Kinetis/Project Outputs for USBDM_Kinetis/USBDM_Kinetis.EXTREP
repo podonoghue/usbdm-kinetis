@@ -1,5 +1,5 @@
 ------------------------------------------------------------------------------------------
-Gerber File Extension Report For: USBDM_Kinetis.GBR   4/11/2016  2:49:28 PM
+Gerber File Extension Report For: USBDM_Kinetis.GBR   9/11/2016  10:57:15 PM
 ------------------------------------------------------------------------------------------
 
 
@@ -9,8 +9,10 @@ Layer Extension     Layer Description
 .GTL                Top Layer                               
 .GBL                Bottom Layer                            
 .GTO                Top Overlay                             
+.GTP                Top Paste                               
 .GTS                Top Solder                              
 .GBS                Bottom Solder                           
+.GBP                Bottom Paste                            
 .GBO                Bottom Overlay                          
 .GKO                Keep-Out Layer                          
 ------------------------------------------------------------------------------------------
