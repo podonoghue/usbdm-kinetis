@@ -1,8 +1,12 @@
-/*
- * usb_implementation_composite.cpp
+/**
+ * @file     usb_implementation_composite.cpp
+ * @brief    USB Kinetis implementation
  *
- *  Created on: 30Oct.,2016
- *      Author: podonoghue
+ * @version  V4.12.1.80
+ * @date     13 April 2016
+ *
+ *  This file provides the implementation specific code for the USB interface.
+ *  It will need to be modified to suit an application.
  */
 #include <string.h>
 
@@ -26,6 +30,7 @@ enum InterfaceNumbers {
    NUMBER_OF_INTERFACES,
 };
 
+/** Force command handler to exit and restart */
 bool Usb0::forceCommandHandlerInitialise = false;
 
 /*
@@ -252,12 +257,12 @@ const Usb0::Descriptors Usb0::otherDescriptors = {
 /*
  * TODO Add additional end-points here
  */
-const OutEndpoint <Usb0Info, Usb0::BULK_OUT_ENDPOINT, BULK_OUT_EP_MAXSIZE> Usb0::epBulkOut;
-const InEndpoint  <Usb0Info, Usb0::BULK_IN_ENDPOINT,  BULK_IN_EP_MAXSIZE>  Usb0::epBulkIn;
+OutEndpoint <Usb0Info, Usb0::BULK_OUT_ENDPOINT, BULK_OUT_EP_MAXSIZE> Usb0::epBulkOut;
+InEndpoint  <Usb0Info, Usb0::BULK_IN_ENDPOINT,  BULK_IN_EP_MAXSIZE>  Usb0::epBulkIn;
 
-const InEndpoint  <Usb0Info, Usb0::CDC_NOTIFICATION_ENDPOINT, CDC_NOTIFICATION_EP_MAXSIZE>  Usb0::epCdcNotification;
-const OutEndpoint <Usb0Info, Usb0::CDC_DATA_OUT_ENDPOINT,     CDC_DATA_OUT_EP_MAXSIZE>      Usb0::epCdcDataOut;
-const InEndpoint  <Usb0Info, Usb0::CDC_DATA_IN_ENDPOINT,      CDC_DATA_IN_EP_MAXSIZE>       Usb0::epCdcDataIn;
+InEndpoint  <Usb0Info, Usb0::CDC_NOTIFICATION_ENDPOINT, CDC_NOTIFICATION_EP_MAXSIZE>  Usb0::epCdcNotification;
+OutEndpoint <Usb0Info, Usb0::CDC_DATA_OUT_ENDPOINT,     CDC_DATA_OUT_EP_MAXSIZE>      Usb0::epCdcDataOut;
+InEndpoint  <Usb0Info, Usb0::CDC_DATA_IN_ENDPOINT,      CDC_DATA_IN_EP_MAXSIZE>       Usb0::epCdcDataIn;
 
 /**
  * Handler for Start of Frame Token interrupt (~1ms interval)
@@ -271,7 +276,7 @@ void Usb0::sofCallback() {
    if (usb->FRMNUML==0) { // Every ~256 ms
       switch (usb->FRMNUMH&0x03) {
          case 0:
-            if (deviceState.state == USBconfigured) {
+            if (connectionState == USBconfigured) {
                // Activity LED on when USB connection established
                UsbLed::on();
             }
@@ -322,6 +327,9 @@ void Usb0::epCdcSendNotification() {
 static uint8_t cdcOutBuff[10] = "Welcome\n";
 static int cdcOutByteCount    = 8;
 
+/**
+ * Start CDC IN transactions
+ */
 void Usb0::startCdcIn() {
    if ((epCdcDataIn.getHardwareState().state == EPIdle) && (cdcOutByteCount>0)) {
       static_assert(epCdcDataIn.BUFFER_SIZE>sizeof(cdcOutBuff), "Buffer too small");
@@ -334,7 +342,7 @@ void Usb0::startCdcIn() {
  * Handler for Token Complete USB interrupts for
  * end-points other than EP0
  */
-void Usb0::handleTokenComplete(void) {
+void Usb0::handleTokenComplete() {
 
    // Let parent process first
    if (UsbBase_T::handleTokenComplete()) {
@@ -382,6 +390,8 @@ void Usb0::handleTokenComplete(void) {
 
 /**
  * Call-back handling CDC-OUT transaction complete
+ *
+ * @param state Current end-point state
  */
 void Usb0::cdcOutTransactionCallback(EndpointState state) {
    static uint8_t buff[] = "";
@@ -393,6 +403,8 @@ void Usb0::cdcOutTransactionCallback(EndpointState state) {
 
 /**
  * Call-back handling CDC-IN transaction complete
+ *
+ * @param state Current end-point state
  */
 void Usb0::cdcInTransactionCallback(EndpointState state) {
    static const uint8_t buff[] = "Hello There\n\r";
@@ -403,6 +415,8 @@ void Usb0::cdcInTransactionCallback(EndpointState state) {
 
 /**
  * Call-back handling BULK-OUT transaction complete
+ *
+ * @param state Current end-point state
  */
 void Usb0::bulkOutTransactionCallback(EndpointState state) {
    (void)state;
@@ -415,6 +429,8 @@ void Usb0::bulkOutTransactionCallback(EndpointState state) {
 
 /**
  * Call-back handling BULK-IN transaction complete
+ *
+ * @param state Current end-point state
  */
 void Usb0::bulkInTransactionCallback(EndpointState state) {
    (void)state;
@@ -519,13 +535,9 @@ void Usb0::irqHandler() {
  *
  *   @return Number of bytes received
  *
- *   @note : Doesn't return until command has been received.
+ *   @note Doesn't return until command has been received.
  */
 int Usb0::receiveBulkData(uint8_t maxSize, uint8_t *buffer) {
-   // Wait for USB connection
-   while(deviceState.state != USBconfigured) {
-      __WFI();
-   }
    epBulkOut.startRxTransaction(EPDataOut, maxSize, buffer);
    while(epBulkOut.getHardwareState().state != EPIdle) {
       __WFI();
@@ -561,15 +573,15 @@ void Usb0::handleSetLineCoding() {
 
    // Call-back to do after transaction complete
    static auto callback = []() {
-      // The ep0 buffer will contain the LineCodingStructure data at call-back time
-      CdcUart::setLineCoding((LineCodingStructure * const)ep0.getBuffer());
+      // The controlEndpoint buffer will contain the LineCodingStructure data at call-back time
+      CdcUart::setLineCoding((LineCodingStructure * const)controlEndpoint.getBuffer());
       setSetupCompleteCallback(nullptr);
    };
    setSetupCompleteCallback(callback);
 
    // Don't use external buffer - this requires response to fit in internal EP buffer
-   static_assert(sizeof(LineCodingStructure) < ep0.BUFFER_SIZE, "Buffer insufficient size");
-   ep0.startRxTransaction(EPDataOut, sizeof(LineCodingStructure));
+   static_assert(sizeof(LineCodingStructure) < controlEndpoint.BUFFER_SIZE, "Buffer insufficient size");
+   controlEndpoint.startRxTransaction(EPDataOut, sizeof(LineCodingStructure));
 }
 
 /**
@@ -619,7 +631,7 @@ void Usb0::handleUserEp0SetupRequests(const SetupPacket &setup) {
             case GET_LINE_CODING :       handleGetLineCoding();       break;
             case SET_CONTROL_LINE_STATE: handleSetControlLineState(); break;
             case SEND_BREAK:             handleSendBreak();           break;
-            default :                    ep0.stall();                 break;
+            default :                    controlEndpoint.stall();     break;
          }
          break;
       case REQ_TYPE_VENDOR :
@@ -641,12 +653,12 @@ void Usb0::handleUserEp0SetupRequests(const SetupPacket &setup) {
                }
                break;
             default :
-               ep0.stall();
+               controlEndpoint.stall();
                break;
          }
          break;
       default:
-         ep0.stall();
+         controlEndpoint.stall();
          break;
    }
 }
