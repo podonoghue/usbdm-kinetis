@@ -41,27 +41,72 @@ enum EndpointState {
 };
 
 /**
- * Endpoint hardware state
- */
-struct EPHardwareState {
-   volatile Data0_1        txData1; //!< Data 0/1 tx state
-   volatile Data0_1        rxData1; //!< Data 0/1 rx state
-   volatile EvenOdd        txOdd;   //!< Odd/Even tx buffer
-   volatile EvenOdd        rxOdd;   //!< Odd/Even rx buffer
-   volatile EndpointState  state;   //!< End-point state
-};
-
-/**
  * Class for generic endpoint
  */
 class Endpoint {
 
+protected:
+   /** Data 0/1 Transmit flag */
+   volatile Data0_1 txData1;
+
+   /** Data 0/1 Receive flag */
+   volatile Data0_1 rxData1;
+
+   /** Odd/Even Transmit buffer flag */
+   volatile EvenOdd txOdd;
+
+   /** Odd/Even Receive buffer flag */
+   volatile EvenOdd rxOdd;
+
+   /** End-point state */
+   volatile EndpointState state;
+
 public:
+   /** End point number */
    const int fEndpointNumber;
 
-   constexpr Endpoint(int endpointNumber): fEndpointNumber(endpointNumber) {
+   /**
+    * Constructor
+    *
+    * @param endpointNumber End-point number
+    */
+   constexpr Endpoint(int endpointNumber):
+      txData1(DATA0),
+      rxData1(DATA0),
+      txOdd(EVEN),
+      rxOdd(EVEN),
+      state(EPIdle),
+      fEndpointNumber(endpointNumber) {
    }
+
    virtual ~Endpoint() {}
+
+   /**
+    * Flip active odd/even buffer state
+    *
+    * @param usbStat Value from USB->STAT
+    */
+    void flipOddEven(uint8_t usbStat) {
+
+      // Direction of transfer 0=>OUT, (!=0)=>IN
+      bool isTx  = usbStat&USB_STAT_TX_MASK;
+
+      // Odd/even buffer
+      bool isOdd = usbStat&USB_STAT_ODD_MASK;
+
+      if (isTx) {
+         // Flip Transmit buffer
+         txOdd = !isOdd;
+//         if ((endPointBdts[ENDPOINT_NUM].txEven.u.bits&BDTEntry_OWN_MASK) ||
+//             (endPointBdts[ENDPOINT_NUM].txOdd.u.bits&BDTEntry_OWN_MASK)) {
+//            printf("Opps-Tx\n");
+//         }
+      }
+      else {
+         // Flip Receive buffer
+         rxOdd = !isOdd;
+      }
+   }
 
    /**
     * Stall endpoint
@@ -85,7 +130,6 @@ template<class Info, int ENDPOINT_NUM, int EP_MAXSIZE>
 class Endpoint_T : public Endpoint {
 
 public:
-   static constexpr int ENDPOINT_NO  = ENDPOINT_NUM;
    static constexpr int BUFFER_SIZE  = EP_MAXSIZE;
 
 protected:
@@ -94,9 +138,6 @@ protected:
 
    /** Buffer for Tx & Rx data */
    uint8_t fDataBuffer[EP_MAXSIZE];
-
-   /** State of the endpoint */
-   EPHardwareState fHardwareState;
 
    /** Callback used on completion of transaction
     *
@@ -142,37 +183,10 @@ public:
       return fDataTransferred;
    }
    /**
-    * Flip active odd/even buffer state
-    *
-    * @param usbStat Value from USB->STAT
+    * Return end-point state
     */
-    void flipOddEven(uint8_t usbStat) {
-
-      // Direction of transfer 0=>OUT, (!=0)=>IN
-      bool isTx  = usbStat&USB_STAT_TX_MASK;
-
-      // Odd/even buffer
-      bool isOdd = usbStat&USB_STAT_ODD_MASK;
-
-      if (isTx) {
-         // Flip Transmit buffer
-         fHardwareState.txOdd = !isOdd;
-         if ((endPointBdts[ENDPOINT_NUM].txEven.u.bits&BDTEntry_OWN_MASK) ||
-             (endPointBdts[ENDPOINT_NUM].txOdd.u.bits&BDTEntry_OWN_MASK)) {
-            printf("Opps-Tx\n");
-         }
-      }
-      else {
-         // Flip Receive buffer
-         fHardwareState.rxOdd = !isOdd;
-      }
-   }
-
-   /**
-    * Return hardware state
-    */
-    EPHardwareState &getHardwareState() {
-      return fHardwareState;
+    EndpointState getHardwareState() {
+      return state;
    }
 
    /**
@@ -209,7 +223,7 @@ public:
     * Stall endpoint
     */
    virtual void stall() {
-      fHardwareState.state               = EPStall;
+      state = EPStall;
       usb->ENDPOINT[ENDPOINT_NUM].ENDPT |= USB_ENDPT_EPSTALL_MASK;
    }
 
@@ -218,9 +232,9 @@ public:
     */
    virtual void clearStall() {
       usb->ENDPOINT[ENDPOINT_NUM].ENDPT &= ~USB_ENDPT_EPSTALL_MASK;
-      fHardwareState.state               = EPIdle;
-      fHardwareState.txData1             = DATA0;
-      fHardwareState.rxData1             = DATA0;
+      state               = EPIdle;
+      txData1             = DATA0;
+      rxData1             = DATA0;
    }
 
    /**
@@ -229,8 +243,13 @@ public:
     *  - BDTs
     */
     void initialise() {
-      static const EPHardwareState initialHardwareState = {DATA0,DATA0,EVEN,EVEN,EPIdle};
-      fHardwareState    = initialHardwareState;
+
+      txData1  = DATA0;
+      rxData1  = DATA0;
+      txOdd    = EVEN;
+      rxOdd    = EVEN;
+      state    = EPIdle;
+
       fDataPtr          = nullptr;
       fDataTransferred  = 0;
       fDataRemaining    = 0;
@@ -253,15 +272,15 @@ public:
     */
     void startTxTransaction(EndpointState state, uint8_t bufSize=0, const uint8_t *bufPtr=nullptr) {
       // Pointer to data
-      fDataPtr       = (uint8_t*)bufPtr;
+      fDataPtr = (uint8_t*)bufPtr;
 
       // Count of bytes transferred
-      fDataTransferred  = 0;
+      fDataTransferred = 0;
 
       // Count of remaining bytes
-      fDataRemaining    = bufSize;
+      fDataRemaining = bufSize;
 
-      fHardwareState.state = state;
+      this->state = state;
       // Configure the BDT for transfer
       initialiseBdtTx();
    }
@@ -271,7 +290,7 @@ public:
     */
     void initialiseBdtTx() {
       // Get BDT to use
-      BdtEntry *bdt = fHardwareState.txOdd?&endPointBdts[ENDPOINT_NUM].txOdd:&endPointBdts[ENDPOINT_NUM].txEven;
+      BdtEntry *bdt = txOdd?&endPointBdts[ENDPOINT_NUM].txOdd:&endPointBdts[ENDPOINT_NUM].txEven;
 
       if ((endPointBdts[ENDPOINT_NUM].txEven.u.bits&BDTEntry_OWN_MASK) ||
           (endPointBdts[ENDPOINT_NUM].txOdd.u.bits&BDTEntry_OWN_MASK)) {
@@ -299,7 +318,7 @@ public:
 
       // Set up to Tx packet
       bdt->bc     = (uint8_t)size;
-      if (fHardwareState.txData1) {
+      if (txData1) {
          bdt->u.bits = BDTEntry_OWN_MASK|BDTEntry_DATA1_MASK|BDTEntry_DTS_MASK;
       }
       else {
@@ -320,7 +339,7 @@ public:
       fDataTransferred     = 0;        // Count of bytes transferred
       fDataRemaining       = bufSize;  // Total bytes to Rx
       fDataPtr             = bufPtr;   // Where to (eventually) place data
-      fHardwareState.state = state;    // State to adopt
+      this->state          = state;    // State to adopt
       initialiseBdtRx();               // Configure the BDT for transfer
    }
 
@@ -332,7 +351,7 @@ public:
     */
     void initialiseBdtRx() {
       // Set up to Rx packet
-      BdtEntry *bdt = fHardwareState.rxOdd?&endPointBdts[ENDPOINT_NUM].rxOdd:&endPointBdts[ENDPOINT_NUM].rxEven;
+      BdtEntry *bdt = rxOdd?&endPointBdts[ENDPOINT_NUM].rxOdd:&endPointBdts[ENDPOINT_NUM].rxEven;
 
       if (bdt->u.bits&BDTEntry_OWN_MASK) {
          // Already configured
@@ -345,7 +364,7 @@ public:
       // Set up to Rx packet
       // Always used maximum size even if expecting less data
       bdt->bc = EP_MAXSIZE;
-      if (fHardwareState.rxData1) {
+      if (rxData1) {
          bdt->u.bits  = BDTEntry_OWN_MASK|BDTEntry_DATA1_MASK|BDTEntry_DTS_MASK;
       }
       else {
@@ -360,7 +379,7 @@ public:
     */
     uint8_t saveRxData() {
       // Get BDT
-      BdtEntry *bdt = (!fHardwareState.rxOdd)?&endPointBdts[ENDPOINT_NUM].rxOdd:&endPointBdts[ENDPOINT_NUM].rxEven;
+      BdtEntry *bdt = (!rxOdd)?&endPointBdts[ENDPOINT_NUM].rxOdd:&endPointBdts[ENDPOINT_NUM].rxEven;
       uint8_t size = bdt->bc;
 
       if (size > 0) {
@@ -391,19 +410,19 @@ public:
 //      pushState('O');
 
       // Toggle DATA0/1 for next pkt
-      fHardwareState.rxData1 = !fHardwareState.rxData1;
+      rxData1 = !rxData1;
 
-      switch (fHardwareState.state) {
+      switch (state) {
          case EPDataOut:        // Receiving a sequence of OUT packets
             // Save the data from the Rx buffer
             transferSize = saveRxData();
             if (ENDPOINT_NUM == 1) {
-               PRINTF("ep1.handleOutToken() s=%d. size=%d, r=%d\n", fHardwareState.state, transferSize, fDataRemaining);
+               PRINTF("ep1.handleOutToken() s=%d. size=%d, r=%d\n", state, transferSize, fDataRemaining);
             }
             // Complete transfer on undersize packet or received expected number of bytes
             if ((transferSize < EP_MAXSIZE) || (fDataRemaining == 0)) {
                // Now idle
-               fHardwareState.state = EPIdle;
+               state = EPIdle;
                doCallback(EPDataOut);
             }
             else {
@@ -414,7 +433,7 @@ public:
 
          case EPStatusOut:       // Done OUT packet as a status handshake from host (IN CONTROL transfer)
             // No action
-            fHardwareState.state = EPIdle;
+            state = EPIdle;
             doCallback(EPStatusOut);
             break;
 
@@ -425,8 +444,8 @@ public:
          case EPComplete:  // Not used
          case EPStall:     // Not used
          case EPThrottle:  // Not used
-            PRINTF("Unexpected OUT, s = %d\n", fHardwareState.state);
-            fHardwareState.state = EPIdle;
+            PRINTF("Unexpected OUT, s = %d\n", state);
+            state = EPIdle;
             break;
       }
    }
@@ -434,10 +453,10 @@ public:
     * Handle IN token [Tx, device -> host]
     */
     void handleInToken() {
-      fHardwareState.txData1 = !fHardwareState.txData1;   // Toggle DATA0/1 for next packet
+      txData1 = !txData1;   // Toggle DATA0/1 for next packet
       //   PUTS(fHardwareState[BDM_OUT_ENDPOINT].data0_1?"ep2HandleInToken-T-1\n":"ep2HandleInToken-T-0\n");
 
-      switch (fHardwareState.state) {
+      switch (state) {
          case EPDataIn:    // Doing a sequence of IN packets
             // Check if packets remaining
             if ((fDataRemaining > 0) || fNeedZLP) {
@@ -445,7 +464,7 @@ public:
                initialiseBdtTx();
             }
             else {
-               fHardwareState.state = EPIdle;
+               state = EPIdle;
                // Execute callback function to process previous OUT data
                doCallback(EPDataIn);
             }
@@ -454,7 +473,7 @@ public:
 
          case EPStatusIn: // Just done an IN packet as a status handshake for an OUT Data transfer
             // Now Idle
-            fHardwareState.state = EPIdle;
+            state = EPIdle;
             // Execute callback function to process previous OUT data
             doCallback(EPStatusIn);
             break;
@@ -464,8 +483,8 @@ public:
          case EPDataOut:   // Doing a sequence of OUT packets (until data count <= EP_MAXSIZE)
          case EPStatusOut: // Doing an OUT packet as a status handshake
          default:
-            PRINTF("Unexpected IN, %d\n", fHardwareState.state);
-            fHardwareState.state = EPIdle;
+            PRINTF("Unexpected IN, %d\n", state);
+            state = EPIdle;
             break;
       }
    }
@@ -481,7 +500,7 @@ template<class Info, int EP_MAXSIZE>
 class ControlEndpoint : public Endpoint_T<Info, 0, EP_MAXSIZE> {
 
 public:
-   using Endpoint_T<Info, 0, EP_MAXSIZE>::fHardwareState;
+   using Endpoint_T<Info, 0, EP_MAXSIZE>::txOdd;
    using Endpoint_T<Info, 0, EP_MAXSIZE>::usb;
    using Endpoint_T<Info, 0, EP_MAXSIZE>::startTxTransaction;
 
@@ -516,7 +535,7 @@ public:
    virtual void stall() {
 //      PRINTF("stall\n");
       // Stall Tx only
-      BdtEntry *bdt = fHardwareState.txOdd?&endPointBdts[0].txOdd:&endPointBdts[0].txEven;
+      BdtEntry *bdt = txOdd?&endPointBdts[0].txOdd:&endPointBdts[0].txEven;
       bdt->u.bits = BDTEntry_OWN_MASK|BDTEntry_STALL_MASK|BDTEntry_DTS_MASK;
    }
 
@@ -526,9 +545,8 @@ public:
    virtual void clearStall() {
 //      PRINTF("clearStall\n");
       // Release BDT as SIE doesn't
-      BdtEntry *bdt = fHardwareState.txOdd?&endPointBdts[0].txOdd:&endPointBdts[0].txEven;
+      BdtEntry *bdt = txOdd?&endPointBdts[0].txOdd:&endPointBdts[0].txEven;
       bdt->u.bits   = 0;
-      usb->ENDPOINT[0].ENDPT &= ~USB_ENDPT_EPSTALL_MASK;
       Endpoint_T<Info, 0, EP_MAXSIZE>::clearStall();
    }
 
@@ -538,6 +556,16 @@ public:
     void startTxStatus() {
       startTxTransaction(0, nullptr);
    }
+    /**
+     * Modifies endpoint state after SETUP has been received
+     *
+     * state == EPIdle, Toggle == DATA1
+     */
+    void setupReceived() {
+       this->state   = EPIdle;
+       this->txData1 = DATA1;
+       this->rxData1 = DATA1;
+    }
 };
 
 /**

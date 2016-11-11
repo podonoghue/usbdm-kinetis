@@ -110,9 +110,9 @@ public:
    /**
     *  Creates a valid string descriptor in UTF-16-LE from a limited UTF-8 string
     *
-    *  @param to       - Where to place descriptor
-    *  @param from     - Zero terminated UTF-8 C string
-    *  @param maxSize  - Size of destination
+    *  @param to       Where to place descriptor
+    *  @param from     Zero terminated UTF-8 C string
+    *  @param maxSize  Size of destination
     *
     *  @note Only handles UTF-8 characters that fit in a single UTF-16 value.
     */
@@ -637,9 +637,7 @@ void UsbBase_T<Info, EP0_SIZE>::handleSetupToken() {
    // Save data from SETUP packet
    memcpy(&ep0SetupBuffer, controlEndpoint.getBuffer(), sizeof(ep0SetupBuffer));
 
-   controlEndpoint.getHardwareState().state   = EPIdle;
-   controlEndpoint.getHardwareState().txData1 = DATA1;
-   controlEndpoint.getHardwareState().rxData1 = DATA1;
+   controlEndpoint.setupReceived();
 
    // Call-backs only persist during a SETUP transaction
    setSetupCompleteCallback(nullptr);

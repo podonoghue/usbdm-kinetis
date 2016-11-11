@@ -221,7 +221,7 @@ public:
     * @param data Pointer to data to transmit
     * @param size Number of bytes to transmit
     */
-   static void cdcSendData(const uint8_t *data, unsigned size);
+   static void sendCdcData(const uint8_t *data, unsigned size);
 
    /**
     * CDC Receive
@@ -231,7 +231,7 @@ public:
     *
     * @return Number of bytes received
     */
-   static int cdcReceiveData(uint8_t *data, unsigned maxSize);
+   static int receiveCdcData(uint8_t *data, unsigned maxSize);
 
    /**
     * Device Descriptor
@@ -277,7 +277,7 @@ protected:
       // Start CDC status transmission
       epCdcSendNotification();
 	  
-	  // Make sure epCdcDataOut is ready for polling (OUT)
+	   // Make sure epCdcDataOut is ready for polling (OUT)
       epCdcDataOut.startRxTransaction(EPDataOut);
 
       static const uint8_t cdcInBuff[] = "Hello there\n";
@@ -358,6 +358,7 @@ protected:
 };
 
 using UsbImplementation = Usb0;
+
 #endif // USBDM_USB0_IS_DEFINED
 
 } // End namespace USBDM

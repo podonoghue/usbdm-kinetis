@@ -15,6 +15,9 @@
 
 namespace USBDM {
 
+/**
+ * Interface numbers for USB descriptors
+ */
 enum InterfaceNumbers {
    /** Interface number for BDM channel */
    BULK_INTF_ID,
@@ -308,8 +311,6 @@ void Usb0::epCdcSendNotification() {
    uint8_t status = CdcUart::getSerialState().bits;
 
    if ((status & CdcUart::CDC_STATE_CHANGE_MASK) == 0) {
-      // No change
-      epCdcNotification.getHardwareState().state = EPIdle;
       return;
    }
    static_assert(epCdcNotification.BUFFER_SIZE>=sizeof(CDCNotification), "Buffer size insufficient");
@@ -331,7 +332,7 @@ static int cdcOutByteCount    = 8;
  * Start CDC IN transactions
  */
 void Usb0::startCdcIn() {
-   if ((epCdcDataIn.getHardwareState().state == EPIdle) && (cdcOutByteCount>0)) {
+   if ((epCdcDataIn.getHardwareState() == EPIdle) && (cdcOutByteCount>0)) {
       static_assert(epCdcDataIn.BUFFER_SIZE>sizeof(cdcOutBuff), "Buffer too small");
       memcpy(epCdcDataIn.getBuffer(), cdcOutBuff, cdcOutByteCount);
       epCdcDataIn.startTxTransaction(EPDataIn, cdcOutByteCount);
@@ -356,6 +357,7 @@ void Usb0::handleTokenComplete() {
    // Endpoint number
    uint8_t   endPoint = ((uint8_t)usbStat)>>4;
 
+   endPoints[endPoint]->flipOddEven(usbStat);
    switch (endPoint) {
       case BULK_OUT_ENDPOINT: // Accept OUT token
          setActive();
@@ -539,7 +541,7 @@ void Usb0::irqHandler() {
  */
 int Usb0::receiveBulkData(uint8_t maxSize, uint8_t *buffer) {
    epBulkOut.startRxTransaction(EPDataOut, maxSize, buffer);
-   while(epBulkOut.getHardwareState().state != EPIdle) {
+   while(epBulkOut.getHardwareState() != EPIdle) {
       __WFI();
    }
    setActive();
@@ -559,7 +561,7 @@ int Usb0::receiveBulkData(uint8_t maxSize, uint8_t *buffer) {
 void Usb0::sendBulkData(uint8_t size, const uint8_t *buffer) {
 //   commandBusyFlag = false;
    //   enableUSBIrq();
-   while (epBulkIn.getHardwareState().state != EPIdle) {
+   while (epBulkIn.getHardwareState() != EPIdle) {
       __WFI();
    }
    epBulkIn.startTxTransaction(EPDataIn, size, buffer);
