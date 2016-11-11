@@ -1,3 +1,10 @@
+/**
+ * @file     bdmCommon.h
+ * @brief    Low power timer interface
+ *
+ * @version  V4.12.1.80
+ * @date     13 April 2016
+ */
 #ifndef _BDMCOMMON_H_
 #define _BDMCOMMON_H_
 

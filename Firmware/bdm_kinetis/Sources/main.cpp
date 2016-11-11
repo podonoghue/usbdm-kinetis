@@ -28,7 +28,10 @@
  * An error message is printed with line # and the program exited if
  * rc indicates any error
  */
-void check(USBDM_ErrorCode rc, const char *file = NULL, unsigned lineNum = 0) {
+void check(USBDM_ErrorCode rc , const char *file = NULL, unsigned lineNum = 0 ) {
+   (void)rc;
+   (void)file;
+   (void)lineNum;
    if (rc == BDM_RC_OK) {
       //      fprintf(stderr, "OK,     [%s:#%4d]\n", file, lineNum);
       return;
@@ -231,15 +234,15 @@ int main() {
    PRINTF("Target Vdd = %f\n", TargetVdd::readVoltage());
 
    USBDM::UsbImplementation::initialise();
-//   commandLoop();
-
-//   CHECK(testmem());
-   //   CHECK(testMassErase());
-//   USBDM::idleLoop();
-
-   commandLoop();
 
    for(;;) {
-      __asm__("nop");
+      // Wait for USB connection
+      while(!USBDM::UsbImplementation::isConfigured()) {
+         __WFI();
+      }
+      // Process commands
+      commandLoop();
+      // Re-initialise
+      initialise();
    }
 }

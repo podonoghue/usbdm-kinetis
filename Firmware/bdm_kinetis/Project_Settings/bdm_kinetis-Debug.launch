@@ -18,10 +18,10 @@
 <stringAttribute key="net.sourceforge.usbdm.gdb.gdbBinPath" value="${usbdm_armLtd_arm_path}"/>
 <stringAttribute key="net.sourceforge.usbdm.gdb.gdbCommand" value="${usbdm_armLtd_arm_prefix}gdb"/>
 <stringAttribute key="net.sourceforge.usbdm.gdb.initCommands" value=""/>
-<intAttribute key="net.sourceforge.usbdm.gdb.interfaceFrequency" value="4000000"/>
+<intAttribute key="net.sourceforge.usbdm.gdb.interfaceFrequency" value="12000000"/>
 <stringAttribute key="net.sourceforge.usbdm.gdb.interfaceType" value="T_ARM"/>
 <booleanAttribute key="net.sourceforge.usbdm.gdb.loadImage" value="true"/>
-<booleanAttribute key="net.sourceforge.usbdm.gdb.maskInterrupts" value="true"/>
+<booleanAttribute key="net.sourceforge.usbdm.gdb.maskInterrupts" value="false"/>
 <intAttribute key="net.sourceforge.usbdm.gdb.nvmClockTrimLocation" value="0"/>
 <stringAttribute key="net.sourceforge.usbdm.gdb.pcRegisterValue" value="__HardReset"/>
 <intAttribute key="net.sourceforge.usbdm.gdb.port" value="1234"/>

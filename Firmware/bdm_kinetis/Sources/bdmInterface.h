@@ -1,5 +1,5 @@
-/*
- * BdmInterface.h
+/**
+ * @file bdmInterface.h
  *
  *  Created on: 12 Feb 2016
  *      Author: podonoghue

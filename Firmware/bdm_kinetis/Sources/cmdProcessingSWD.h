@@ -1,10 +1,10 @@
-/*
- * CmdProcessingSWD.h
+/**
+ * @file     CmdProcessingSWD.h
+ * @brief    SWD Command Processing
  *
- *  Created on: 11/08/2012
- *      Author: podonoghuE
+ * @version  V4.12.1.80
+ * @date     13 April 2016
  */
-
 #ifndef CMDPROCESSINGSWD_H_
 #define CMDPROCESSINGSWD_H_
 

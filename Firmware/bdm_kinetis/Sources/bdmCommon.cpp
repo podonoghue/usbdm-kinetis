@@ -157,10 +157,13 @@ void FTM0_IRQHandler(void) {
 #define VDD_3v3 (((3*255)/5)*9/10)  // 10% allowance on 3.3V
 #define VDD_5v  (((5*255)/5)*9/10)  // 10% allowance on 5V
 
-//!  Checks Target Vdd  - Updates Target Vdd LED & status
-//!
-//!  Updates \ref cable_status
-//!
+/*
+ * Checks Target Vdd  - Updates Target Vdd LED & status
+ *
+ * Updates \ref cable_status
+ *
+ * @return E_NO_ERROR on success
+ */
 USBDM_ErrorCode bdm_checkTargetVdd(void) {
 #if (HW_CAPABILITY&CAP_VDDSENSE)
    if (TargetVdd::vddOK()) {
@@ -613,10 +616,12 @@ USBDM_ErrorCode bdm_clearStatus(void) {
    return BDM_RC_OK;
 }
 
-//! Initialises BDM module for the given target type
-//!
-//!  @param target = Target processor (see \ref TargetType_t)
-//!
+/*  Initialises BDM module for the given target type
+ *
+ *   @param target = Target processor (see \ref TargetType_t)
+ *
+ *   @return E_NO_ERROR on success
+ */
 USBDM_ErrorCode bdm_setTarget(uint8_t target) {
    USBDM_ErrorCode rc = BDM_RC_OK;
 

@@ -1167,12 +1167,8 @@ FunctionPtr commandPtr = f_CMD_ILLEGAL;     // Default to illegal command
 }
 
 /**
- *   Receive a command over EP1
+ * Process commands from USB device
  *
- *   @param maxSize  = max # of bytes to receive
- *   @param buffer   = ptr to buffer for bytes received
- *
- *   @note : Doesn't return until command has been received.
  *   @note : Format
  *       - [0]    = size of command (N)
  *       - [1]    = command
@@ -1193,7 +1189,6 @@ FunctionPtr commandPtr = f_CMD_ILLEGAL;     // Default to illegal command
  *   +--------------------------+
  *
  */
-
 void commandLoop(void) {
    static uint8_t commandSequence = 0;
 

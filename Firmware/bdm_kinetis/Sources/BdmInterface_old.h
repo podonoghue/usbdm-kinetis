@@ -370,7 +370,10 @@ private:
    /**
     * Return the maximum of two values
     *
-    * @return Max value
+    *  @param a One value
+    *  @param b Other vaue
+    *
+    *  @return Max value
     */
    static int max(int a, int b) {
       return (a>b)?a:b;
@@ -568,7 +571,7 @@ public:
      *
      * @param data Value to transmit
      */
-    static void rx(uint32_t &data) {
+    static void rx(uint32_t data) {
 
        Bkgd::highZ();
 
@@ -612,7 +615,10 @@ public:
     }
 
    /**
+    *
     * @param lowTime Length of low pulse that initiates a bit reception
+    *
+    * @return ??
     */
    static uint16_t rx2(uint16_t lowTime) {
 
