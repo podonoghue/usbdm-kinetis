@@ -300,7 +300,7 @@ public:
          fNeedZLP = false;
       }
       // fDataBuffer may be nullptr to indicate using fDataBuffer directly
-      if (fDataBuffer != nullptr) {
+      if (fDataPtr != nullptr) {
          // Copy the Transmit data to EP buffer
          (void) memcpy(fDataBuffer, (void*)fDataPtr, size);
          // Pointer to _next_ data
