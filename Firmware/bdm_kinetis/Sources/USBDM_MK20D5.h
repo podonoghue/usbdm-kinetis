@@ -138,13 +138,12 @@ using Reset = Lvc1t45<USBDM::GpioC<1>, USBDM::GpioC<0>>;
 //==========================================================================================
 // USB Serial Number
 #ifdef UNIQUE_ID
-#define SERIAL_NO "USBDM-MK-%lu"
+#define SERIAL_NO           "USBDM-MK-%lu"
 #else
-#define SERIAL_NO "USBDM-MK-0001"
+#define SERIAL_NO           "USBDM-MK-0001"
 #endif
-#define ProductDescription "USBDM ARM-SWD for MK"
-
-#define CRYSTAL 4000000UL
+#define PRODUCT_DESCRIPTION "USBDM ARM-SWD for MK"
+#define MANUFACTURER        "pgo"
 
 //==========================================================================================
 // Capabilities of the hardware - used to enable/disable appropriate code

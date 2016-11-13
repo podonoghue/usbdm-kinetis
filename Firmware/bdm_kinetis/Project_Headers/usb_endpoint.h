@@ -2,8 +2,8 @@
  * @file     usb_endpoint.h
  * @brief    Universal Serial Bus Endpoint
  *
- * @version  V4.12.1.80
- * @date     13 April 2016
+ * @version  V4.12.1.150
+ * @date     13 Nov 2016
  */
 #ifndef PROJECT_HEADERS_USB_ENDPOINT_H_
 #define PROJECT_HEADERS_USB_ENDPOINT_H_
@@ -20,19 +20,17 @@
 
 namespace USBDM {
 
-/** BDTs organised by endpoint, odd/even, tx/rx */
+/** BDTs organised by endpoint, odd/even, transmit/receive */
 extern EndpointBdtEntry endPointBdts[];
 
 /** BDTs as simple array */
-constexpr BdtEntry * bdts = (BdtEntry *)endPointBdts;
+constexpr BdtEntry *bdts = (BdtEntry *)endPointBdts;
 
-/**
- * Endpoint state values
- */
+/** Endpoint state values */
 enum EndpointState {
-   EPIdle = 0,  //!< Idle (Tx complete)
-   EPDataIn,    //!< Doing a sequence of IN packets (until data count <= EP_MAXSIZE)
-   EPDataOut,   //!< Doing a sequence of OUT packets (until data count == 0)
+   EPIdle = 0,  //!< Idle
+   EPDataIn,    //!< Doing a sequence of IN packets
+   EPDataOut,   //!< Doing a sequence of OUT packets
    EPStatusIn,  //!< Doing an IN packet as a status handshake
    EPStatusOut, //!< Doing an OUT packet as a status handshake
    EPThrottle,  //!< Doing OUT packets but no buffers available (NAKed)
@@ -97,10 +95,6 @@ public:
       if (isTx) {
          // Flip Transmit buffer
          txOdd = !isOdd;
-//         if ((endPointBdts[ENDPOINT_NUM].txEven.u.bits&BDTEntry_OWN_MASK) ||
-//             (endPointBdts[ENDPOINT_NUM].txOdd.u.bits&BDTEntry_OWN_MASK)) {
-//            printf("Opps-Tx\n");
-//         }
       }
       else {
          // Flip Receive buffer
@@ -130,13 +124,14 @@ template<class Info, int ENDPOINT_NUM, int EP_MAXSIZE>
 class Endpoint_T : public Endpoint {
 
 public:
+   /** Size of end-point buffer */
    static constexpr int BUFFER_SIZE  = EP_MAXSIZE;
 
 protected:
    /** Pointer to hardware */
    static constexpr USB_Type volatile *usb = Info::usb;
 
-   /** Buffer for Tx & Rx data */
+   /** Buffer for Transmit & Receive data */
    uint8_t fDataBuffer[EP_MAXSIZE];
 
    /** Callback used on completion of transaction
@@ -145,12 +140,12 @@ protected:
     * e.g. EPDataOut, EPStatusIn, EPLastIn, EPStatusOut\n
     * The endpoint is in EPIdle state now.
     */
-   void (*volatile fCallback)(EndpointState endpointState);
+   void (*fCallback)(EndpointState endpointState);
 
-   /** Pointer to external data buffer for Rx/Tx */
+   /** Pointer to external data buffer for transmit/receive */
    volatile uint8_t* fDataPtr;
 
-   /** Count of remaining bytes in external data buffer to Rx/Tx */
+   /** Count of remaining bytes in external data buffer to transmit/receive */
    volatile uint16_t fDataRemaining;
 
    /** Count of data bytes transferred to/from data buffer */
@@ -185,7 +180,7 @@ public:
    /**
     * Return end-point state
     */
-    EndpointState getHardwareState() {
+    EndpointState getState() {
       return state;
    }
 
@@ -215,7 +210,7 @@ public:
     *
     *  @note This flag is cleared on each transaction
     */
-   void setNeedZLP(bool needZLP) {
+   void setNeedZLP(bool needZLP=true) {
       fNeedZLP = needZLP;
    }
 
@@ -227,7 +222,7 @@ public:
       usb->ENDPOINT[ENDPOINT_NUM].ENDPT |= USB_ENDPT_EPSTALL_MASK;
    }
 
-   /*
+   /**
     * Clear Stall on endpoint
     */
    virtual void clearStall() {
@@ -243,7 +238,6 @@ public:
     *  - BDTs
     */
     void initialise() {
-
       txData1  = DATA0;
       rxData1  = DATA0;
       txOdd    = EVEN;
@@ -264,7 +258,7 @@ public:
    }
 
    /**
-    * Start IN transaction [Tx, device -> host, DATA0/1]
+    * Start IN transaction [Transmit, device -> host, DATA0/1]
     *
     * @param state   State to adopt for transaction e.g. EPDataIn, EPStatusIn
     * @param bufSize Size of buffer to send (may be zero)
@@ -281,12 +275,13 @@ public:
       fDataRemaining = bufSize;
 
       this->state = state;
+
       // Configure the BDT for transfer
       initialiseBdtTx();
    }
 
    /**
-    * Configure the BDT for next IN [Tx, device -> host]
+    * Configure the BDT for next IN [Transmit, device -> host]
     */
     void initialiseBdtTx() {
       // Get BDT to use
@@ -294,7 +289,7 @@ public:
 
       if ((endPointBdts[ENDPOINT_NUM].txEven.u.bits&BDTEntry_OWN_MASK) ||
           (endPointBdts[ENDPOINT_NUM].txOdd.u.bits&BDTEntry_OWN_MASK)) {
-         printf("Opps-Tx\n");
+         PRINTF("Opps-Tx\n");
       }
       uint16_t size = fDataRemaining;
       if (size > EP_MAXSIZE) {
@@ -306,18 +301,19 @@ public:
       }
       // fDataBuffer may be nullptr to indicate using fDataBuffer directly
       if (fDataBuffer != nullptr) {
-         // Copy the Tx data to EP buffer
+         // Copy the Transmit data to EP buffer
          (void) memcpy(fDataBuffer, (void*)fDataPtr, size);
          // Pointer to _next_ data
          fDataPtr += size;
       }
       // Count of transferred bytes
       fDataTransferred += size;
+
       // Count of remaining bytes
       fDataRemaining   -= size;
 
-      // Set up to Tx packet
-      bdt->bc     = (uint8_t)size;
+      // Set up to Transmit packet
+      bdt->bc = (uint8_t)size;
       if (txData1) {
          bdt->u.bits = BDTEntry_OWN_MASK|BDTEntry_DATA1_MASK|BDTEntry_DTS_MASK;
       }
@@ -327,7 +323,7 @@ public:
    }
 
    /**
-    *  Start an OUT transaction [Rx, device <- host, DATA0/1]
+    *  Start an OUT transaction [Receive, device <- host, DATA0/1]
     *
     *   @param state   - State to adopt for transaction e.g. EPIdle, EPDataOut, EPStatusOut
     *   @param bufSize - Size of data to transfer (may be zero)
@@ -337,20 +333,20 @@ public:
     */
     void startRxTransaction( EndpointState state, uint8_t bufSize=0, uint8_t *bufPtr=nullptr ) {
       fDataTransferred     = 0;        // Count of bytes transferred
-      fDataRemaining       = bufSize;  // Total bytes to Rx
+      fDataRemaining       = bufSize;  // Total bytes to Receive
       fDataPtr             = bufPtr;   // Where to (eventually) place data
       this->state          = state;    // State to adopt
       initialiseBdtRx();               // Configure the BDT for transfer
    }
 
    /**
-    * Configure the BDT for OUT [Rx, device <- host, DATA0/1]
+    * Configure the BDT for OUT [Receive, device <- host, DATA0/1]
     *
     * @note No action is taken if already configured
     * @note Always uses EP_MAXSIZE for packet size accepted
     */
     void initialiseBdtRx() {
-      // Set up to Rx packet
+      // Set up to Receive packet
       BdtEntry *bdt = rxOdd?&endPointBdts[ENDPOINT_NUM].rxOdd:&endPointBdts[ENDPOINT_NUM].rxEven;
 
       if (bdt->u.bits&BDTEntry_OWN_MASK) {
@@ -359,9 +355,9 @@ public:
       }
       if ((endPointBdts[ENDPOINT_NUM].rxEven.u.bits&BDTEntry_OWN_MASK) ||
           (endPointBdts[ENDPOINT_NUM].rxOdd.u.bits&BDTEntry_OWN_MASK)) {
-         printf("Opps-Rx\n");
+         PRINTF("Opps-Rx\n");
       }
-      // Set up to Rx packet
+      // Set up to Receive packet
       // Always used maximum size even if expecting less data
       bdt->bc = EP_MAXSIZE;
       if (rxData1) {
@@ -389,7 +385,7 @@ public:
          }
          // Check if external buffer in use
          if (fDataPtr != nullptr) {
-            // Copy the data from the Rx buffer to external buffer
+            // Copy the data from the Receive buffer to external buffer
             ( void )memcpy((void*)fDataPtr, (void*)fDataBuffer, size);
             // Advance buffer ptr
             fDataPtr    += size;
@@ -399,11 +395,14 @@ public:
          // Count down bytes to go
          fDataRemaining   -= size;
       }
+      else {
+         PRINTF("RxSize = 0\n");
+      }
       return size;
    }
 
    /**
-    * Handle OUT [Rx, device <- host, DATA0/1]
+    * Handle OUT [Receive, device <- host, DATA0/1]
     */
     void handleOutToken() {
       uint8_t transferSize = 0;
@@ -414,11 +413,11 @@ public:
 
       switch (state) {
          case EPDataOut:        // Receiving a sequence of OUT packets
-            // Save the data from the Rx buffer
+            // Save the data from the Receive buffer
             transferSize = saveRxData();
-            if (ENDPOINT_NUM == 1) {
-               PRINTF("ep1.handleOutToken() s=%d. size=%d, r=%d\n", state, transferSize, fDataRemaining);
-            }
+//            if (fEndpointNumber == 1) {
+//               PRINTF("ep1.handleOutToken() s=%d. size=%d, r=%d\n", state, transferSize, fDataRemaining);
+//            }
             // Complete transfer on undersize packet or received expected number of bytes
             if ((transferSize < EP_MAXSIZE) || (fDataRemaining == 0)) {
                // Now idle
@@ -450,10 +449,12 @@ public:
       }
    }
    /**
-    * Handle IN token [Tx, device -> host]
+    * Handle IN token [Transmit, device -> host]
     */
     void handleInToken() {
-      txData1 = !txData1;   // Toggle DATA0/1 for next packet
+      // Toggle DATA0/1 for next packet
+      txData1 = !txData1;
+
       //   PUTS(fHardwareState[BDM_OUT_ENDPOINT].data0_1?"ep2HandleInToken-T-1\n":"ep2HandleInToken-T-0\n");
 
       switch (state) {
@@ -479,7 +480,7 @@ public:
             break;
 
             // We don't expect an IN token while in the following states
-         case EPIdle:      // Idle (Tx complete)
+         case EPIdle:      // Idle (Transmit complete)
          case EPDataOut:   // Doing a sequence of OUT packets (until data count <= EP_MAXSIZE)
          case EPStatusOut: // Doing an OUT packet as a status handshake
          default:
@@ -511,7 +512,7 @@ public:
    }
 
    /**
-    * Constructor
+    * Destructor
     */
    virtual ~ControlEndpoint() {
    }
@@ -524,7 +525,7 @@ public:
     */
     void initialise() {
       Endpoint_T<Info, 0, EP_MAXSIZE>::initialise();
-      // Rx/Tx/SETUP
+      // Receive/Transmit/SETUP
       usb->ENDPOINT[0].ENDPT = USB_ENDPT_EPRXEN_MASK|USB_ENDPT_EPTXEN_MASK|USB_ENDPT_EPHSHK_MASK;
    }
 
@@ -534,7 +535,7 @@ public:
     */
    virtual void stall() {
 //      PRINTF("stall\n");
-      // Stall Tx only
+      // Stall Transmit only
       BdtEntry *bdt = txOdd?&endPointBdts[0].txOdd:&endPointBdts[0].txEven;
       bdt->u.bits = BDTEntry_OWN_MASK|BDTEntry_STALL_MASK|BDTEntry_DTS_MASK;
    }

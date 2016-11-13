@@ -2,8 +2,8 @@
  * @file     usb_implementation_composite.h
  * @brief    USB Kinetis implementation
  *
- * @version  V4.12.1.80
- * @date     13 April 2016
+ * @version  V4.12.1.150
+ * @date     13 Nov 2016
  *
  *  This file provides the implementation specific code for the USB interface.
  *  It will need to be modified to suit an application.
@@ -27,6 +27,8 @@
 #define UNIQUE_ID
 #include "configure.h"
 
+#include "queue.h"
+
 namespace USBDM {
 
 //======================================================================
@@ -38,13 +40,13 @@ namespace USBDM {
 
 #ifndef SERIAL_NO
 #ifdef UNIQUE_ID
-#define SERIAL_NO "USBDM-MK-%lu"
+#define SERIAL_NO           "USBDM-%lu"
 #else
-#define SERIAL_NO "USBDM-MK-0001"
+#define SERIAL_NO           "USBDM-0001"
 #endif
 #endif
 #ifndef PRODUCT_DESCRIPTION
-#define PRODUCT_DESCRIPTION "USBDM ARM-SWD for MK"
+#define PRODUCT_DESCRIPTION "USB ARM"
 #endif
 #ifndef MANUFACTURER
 #define MANUFACTURER        "pgo"
@@ -114,7 +116,7 @@ public:
        */
 
       /** Marks last entry */
-      s_last_string_descriptor_index
+      s_number_of_string_descriptors
    };
 
    /**
@@ -178,19 +180,14 @@ protected:
    /** Force command handler to exit and restart */
    static bool forceCommandHandlerInitialise;
 
+   using Uart = CdcUart<Uart0Info>;
+
 public:
 
    /**
     * Initialise the USB interface
     */
    static void initialise();
-
-   /**
-    * Handler for USB interrupt
-    *
-    * Determines source and dispatches to appropriate routine.
-    */
-   static void irqHandler(void);
 
    /**
     *  Blocking transmission of data over bulk IN end-point
@@ -233,6 +230,8 @@ public:
     */
    static int receiveCdcData(uint8_t *data, unsigned maxSize);
 
+   static bool putCdcChar(uint8_t ch);
+
    /**
     * Device Descriptor
     */
@@ -241,7 +240,28 @@ public:
    /**
     * Other descriptors type
     */
-   struct Descriptors;
+   struct Descriptors {
+      ConfigurationDescriptor                  configDescriptor;
+
+      InterfaceDescriptor                      bulk_interface;
+      EndpointDescriptor                       bulk_out_endpoint;
+      EndpointDescriptor                       bulk_in_endpoint;
+
+      InterfaceAssociationDescriptor           interfaceAssociationDescriptorCDC;
+      InterfaceDescriptor                      cdc_CCI_Interface;
+      CDCHeaderFunctionalDescriptor            cdc_Functional_Header;
+      CDCCallManagementFunctionalDescriptor    cdc_CallManagement;
+      CDCAbstractControlManagementDescriptor   cdc_Functional_ACM;
+      CDCUnionFunctionalDescriptor             cdc_Functional_Union;
+      EndpointDescriptor                       cdc_notification_Endpoint;
+
+      InterfaceDescriptor                      cdc_DCI_Interface;
+      EndpointDescriptor                       cdc_dataOut_Endpoint;
+      EndpointDescriptor                       cdc_dataIn_Endpoint;
+      /*
+       * TODO Add additional Descriptors here
+       */
+   };
 
    /**
     * Other descriptors
@@ -253,8 +273,6 @@ protected:
     * Initialises all end-points
     */
    static void initialiseEndpoints(void) {
-      UsbBase_T::initialiseEndpoints();
-
       epBulkOut.initialise();
       addEndpoint(&epBulkOut);
       epBulkOut.setCallback(bulkOutTransactionCallback);
@@ -270,6 +288,9 @@ protected:
       addEndpoint(&epCdcDataOut);
       epCdcDataOut.setCallback(cdcOutTransactionCallback);
 
+      // Make sure epCdcDataOut is ready for polling (OUT)
+      epCdcDataOut.startRxTransaction(EPDataOut, epCdcDataOut.BUFFER_SIZE);
+
       epCdcDataIn.initialise();
       addEndpoint(&epCdcDataIn);
       epCdcDataIn.setCallback(cdcInTransactionCallback);
@@ -277,9 +298,6 @@ protected:
       // Start CDC status transmission
       epCdcSendNotification();
 	  
-	   // Make sure epCdcDataOut is ready for polling (OUT)
-      epCdcDataOut.startRxTransaction(EPDataOut);
-
       static const uint8_t cdcInBuff[] = "Hello there\n";
       epCdcDataIn.startTxTransaction(EPDataIn, sizeof(cdcInBuff), cdcInBuff);
       /*
@@ -318,6 +336,10 @@ protected:
     */
    static void handleTokenComplete(void);
 
+   /**
+    * Start CDC IN transaction\n
+    * A packet is only sent if data is available
+    */
    static void startCdcIn();
 
    /**

@@ -1,5 +1,9 @@
-/*! \file
-    \brief Simple USB Stack for Kinetis
+/** 
+    @file usb.cpp
+    @brief Simple USB Stack for Kinetis
+
+    @version  V4.12.1.150
+    @date     13 Nov 2016
 
    \verbatim
     Kinetis USB Code

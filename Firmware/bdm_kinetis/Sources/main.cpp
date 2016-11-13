@@ -21,9 +21,9 @@
 
 /** Check error code from USBDM API function
  *
- * @param rc - error code to report
- * @param file - Filename to report
- * @param lineNum - Line number to report
+ * @param rc       Error code to report
+ * @param file     Filename to report
+ * @param lineNum  Line number to report
  *
  * An error message is printed with line # and the program exited if
  * rc indicates any error
@@ -33,7 +33,7 @@ void check(USBDM_ErrorCode rc , const char *file = NULL, unsigned lineNum = 0 ) 
    (void)file;
    (void)lineNum;
    if (rc == BDM_RC_OK) {
-      //      fprintf(stderr, "OK,     [%s:#%4d]\n", file, lineNum);
+//      PRINTF("OK,     [%s:#%4d]\n", file, lineNum);
       return;
    }
    PRINTF("Failed, [%s:#%4d] Reason= %d\n", file, lineNum, rc);
@@ -235,6 +235,20 @@ int main() {
 
    USBDM::UsbImplementation::initialise();
 
+//   Queue<100> q;
+//
+//   for (int i=0; i<75; i++) {
+//      q.enQueue(i);
+//   }
+//   for (int i=0; i<50; i++) {
+//      PRINTF("v = %d\n", q.deQueue());
+//   }
+//   for (int i=0; i<75; i++) {
+//      q.enQueue(i);
+//   }
+//   while (!q.isEmpty()) {
+//      PRINTF("v = %d\n", q.deQueue());
+//   }
    for(;;) {
       // Wait for USB connection
       while(!USBDM::UsbImplementation::isConfigured()) {

@@ -15,21 +15,20 @@
 
 #include "usb.h"
 
-//  Buffer for USB command in, result out
-uint8_t   commandBuffer[MAX_COMMAND_SIZE+4];
+/**  Buffer for USB command in, result out */
+uint8_t commandBuffer[MAX_COMMAND_SIZE+4];
 
+/**  Size of command return result */
+int returnSize;
 
-//  Size of command return result
-int       returnSize;
-
-/*
+/**
  *  Status of the BDM
  *
  *  see \ref CableStatus_t
  */
 CableStatus_t cable_status;
 
-/*
+/**
  *  Options for the BDM
  *
  *  see \ref BDM_Option_t
@@ -47,7 +46,8 @@ BDM_Option_t bdm_option = {
  /* reserved           */   {0}                   //   Reserved
 };
 
-static USBDM_ErrorCode commandStatus;       //!< Error code from last/current command
+/** Error code from last/current command */
+static USBDM_ErrorCode commandStatus;
 
 /**
  *  Creates status byte
@@ -121,11 +121,12 @@ uint16_t status = 0;
    return status;
 }
 
-/*  Optionally re-connects with target
+/**
+ *   Optionally re-connects with target
  *
- *  @param when indicates situation in which the routine is being called\n
- *        AUTOCONNECT_STATUS  - being called during status query
- *          AUTOCONNECT_ALWAYS, - being called before command execution
+ *  @param when Indicates situation in which the routine is being called\n
+ *        AUTOCONNECT_STATUS - being called during status query
+ *        AUTOCONNECT_ALWAYS - being called before command execution
  *
  *  @return
  *     == \ref BDM_RC_OK => success       \n
@@ -152,7 +153,8 @@ USBDM_ErrorCode rc = BDM_RC_OK;
    return rc;
 }
 
-/*  Dummy routine for unused slots in command tables
+/**
+ *  Dummy routine for unused slots in command tables
  *
  *  @return
  *     BDM_RC_ILLEGAL_COMMAND => illegal command
@@ -161,7 +163,8 @@ USBDM_ErrorCode rc = BDM_RC_OK;
    return BDM_RC_ILLEGAL_COMMAND;
 }
 
-/*  Return status from last command received
+/**
+ *  Return status from last command received
  *
  *  @return
  *    status from last command
@@ -223,10 +226,11 @@ USBDM_ErrorCode eraseKinetisSecurity(void) {
 }
 #endif
 
-/*  Various debugging & testing commands
+/**
+ *  Various debugging & testing commands
  *
  *  @note
- *    commandBuffer           \n
+ *    commandBuffer \n
  *     - [1..N] = various commands
  *
  *  @return
@@ -352,7 +356,8 @@ DebugSubCommands subCommand = (DebugSubCommands)commandBuffer[2];
    return BDM_RC_ILLEGAL_PARAMS;
 }
 
-/*  Set various options
+/**
+ *  Set various options
  *
  *  @note
  *    commandBuffer\n
@@ -392,7 +397,7 @@ static const uint8_t capabilities[] = {
    VERSION_MICRO,
 };
 
-/*
+/**
  *  Returns capability vector for hardware
  *  @return
  *   commandBuffer                                                \n
@@ -405,7 +410,8 @@ USBDM_ErrorCode f_CMD_GET_CAPABILITIES(void) {
    returnSize = sizeof(capabilities) + 1;
    return BDM_RC_OK;
 }
-/*
+
+/**
  *  Return status of BDM communication
  *
  *  @note
@@ -427,6 +433,13 @@ uint16_t word;
    return BDM_RC_OK;
 }
 
+/**
+ *  Get pin status
+ *
+ *  @note
+ *    commandBuffer\n
+ *   - [1..2] = BDM status
+ */
 void getPinStatus(void) {
 uint16_t status = 0;
 
@@ -438,6 +451,7 @@ uint16_t status = 0;
    commandBuffer[2] = (uint8_t) status;
    returnSize  = 3;
 }
+
 /*
  *  Directly control pins
  *
@@ -628,7 +642,8 @@ USBDM_ErrorCode f_CMD_CONTROL_PINS(void) {
    getPinStatus();
    return BDM_RC_OK;
 }
-/*
+
+/**
  *  Directly control Target Vdd
  *
  *  @note
@@ -654,10 +669,11 @@ USBDM_ErrorCode f_CMD_SET_VDD(void) {
 //=================================================
 // Command Dispatch code
 //=================================================
-//!  Ptr to command function
+
+/**  Ptr to command function */
 typedef USBDM_ErrorCode (*FunctionPtr)(void);
 
-//!  Structure representing a set of function ptrs
+/**  Structure representing a s.et of function ptrs */
 typedef struct {
    uint8_t firstCommand;          //!< First command value accepted
    uint8_t size;                  //!< Size of command structure
@@ -666,6 +682,7 @@ typedef struct {
 
 extern USBDM_ErrorCode f_CMD_SET_TARGET(void);
 
+/** Command functions shared by all targets */
 static const FunctionPtr commonFunctionPtrs[] = {
    // Common to all targets
    f_CMD_GET_COMMAND_STATUS         ,//= 0,  CMD_USBDM_GET_COMMAND_STATUS
@@ -965,6 +982,7 @@ static const FunctionPtrs JTAGFunctionPointers   = {CMD_USBDM_CONNECT,
 #endif
 
 #if (TARGET_CAPABILITY&CAP_ARM_SWD)
+/** Command functions for ARM-SWD targets */
 static const FunctionPtr SWDfunctionPtrs[] = {
    // Target specific versions
    Swd::f_CMD_CONNECT                ,//= 15, CMD_USBDM_CONNECT
@@ -990,6 +1008,7 @@ static const FunctionPtr SWDfunctionPtrs[] = {
    Swd::f_CMD_READ_ALL_CORE_REGS     ,//= 34  CMD_USBDM_READ_ALL_REGS
 #endif
    };
+/** Information about command functions for ARM-SWD targets */
 static const FunctionPtrs SWDFunctionPointers   = {CMD_USBDM_CONNECT,
                                                     sizeof(SWDfunctionPtrs)/sizeof(FunctionPtr),
                                                     SWDfunctionPtrs};
@@ -1052,12 +1071,12 @@ static const FunctionPtrs *const functionsPtrs[] = {
    NULL,
 #endif
 };
+
 /*
  *  Set target type
  *  Initialise interface for given target
- *  @note
- *    commandBuffer        \n
- *    - [2] = target type
+ *  @note \n
+ *    commandBuffer[2] = target type
  */
 USBDM_ErrorCode f_CMD_SET_TARGET(void) {
    uint8_t target = commandBuffer[2];
@@ -1077,11 +1096,12 @@ USBDM_ErrorCode f_CMD_SET_TARGET(void) {
 /*
  *   Processes all commands received over USB
  *
- *   The command is expected to be in \ref commandBuffer[1..N]
+ *   The command is expected to be in commandBuffer[1..N]
  *
- *   @return Number of bytes left in commandBuffer to be sent back as response.\n
- *          commandBuffer[0]    = result code, BDM_RC_OK => success, else failure error code\n
- *          commandBuffer[1..N] = command results
+ *   @return \n
+ *      Number of bytes left in commandBuffer to be sent back as response.\n
+ *      commandBuffer[0]    = result code, BDM_RC_OK => success, else failure error code\n
+ *      commandBuffer[1..N] = command results
  */
 static void commandExec(void) {
 BDMCommands command    = (BDMCommands)commandBuffer[1];  // Command is 1st byte
@@ -1169,25 +1189,14 @@ FunctionPtr commandPtr = f_CMD_ILLEGAL;     // Default to illegal command
 /**
  * Process commands from USB device
  *
- *   @note : Format
- *       - [0]    = size of command (N)
- *       - [1]    = command
- *       - [2..N] = parameters
+ *   @note : Command                                    \n
+ *       commandBuffer[0]    = size of command (N)      \n
+ *       commandBuffer[1]    = command                  \n
+ *       commandBuffer[2..N] = parameters/data
  *
- *   =======================================================
- *   Format
- *
- *    Transaction
- *   +--------------------------+
- *   |  Size of entire command  |  0 - size
- *   +--------------------------+
- *   |  Command byte            |  1
- *   +--------------------------+
- *   |                          |  2...N
- *   | //// DATA ////////////// |
- *   |                          |
- *   +--------------------------+
- *
+ *   @note : Response                                   \n
+ *       commandBuffer[0]    = error code               \n
+ *       commandBuffer[1..N] = response/data
  */
 void commandLoop(void) {
    static uint8_t commandSequence = 0;

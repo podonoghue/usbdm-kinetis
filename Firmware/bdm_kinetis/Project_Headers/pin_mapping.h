@@ -1986,7 +1986,7 @@ public:
          /*   2: --                   = --                             */  { 0, 0, 0, INVALID_PCR,  0 },
          /*   3: LLWU_P3              = --                             */  { 0, 0, 0, UNMAPPED_PCR, 0 },
          /*   4: --                   = --                             */  { 0, 0, 0, INVALID_PCR,  0 },
-         /*   5: LLWU_P5              = --                             */  { 0, 0, 0, UNMAPPED_PCR, 0 },
+         /*   5: LLWU_P5              = PTB0 (p27)                     */  { PORTB_CLOCK_MASK, PORTB_BasePtr,  GPIOB_BasePtr,  0,   PORT_PCR_MUX(1)|defaultPcrValue  },
          /*   6: LLWU_P6              = PTC1 (p34)                     */  { PORTC_CLOCK_MASK, PORTC_BasePtr,  GPIOC_BasePtr,  1,   PORT_PCR_MUX(1)|defaultPcrValue  },
          /*   7: LLWU_P7              = --                             */  { 0, 0, 0, UNMAPPED_PCR, 0 },
          /*   8: LLWU_P8              = --                             */  { 0, 0, 0, UNMAPPED_PCR, 0 },
@@ -2003,8 +2003,9 @@ public:
     * Initialise pins used by peripheral
     */
    static void initPCRs(uint32_t pcrValue=defaultPcrValue) {
-      enablePortClocks(PORTC_CLOCK_MASK);
+      enablePortClocks(PORTB_CLOCK_MASK|PORTC_CLOCK_MASK);
 
+      ((PORT_Type *)PORTB_BasePtr)->GPCLR = pcrValue|PORT_PCR_MUX(1)|PORT_GPCLR_GPWE(0x0001UL);
       ((PORT_Type *)PORTC_BasePtr)->GPCLR = pcrValue|PORT_PCR_MUX(1)|PORT_GPCLR_GPWE(0x0002UL);
    }
 
@@ -2012,8 +2013,9 @@ public:
     * Resets pins used by peripheral
     */
    static void clearPCRs() {
-      enablePortClocks(PORTC_CLOCK_MASK);
+      enablePortClocks(PORTB_CLOCK_MASK|PORTC_CLOCK_MASK);
 
+      ((PORT_Type *)PORTB_BasePtr)->GPCLR = PORT_PCR_MUX(0)|PORT_GPCLR_GPWE(0x1U);
       ((PORT_Type *)PORTC_BasePtr)->GPCLR = PORT_PCR_MUX(0)|PORT_GPCLR_GPWE(0x2U);
    }
 
@@ -2517,7 +2519,7 @@ public:
    // Template:uart0_mk11d5_c7816
 
    //! Callback handler has been installed in vector table
-   static constexpr bool irqHandlerInstalled = false;
+   static constexpr bool irqHandlerInstalled = true;
 
    //! Default IRQ level
    static constexpr uint32_t irqLevel =  0;
@@ -2922,6 +2924,7 @@ using ftm_p47              = const USBDM::Ftm0Channel<6>;
  * @brief Pins used for Digital Input/Output
  * @{
  */
+using gpio_p27             = const USBDM::GpioB<0>;
 using gpio_p30             = const USBDM::GpioB<3>;
 using gpio_p33             = const USBDM::GpioC<0>;
 using gpio_p34             = const USBDM::GpioC<1>;
@@ -2956,10 +2959,10 @@ extern void mapAllPins();
  *  PTA4                     | -                                           | p21                       | N/C       
  *  PTA18                    | EXTAL0                                      | p24                       | EXTAL       
  *  PTA19                    | XTAL0                                       | p25                       | XTAL       
- *  PTB0                     | -                                           | p27                       | N/C       
- *  PTB1                     | -                                           | p28                       | N/C       
+ *  PTB0                     | GPIOB_0/LLWU_P5                             | p27                       | TPa       
+ *  PTB1                     | -                                           | p28                       | TPa       
  *  PTB2                     | ADC0_SE12                                   | p29                       | Vbdm       
- *  PTB3                     | GPIOB_3                                     | p30                       | LED_TVdd       
+ *  PTB3                     | GPIOB_3                                     | p30                       | TVdd_LED       
  *  PTB16                    | UART0_RX                                    | p31                       | DBG_Rx       
  *  PTB17                    | UART0_TX                                    | p32                       | DBG_Tx       
  *  PTC0                     | GPIOC_0                                     | p33                       | RST_DIR       
@@ -2977,7 +2980,7 @@ extern void mapAllPins();
  *  PTD4                     | FTM0_CH4                                    | p45                       | BKGD/SWD_I       
  *  PTD5                     | -                                           | p46                       | N/C       
  *  PTD6                     | FTM0_CH6                                    | p47                       | BKGD/SWD_0       
- *  PTD7                     | GPIOD_7                                     | p48                       | LED       
+ *  PTD7                     | GPIOD_7                                     | p48                       | USB_LED       
  *  RESET_b                  | RESET_b                                     | p26                       | RESETb       
  *  USB0_DM                  | USB0_DM                                     | p4                        | USB_DM       
  *  USB0_DP                  | USB0_DP                                     | p3                        | USB_DP       
@@ -3026,10 +3029,10 @@ extern void mapAllPins();
  *  PTA18                    | EXTAL0                                      | p24                       | EXTAL       
  *  PTA19                    | XTAL0                                       | p25                       | XTAL       
  *  RESET_b                  | RESET_b                                     | p26                       | RESETb       
- *  PTB0                     | -                                           | p27                       | N/C       
- *  PTB1                     | -                                           | p28                       | N/C       
+ *  PTB0                     | GPIOB_0/LLWU_P5                             | p27                       | TPa       
+ *  PTB1                     | -                                           | p28                       | TPa       
  *  PTB2                     | ADC0_SE12                                   | p29                       | Vbdm       
- *  PTB3                     | GPIOB_3                                     | p30                       | LED_TVdd       
+ *  PTB3                     | GPIOB_3                                     | p30                       | TVdd_LED       
  *  PTB16                    | UART0_RX                                    | p31                       | DBG_Rx       
  *  PTB17                    | UART0_TX                                    | p32                       | DBG_Tx       
  *  PTC0                     | GPIOC_0                                     | p33                       | RST_DIR       
@@ -3047,7 +3050,7 @@ extern void mapAllPins();
  *  PTD4                     | FTM0_CH4                                    | p45                       | BKGD/SWD_I       
  *  PTD5                     | -                                           | p46                       | N/C       
  *  PTD6                     | FTM0_CH6                                    | p47                       | BKGD/SWD_0       
- *  PTD7                     | GPIOD_7                                     | p48                       | LED       
+ *  PTD7                     | GPIOD_7                                     | p48                       | USB_LED       
  *
  *
  * @section PinsByFunction Pins by Function
@@ -3062,11 +3065,12 @@ extern void mapAllPins();
  *  EXTAL32                  | EXTAL32                                     | p15                       | N/C       
  *  PTD4                     | FTM0_CH4                                    | p45                       | BKGD/SWD_I       
  *  PTD6                     | FTM0_CH6                                    | p47                       | BKGD/SWD_0       
- *  PTB3                     | GPIOB_3                                     | p30                       | LED_TVdd       
+ *  PTB0                     | GPIOB_0/LLWU_P5                             | p27                       | TPa       
+ *  PTB3                     | GPIOB_3                                     | p30                       | TVdd_LED       
  *  PTC0                     | GPIOC_0                                     | p33                       | RST_DIR       
  *  PTC1                     | GPIOC_1/LLWU_P6                             | p34                       | RST_IO       
  *  PTC2                     | GPIOC_2                                     | p35                       | BKGD/SWD_DIR       
- *  PTD7                     | GPIOD_7                                     | p48                       | LED       
+ *  PTD7                     | GPIOD_7                                     | p48                       | USB_LED       
  *  PTA0                     | JTAG_TCLK/SWD_CLK                           | p17                       | SWD_CLK       
  *  PTA3                     | JTAG_TMS/SWD_DIO                            | p20                       | SWD_DIO       
  *  RESET_b                  | RESET_b                                     | p26                       | RESETb       

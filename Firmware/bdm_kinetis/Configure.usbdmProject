@@ -24,17 +24,18 @@
    <item key="$signal$PTA3_muxSetting"                     value="mux7" />
    <item key="$signal$PTA3_pcrSetting"                     value="3" />
    <item key="$signal$PTA4_descriptionSetting"             value="N/C" />
-   <item key="$signal$PTB0_descriptionSetting"             value="N/C" />
+   <item key="$signal$PTB0_descriptionSetting"             value="TPa" />
+   <item key="$signal$PTB0_muxSetting"                     value="mux1" />
    <item key="$signal$PTB16_descriptionSetting"            value="DBG_Rx" />
    <item key="$signal$PTB16_muxSetting"                    value="mux3" />
    <item key="$signal$PTB16_pcrSetting"                    value="3" />
    <item key="$signal$PTB17_descriptionSetting"            value="DBG_Tx" />
    <item key="$signal$PTB17_muxSetting"                    value="mux3" />
    <item key="$signal$PTB17_pcrSetting"                    value="3" />
-   <item key="$signal$PTB1_descriptionSetting"             value="N/C" />
+   <item key="$signal$PTB1_descriptionSetting"             value="TPa" />
    <item key="$signal$PTB2_descriptionSetting"             value="Vbdm" />
    <item key="$signal$PTB2_muxSetting"                     value="mux0" />
-   <item key="$signal$PTB3_descriptionSetting"             value="LED_TVdd" />
+   <item key="$signal$PTB3_descriptionSetting"             value="TVdd_LED" />
    <item key="$signal$PTB3_muxSetting"                     value="mux1" />
    <item key="$signal$PTC0_descriptionSetting"             value="RST_DIR" />
    <item key="$signal$PTC0_muxSetting"                     value="mux1" />
@@ -70,7 +71,7 @@
    <item key="$signal$PTD6_descriptionSetting"             value="BKGD/SWD_0" />
    <item key="$signal$PTD6_muxSetting"                     value="mux4" />
    <item key="$signal$PTD6_pcrSetting"                     value="3" />
-   <item key="$signal$PTD7_descriptionSetting"             value="LED" />
+   <item key="$signal$PTD7_descriptionSetting"             value="USB_LED" />
    <item key="$signal$PTD7_muxSetting"                     value="mux1" />
    <item key="$signal$RESET_b_descriptionSetting"          value="RESETb" />
    <item key="$signal$USB0_DM_descriptionSetting"          value="USB_DM" />
@@ -323,7 +324,7 @@
    <item key="/SPI0/spi_mode"                              value="0" />
    <item key="/UART0/clockSource"                          value="SystemCoreClock" />
    <item key="/UART0/defaultBaudRate"                      value="115200" />
-   <item key="/UART0/irqHandlerInstalled"                  value="false" />
+   <item key="/UART0/irqHandlerInstalled"                  value="true" />
    <item key="/UART0/irqLevel"                             value="0" />
    <item key="/UART1/clockSource"                          value="SystemCoreClock" />
    <item key="/UART1/defaultBaudRate"                      value="115200" />
