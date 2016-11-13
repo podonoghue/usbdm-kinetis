@@ -1309,7 +1309,7 @@ void UsbBase_T<Info, EP0_SIZE>::handleSetInterface() {
 }
 
 /**
- * Handler for USB0 interrupt
+ * Handler for USB interrupt
  *
  * Determines source and dispatches to appropriate routine.
  */
