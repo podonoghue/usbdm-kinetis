@@ -102,7 +102,7 @@ public:
        */
 
       /** Marks last entry */
-      s_last_string_descriptor_index
+      s_number_of_string_descriptors
    };
 
    /**
@@ -162,13 +162,6 @@ public:
    static void initialise();
 
    /**
-    * Handler for USB interrupt
-    *
-    * Determines source and dispatches to appropriate routine.
-    */
-   static void irqHandler(void);
-
-   /**
     *  Blocking transmission of data over bulk IN end-point
     *
     *  @param size   Number of bytes to send
@@ -199,7 +192,17 @@ public:
    /**
     * Other descriptors type
     */
-   struct Descriptors;
+   struct Descriptors {
+      ConfigurationDescriptor                  configDescriptor;
+
+      InterfaceDescriptor                      bulk_interface;
+      EndpointDescriptor                       bulk_out_endpoint;
+      EndpointDescriptor                       bulk_in_endpoint;
+
+      /*
+       * TODO Add additional Descriptors here
+       */
+   };
 
    /**
     * Other descriptors
@@ -211,8 +214,6 @@ protected:
     * Initialises all end-points
     */
    static void initialiseEndpoints(void) {
-      UsbBase_T::initialiseEndpoints();
-
       epBulkOut.initialise();
       addEndpoint(&epBulkOut);
       epBulkOut.setCallback(bulkOutTransactionCallback);
@@ -250,6 +251,7 @@ protected:
 };
 
 using UsbImplementation = Usb0;
+
 #endif // USBDM_USB0_IS_DEFINED
 
 } // End namespace USBDM

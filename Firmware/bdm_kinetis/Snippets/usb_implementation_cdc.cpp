@@ -15,6 +15,9 @@
 
 namespace USBDM {
 
+/**
+ * Interface numbers for USB descriptors
+ */
 enum InterfaceNumbers {
    /** Interface number for CDC Control channel */
    CDC_COMM_INTF_ID,
@@ -79,27 +82,6 @@ const DeviceDescriptor Usb0::deviceDescriptor = {
       /* iProduct            */ s_product_index,                // String index of product description
       /* iSerialNumber       */ s_serial_index,                 // String index of serial number
       /* bNumConfigurations  */ NUMBER_OF_CONFIGURATIONS        // Number of configurations
-};
-
-/**
- * Other descriptors type
- */
-struct Usb0::Descriptors {
-   ConfigurationDescriptor                  configDescriptor;
-
-   InterfaceDescriptor                      cdc_CCI_Interface;
-   CDCHeaderFunctionalDescriptor            cdc_Functional_Header;
-   CDCCallManagementFunctionalDescriptor    cdc_CallManagement;
-   CDCAbstractControlManagementDescriptor   cdc_Functional_ACM;
-   CDCUnionFunctionalDescriptor             cdc_Functional_Union;
-   EndpointDescriptor                       cdc_notification_Endpoint;
-
-   InterfaceDescriptor                      cdc_DCI_Interface;
-   EndpointDescriptor                       cdc_dataOut_Endpoint;
-   EndpointDescriptor                       cdc_dataIn_Endpoint;
-   /*
-    * TODO Add additional Descriptors here
-    */
 };
 
 /**
@@ -243,22 +225,25 @@ void Usb0::sofCallback() {
 }
 
 /**
- * Configure epCdcNotification for an IN transaction [Tx, device -> host, DATA0/1]
+ * Configure epCdcNotification for an IN status transaction [Tx, device -> host, DATA0/1]\n
+ * A packet is only sent if there has been a change in status
  */
 void Usb0::epCdcSendNotification() {
    const CDCNotification cdcNotification= {CDC_NOTIFICATION, SERIAL_STATE, 0, RT_INTERFACE, nativeToLe16(2)};
-   uint8_t status = CdcUart::getSerialState().bits;
+   uint8_t status = Uart::getSerialState().bits;
 
-   if ((status & CdcUart::CDC_STATE_CHANGE_MASK) == 0) {
-      // No change
-      epCdcNotification.getHardwareState().state = EPIdle;
+   if ((status & Uart::CDC_STATE_CHANGE_MASK) == 0) {
+      return;
+   }
+   if (epCdcNotification.getState() != EPIdle) {
+      // Busy with previous
       return;
    }
    static_assert(epCdcNotification.BUFFER_SIZE>=sizeof(CDCNotification), "Buffer size insufficient");
 
    // Copy the data to Tx buffer
    (void)memcpy(epCdcNotification.getBuffer(), &cdcNotification, sizeof(cdcNotification));
-   epCdcNotification.getBuffer()[sizeof(cdcNotification)+0] = status&~CdcUart::CDC_STATE_CHANGE_MASK;
+   epCdcNotification.getBuffer()[sizeof(cdcNotification)+0] = status&~Uart::CDC_STATE_CHANGE_MASK;
    epCdcNotification.getBuffer()[sizeof(cdcNotification)+1] = 0;
 
    // Set up to Tx packet
@@ -270,12 +255,15 @@ static uint8_t cdcOutBuff[10] = "Welcome\n";
 static int cdcOutByteCount    = 8;
 
 /**
- * Start CDC IN transactions
+ * Start CDC IN transaction\n
+ * A packet is only sent if data is available
  */
 void Usb0::startCdcIn() {
-   if ((epCdcDataIn.getHardwareState().state == EPIdle) && (cdcOutByteCount>0)) {
+   if ((epCdcDataIn.getState() == EPIdle) && (cdcOutByteCount>0)) {
       static_assert(epCdcDataIn.BUFFER_SIZE>sizeof(cdcOutBuff), "Buffer too small");
       memcpy(epCdcDataIn.getBuffer(), cdcOutBuff, cdcOutByteCount);
+      //TODO check this
+      epCdcDataIn.setNeedZLP();
       epCdcDataIn.startTxTransaction(EPDataIn, cdcOutByteCount);
       cdcOutByteCount = 0;
    }
@@ -286,32 +274,24 @@ void Usb0::startCdcIn() {
  */
 void Usb0::handleTokenComplete() {
 
-   // Let parent process first
-   if (UsbBase_T::handleTokenComplete()) {
-      // Done
-      return;
-   }
-
    // Status from Token
    uint8_t   usbStat  = usb->STAT;
 
    // Endpoint number
    uint8_t   endPoint = ((uint8_t)usbStat)>>4;
 
+   endPoints[endPoint]->flipOddEven(usbStat);
    switch (endPoint) {
       case CDC_NOTIFICATION_ENDPOINT: // Accept IN token
 //         PRINTF("CDC_NOTIFICATION_ENDPOINT\n");
-         epCdcNotification.flipOddEven(usbStat);
          epCdcSendNotification();
          return;
       case CDC_DATA_OUT_ENDPOINT: // Accept OUT token
 //         PRINTF("CDC_DATA_OUT_ENDPOINT\n");
-         epCdcDataOut.flipOddEven(usbStat);
          epCdcDataOut.handleOutToken();
          return;
       case CDC_DATA_IN_ENDPOINT:  // Accept IN token
 //         PRINTF("CDC_DATA_IN_ENDPOINT\n");
-         epCdcDataIn.flipOddEven(usbStat);
          epCdcDataIn.handleInToken();
          return;
       /*
@@ -326,12 +306,19 @@ void Usb0::handleTokenComplete() {
  * @param state Current end-point state
  */
 void Usb0::cdcOutTransactionCallback(EndpointState state) {
-   static uint8_t buff[] = "";
-//   PRINTF("%c\n", buff[0]);
+   PRINTF("cdc_out\n");
    if (state == EPDataOut) {
-      epCdcDataOut.startRxTransaction(EPDataOut, sizeof(buff), buff);
+      uint8_t *buff = epCdcDataOut.getBuffer();
+      for (int i=epCdcDataOut.getDataTransferredSize(); i>0; i--) {
+         if (!Uart::putChar(*buff++)) {
+            break;
+         }
+      }
+      epCdcDataOut.startRxTransaction(EPDataOut, epCdcDataOut.BUFFER_SIZE);
    }
 }
+
+static Queue<100> inQueue;
 
 /**
  * Call-back handling CDC-IN transaction complete
@@ -339,10 +326,34 @@ void Usb0::cdcOutTransactionCallback(EndpointState state) {
  * @param state Current end-point state
  */
 void Usb0::cdcInTransactionCallback(EndpointState state) {
-   static const uint8_t buff[] = "Hello There\n\r";
    if (state == EPDataIn) {
-      epCdcDataIn.startTxTransaction(EPDataIn, sizeof(buff), buff);
+      int     charCount = 0;
+      uint8_t *buff     = epCdcDataIn.getBuffer();
+      while(!inQueue.isEmpty()) {
+         if (charCount>=epCdcDataIn.BUFFER_SIZE) {
+            break;
+         }
+         *buff++ = inQueue.deQueue();
+      }
+      if (charCount>0) {
+         epCdcDataIn.startTxTransaction(EPDataIn, charCount);
+      }
    }
+}
+
+bool Usb0::putCdcChar(uint8_t ch) {
+   if (inQueue.isFull()) {
+      return false;
+   }
+   inQueue.enQueue(ch);
+   if (epCdcDataIn.getState() == EPIdle) {
+      disableInterrupts();
+      // Restart IN transfer
+      cdcInTransactionCallback(EPIdle);
+      ::enableInterrupts();
+   }
+   return true;
+}
 }
 
 /**
@@ -363,74 +374,6 @@ void Usb0::initialise() {
 }
 
 /**
- * Handler for USB0 interrupt
- *
- * Determines source and dispatches to appropriate routine.
- */
-void Usb0::irqHandler() {
-   // All active flags
-   uint8_t interruptFlags = usb->ISTAT;
-
-   //   if (interruptFlags&~USB_ISTAT_SOFTOK_MASK) {
-   //      PRINTF("ISTAT=%2X\n", interruptFlags);
-   //   }
-
-   // Get active and enabled interrupt flags
-   uint8_t enabledInterruptFlags = interruptFlags & usb->INTEN;
-
-   if ((enabledInterruptFlags&USB_ISTAT_USBRST_MASK) != 0) {
-      // Reset signaled on Bus
-      handleUSBReset();
-      usb->ISTAT = USB_ISTAT_USBRST_MASK; // Clear source
-      return;
-   }
-   if ((enabledInterruptFlags&USB_ISTAT_TOKDNE_MASK) != 0) {
-      // Token complete interrupt
-      handleTokenComplete();
-      // Clear source
-      usb->ISTAT = USB_ISTAT_TOKDNE_MASK;
-   }
-   else if ((enabledInterruptFlags&USB_ISTAT_RESUME_MASK) != 0) {
-      // Resume signaled on Bus
-      handleUSBResume();
-      // Clear source
-      usb->ISTAT = USB_ISTAT_RESUME_MASK;
-   }
-   else if ((enabledInterruptFlags&USB_ISTAT_STALL_MASK) != 0) {
-      // Stall sent
-      handleStallComplete();
-      // Clear source
-      usb->ISTAT = USB_ISTAT_STALL_MASK;
-   }
-   else if ((enabledInterruptFlags&USB_ISTAT_SOFTOK_MASK) != 0) {
-      // SOF Token?
-      handleSOFToken();
-      usb->ISTAT = USB_ISTAT_SOFTOK_MASK; // Clear source
-   }
-   else if ((enabledInterruptFlags&USB_ISTAT_SLEEP_MASK) != 0) {
-      // Bus Idle 3ms => sleep
-      //      PUTS("Suspend");
-      handleUSBSuspend();
-      // Clear source
-      usb->ISTAT = USB_ISTAT_SLEEP_MASK;
-   }
-   else if ((enabledInterruptFlags&USB_ISTAT_ERROR_MASK) != 0) {
-      // Any Error
-      PRINTF("Error s=0x%02X\n", usb->ERRSTAT);
-      usb->ERRSTAT = 0xFF;
-      // Clear source
-      usb->ISTAT = USB_ISTAT_ERROR_MASK;
-   }
-   else  {
-      // Unexpected interrupt
-      // Clear & ignore
-      PRINTF("Unexpected interrupt, flags=0x%02X\n", interruptFlags);
-      // Clear & ignore
-      usb->ISTAT = interruptFlags;
-   }
-}
-
-/**
  * CDC Set line coding handler
  */
 void Usb0::handleSetLineCoding() {
@@ -439,7 +382,7 @@ void Usb0::handleSetLineCoding() {
    // Call-back to do after transaction complete
    static auto callback = []() {
       // The controlEndpoint buffer will contain the LineCodingStructure data at call-back time
-      CdcUart::setLineCoding((LineCodingStructure * const)controlEndpoint.getBuffer());
+      Uart::setLineCoding((LineCodingStructure * const)controlEndpoint.getBuffer());
       setSetupCompleteCallback(nullptr);
    };
    setSetupCompleteCallback(callback);
@@ -455,7 +398,7 @@ void Usb0::handleSetLineCoding() {
 void Usb0::handleGetLineCoding() {
 //   PRINTF("handleGetLineCoding()\n");
    // Send packet
-   ep0StartTxTransaction( sizeof(LineCodingStructure), (const uint8_t*)CdcUart::getLineCoding());
+   ep0StartTxTransaction( sizeof(LineCodingStructure), (const uint8_t*)Uart::getLineCoding());
 }
 
 /**
@@ -463,7 +406,7 @@ void Usb0::handleGetLineCoding() {
  */
 void Usb0::handleSetControlLineState() {
 //   PRINTF("handleSetControlLineState(%X)\n", ep0SetupBuffer.wValue.lo());
-   CdcUart::setControlLineState(ep0SetupBuffer.wValue.lo());
+   Uart::setControlLineState(ep0SetupBuffer.wValue.lo());
    // Tx empty Status packet
    ep0StartTxTransaction( 0, nullptr );
 }
@@ -473,7 +416,7 @@ void Usb0::handleSetControlLineState() {
  */
 void Usb0::handleSendBreak() {
 //   PRINTF("handleSendBreak()\n");
-   CdcUart::sendBreak(ep0SetupBuffer.wValue);
+   Uart::sendBreak(ep0SetupBuffer.wValue);
    // Tx empty Status packet
    ep0StartTxTransaction( 0, nullptr );
 }
