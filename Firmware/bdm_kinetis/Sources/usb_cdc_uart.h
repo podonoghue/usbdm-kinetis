@@ -40,10 +40,14 @@ public:
 
    /**
     * Set callback to handle received characters
+    *
+    * @param callback Call-back to execute when a serial character is received
     */
    static void setInCallback(bool (*callback)(uint8_t)) {
       inCallback = callback;
    }
+   
+   /** Queue of outgoing characters */
    static Queue<100> outQueue;
 
    /**
@@ -61,6 +65,7 @@ public:
          return false;
       }
       outQueue.enQueue(ch);
+      // Restart Transmit IRQ
       UartInfo::uart->C2 |= UART_C2_TIE_MASK;
       return true;
    }
@@ -195,7 +200,7 @@ public:
    /**
     *  Send CDC break\n
     *
-    * @param length - length of break in milliseconds (see note)\n
+    * @param length Length of break in milliseconds (see note)\n
     *  - 0x0000 => End BREAK
     *  - 0xFFFF => Start indefinite BREAK
     *  - else   => Send a break of 10 chars

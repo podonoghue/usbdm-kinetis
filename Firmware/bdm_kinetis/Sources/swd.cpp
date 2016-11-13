@@ -163,11 +163,12 @@ static void setCTAR1Value(uint32_t ctar) {
 /**
  * Calculate parity of the 32-bit value
  *
- * @param  data   Data value
+ * @param  data Data value
  *
  * @return parity value
  */
-static uint8_t __attribute__((naked)) calcParity(const uint32_t data) {
+__attribute__((naked))
+static uint8_t calcParity(const uint32_t data) {
    (void)data;
    __asm__ volatile (
          "eor.w r0, r0, r0, lsr #16  \n\t"
@@ -199,7 +200,7 @@ static void txIdle8() {
 /**
  *  Transmit [mark, 8-bit word], Receive [ACK]
  *
- *  @param send    - data to send
+ *  @param data Data to send
  */
 static uint8_t txMark_8_rxAck(uint32_t data) {
    setCTAR0Value(CTAR_TX|SPI_CTAR_FMSZ(9-1)); // 9-bit Tx
@@ -221,7 +222,7 @@ static uint8_t txMark_8_rxAck(uint32_t data) {
 /**
  *  Transmit [mark, 8-bit word], receive [ACK, Trn]
  *
- *  @param send    - data to send
+ *  @param data Data to send
  */
 static uint8_t txMark_8_rxAck_Trn(uint32_t data) {
    setCTAR0Value(CTAR_TX|SPI_CTAR_FMSZ(9-1)); // 9-bit Tx
@@ -290,7 +291,7 @@ static uint8_t tx8_rxAck_Trn(uint32_t command) {
 /**
  *  Transmit a [32-bit word, parity]
  *
- *  @param send    - data to send
+ *  @param data Data to send
  */
 static void tx32_parity(const uint32_t data) {
    uint8_t parity = calcParity(data);
@@ -313,7 +314,7 @@ static void tx32_parity(const uint32_t data) {
 /**
  *  Transmit a [32-bit word]
  *
- *  @param send Data to send
+ *  @param data Data to send
  */
 static void tx32(const uint32_t data) {
    setCTAR0Value(CTAR_TX|SPI_CTAR_FMSZ(8-1)); // 8-bit Tx

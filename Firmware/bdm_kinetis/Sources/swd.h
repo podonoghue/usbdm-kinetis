@@ -88,7 +88,7 @@ static constexpr uint32_t  DHCSR_C_DEBUGEN         = (1<<0);
 /**
  * Pack 4 bytes into a 32-bit value in LITTLE-ENDIAN order order
  *
- * @param  data[4]   Data value in LITTLE-ENDIAN order order
+ * @param  data Data value in LITTLE-ENDIAN order order
  *
  * @return Value
  */
@@ -99,7 +99,7 @@ static inline constexpr uint32_t pack32LE(const uint8_t data[4]) {
 /**
  * Pack 4 bytes into a 32-bit value in BIG-ENDIAN order order
  *
- * @param  data[4]   Data value in BIG_ENDIAN order
+ * @param  data Data value in BIG_ENDIAN order
  *
  * @return Value
  */
@@ -111,7 +111,7 @@ constexpr uint32_t pack32BE(const uint8_t data[4]) {
 /**
  * Pack 2 bytes into a 32-bit value for ARM addresses
  *
- * @param  data[2]   Data value in BIG-ENDIAN order order
+ * @param  data   Data value in BIG-ENDIAN order order
  *
  * @return Value
  */
@@ -124,7 +124,7 @@ constexpr uint32_t pack16AddressBE(const uint8_t data[2]) {
  * Unpack a 32-bit value into 4 bytes in LE order
  *
  * @param  data    Value to unpack
- * @param  ar[4]   Buffer for data value in LITTLE-ENDIAN order order
+ * @param  ar   Buffer for data value in LITTLE-ENDIAN order order
  *
  * @return Value
  */
@@ -140,7 +140,7 @@ void unpack32LE(uint32_t data, uint8_t ar[4]) {
  * Unpack a 32-bit value into 4 bytes in BE order
  *
  * @param  data    Value to unpack
- * @param  ar[4]   Buffer for data value in BIG-ENDIAN order
+ * @param  ar      Buffer for data value in BIG-ENDIAN order
  *
  * @return Value
  */
@@ -330,7 +330,7 @@ USBDM_ErrorCode readAPReg(const uint32_t address, uint32_t &buff);
 /**
  *  Read register of Access Port
  *
- *  @param 32-bit address in BIG-ENDIAN order\n
+ *  @param address 32-bit address in BIG-ENDIAN order\n
  *     A[31:24] => DP-AP-SELECT[31:24] (AP # Select) \n
  *     A[7:4]   => DP-AP-SELECT[7:4]   (Bank select within AP) \n
  *     A[3:2]   => APACC[3:2]          (Register select within bank)

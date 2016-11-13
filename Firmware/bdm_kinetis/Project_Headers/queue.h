@@ -26,8 +26,8 @@ public:
     * Create empty Queue
     */
    Queue() : fHead(fBuff), fTail(fBuff), fNumberOfElements(0) {
-
    }
+
    /*
     * Check if empty
     *

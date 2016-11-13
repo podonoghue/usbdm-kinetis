@@ -26,9 +26,6 @@ enum InterfaceNumbers {
    CDC_COMM_INTF_ID,
    /** Interface number for CDC Data channel */
    CDC_DATA_INTF_ID,
-   /*
-    * TODO Add additional Interface numbers here
-    */
    /** Total number of interfaces */
    NUMBER_OF_INTERFACES,
 };
@@ -223,17 +220,11 @@ const Usb0::Descriptors Usb0::otherDescriptors = {
             /* bDescriptorType         */ DT_ENDPOINT,
             /* bEndpointAddress        */ EP_IN|CDC_DATA_IN_ENDPOINT,
             /* bmAttributes            */ ATTR_BULK,
-            /* wMaxPacketSize          */ nativeToLe16(2*CDC_DATA_IN_EP_MAXSIZE), // x2 so all packets are terminating (short))
+            /* wMaxPacketSize          */ nativeToLe16(CDC_DATA_IN_EP_MAXSIZE),
             /* bInterval               */ USBMilliseconds(1)
       },
-      /*
-       * TODO Add additional Descriptors here
-       */
 };
 
-/*
- * TODO Add additional end-points here
- */
 OutEndpoint <Usb0Info, Usb0::BULK_OUT_ENDPOINT, BULK_OUT_EP_MAXSIZE> Usb0::epBulkOut;
 InEndpoint  <Usb0Info, Usb0::BULK_IN_ENDPOINT,  BULK_IN_EP_MAXSIZE>  Usb0::epBulkIn;
 
@@ -302,7 +293,7 @@ void Usb0::epCdcSendNotification() {
    epCdcNotification.getBuffer()[sizeof(cdcNotification)+1] = 0;
 
    // Set up to Tx packet
-   PRINTF("epCdcSendNotification(0x%2X)\n", epCdcNotification.getBuffer()[sizeof(cdcNotification)+0]);
+//   PRINTF("epCdcSendNotification(0x%2X)\n", epCdcNotification.getBuffer()[sizeof(cdcNotification)+0]);
    epCdcNotification.startTxTransaction(EPDataIn, sizeof(cdcNotification)+2);
 }
 
@@ -357,9 +348,6 @@ void Usb0::handleTokenComplete() {
 //         PRINTF("CDC_DATA_IN_ENDPOINT\n");
          epCdcDataIn.handleInToken();
          return;
-      /*
-       * TODO Add additional End-point handling here
-       */
    }
 }
 
@@ -370,7 +358,7 @@ void Usb0::handleTokenComplete() {
  * @param state Current end-point state
  */
 void Usb0::cdcOutTransactionCallback(EndpointState state) {
-   PRINTF("cdc_out\n");
+//   PRINTF("cdc_out\n");
    if (state == EPDataOut) {
       uint8_t *buff = epCdcDataOut.getBuffer();
       for (int i=epCdcDataOut.getDataTransferredSize(); i>0; i--) {
@@ -407,7 +395,7 @@ void Usb0::cdcInTransactionCallback(EndpointState state) {
          charCount++;
       }
       if (charCount>0) {
-         PRINTF("Sending %d\n", charCount);
+//         PRINTF("Sending %d\n", charCount);
          // Schedules transfer if data available
          epCdcDataIn.startTxTransaction(EPDataIn, charCount);
       }
@@ -471,9 +459,6 @@ void Usb0::initialise() {
    setSOFCallback(sofCallback);
 
    CdcUart<Uart0Info>::setInCallback(putCdcChar);
-   /*
-    * TODO Additional initialisation
-    */
 }
 
 /**

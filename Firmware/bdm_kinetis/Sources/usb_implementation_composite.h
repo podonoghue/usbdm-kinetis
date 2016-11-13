@@ -66,9 +66,7 @@ namespace USBDM {
 // Maximum packet sizes for each endpoint
 //
 static constexpr uint  CONTROL_EP_MAXSIZE           = 64; //!< Control in/out    64
-/*
- *  TODO Define additional end-point sizes
- */
+
 static constexpr uint  BULK_OUT_EP_MAXSIZE          = 64; //!< Bulk out          64
 static constexpr uint  BULK_IN_EP_MAXSIZE           = 64; //!< Bulk in           64
 
@@ -111,9 +109,6 @@ public:
       s_cdc_control_interface_index,
       /** CDC Data Interface */
       s_cdc_data_Interface_index,
-      /*
-       * TODO Add additional String indexes
-       */
 
       /** Marks last entry */
       s_number_of_string_descriptors
@@ -141,9 +136,6 @@ public:
       /** CDC Data in endpoint number */
       CDC_DATA_IN_ENDPOINT,
 
-      /*
-       * TODO Add additional Endpoint numbers here
-       */
       /** Total number of end-points */
       NUMBER_OF_ENDPOINTS,
    };
@@ -173,9 +165,6 @@ protected:
    static InEndpoint  <Usb0Info, Usb0::CDC_NOTIFICATION_ENDPOINT, CDC_NOTIFICATION_EP_MAXSIZE>  epCdcNotification;
    static OutEndpoint <Usb0Info, Usb0::CDC_DATA_OUT_ENDPOINT,     CDC_DATA_OUT_EP_MAXSIZE>      epCdcDataOut;
    static InEndpoint  <Usb0Info, Usb0::CDC_DATA_IN_ENDPOINT,      CDC_DATA_IN_EP_MAXSIZE>       epCdcDataIn;
-   /*
-    * TODO Add additional End-points here
-    */
 
    /** Force command handler to exit and restart */
    static bool forceCommandHandlerInitialise;
@@ -258,9 +247,6 @@ public:
       InterfaceDescriptor                      cdc_DCI_Interface;
       EndpointDescriptor                       cdc_dataOut_Endpoint;
       EndpointDescriptor                       cdc_dataIn_Endpoint;
-      /*
-       * TODO Add additional Descriptors here
-       */
    };
 
    /**
@@ -300,9 +286,6 @@ protected:
 	  
       static const uint8_t cdcInBuff[] = "Hello there\n";
       epCdcDataIn.startTxTransaction(EPDataIn, sizeof(cdcInBuff), cdcInBuff);
-      /*
-       * TODO Initialise additional End-points here
-       */
    }
 
    /**
