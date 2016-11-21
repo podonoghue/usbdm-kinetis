@@ -44,8 +44,8 @@ protected:
    ~Spi() {}
 
 protected:
-   volatile  SPI_Type * const spi; //!< SPI hardware
-   uint32_t  pushrMask;            //!< Value to combine with data
+   volatile  SPI_Type * const spi;       //!< SPI hardware
+   uint32_t                   pushrMask; //!< Value to combine with data
 
 protected:
    /**
@@ -182,7 +182,7 @@ protected:
     * Sets the CTAR value for a given set of communication delays
     *
     * @param clockFrequency => Clock frequency of SPI in Hz
-    * @param cssck          => PCS assertion to SCK Delay Scaler
+    * @param cssck          => PCS assertion to SCK Delay
     * @param asc            => SCK to PCS negation delay
     * @param dt             => PCS negation to PCS assertion delay between transfers
     * @param ctarNum        => Index of CTAR register to modify
@@ -193,7 +193,7 @@ protected:
 
       uint32_t ctarValue = spi->CTAR[ctarNum] &
             ~(SPI_CTAR_ASC_MASK|SPI_CTAR_PASC_MASK|SPI_CTAR_DT_MASK|SPI_CTAR_PDT_MASK|SPI_CTAR_CSSCK_MASK|SPI_CTAR_PCSSCK_MASK);
-      spi->CTAR[ctarNum] = ctarValue|calculateDelays(clockFrequency, asc, dt, cssck);
+      spi->CTAR[ctarNum] = ctarValue|calculateDelays(clockFrequency, cssck, asc, dt);
    }
 
 public:

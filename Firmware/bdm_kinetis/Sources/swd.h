@@ -154,7 +154,7 @@ static inline void unpack32BE(uint32_t data, uint8_t ar[4]) {
 /**
  * Sets Communication speed for SWD
  *
- * @param frequency Frequency in Hz (0 => use default value)
+ * @param frequency Frequency in Hz
  *
  * Note: Chooses the highest speed that is not greater than frequency.
  * Note: This will only have effect the next time a CTAR is changed

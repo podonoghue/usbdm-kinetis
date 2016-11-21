@@ -77,17 +77,20 @@ public:
  */
 class TargetVdd : USBDM::Adc0Channel<12> {
 private:
+   /**
+    * 2:1 voltage divider on input
+    */
    static constexpr int   externalDivider = 2;
    /**
     * Conversion factor for ADC reading to input voltage\n
-    * 3.3V range, 10 bit conversion, 2:1 voltage divider on input
+    * 3.3V range, 8 bit conversion, voltage divider on input
     * V = ADCValue * scaleFactor
     */
-   static constexpr float scaleFactor = (externalDivider*3.3)/255;
+   static constexpr float scaleFactor = (externalDivider*3.3)/((1<<8)-1);
 
    /**
-    * Minimum input voltage as an ADC reading \n
-    *  1.5 V as ADC reading
+    * Minimum working input voltage as an ADC reading \n
+    * 1.5 V as ADC reading
     */
    static constexpr int   threshold = (int)(1.5/scaleFactor);
 
@@ -124,7 +127,7 @@ public:
 };
 
 /**
- * GPIO controlling some SWD outputs
+ * GPIO controlling some SWD related signals
  */
 using Swd_enable = USBDM::GpioC<4>;
 
@@ -149,26 +152,14 @@ using Reset = Lvc1t45<USBDM::GpioC<1>, USBDM::GpioC<0>>;
 // Capabilities of the hardware - used to enable/disable appropriate code
 //
 #ifdef SDA_POWER
-#define HW_CAPABILITY       (CAP_RST_OUT|CAP_RST_IN|CAP_SWD_HW|CAP_CDC|CAP_CORE_REGS|CAP_VDDCONTROL)
-#define TARGET_CAPABILITY   (CAP_RST   |CAP_ARM_SWD|CAP_CDC|CAP_VDDCONTROL)
+#define HW_CAPABILITY       (CAP_RST_OUT|CAP_CDC|CAP_RST_IN|CAP_SWD_HW|CAP_CORE_REGS|CAP_VDDCONTROL)
+#define TARGET_CAPABILITY   (CAP_RST    |CAP_CDC|CAP_ARM_SWD|CAP_VDDCONTROL)
 #else
-#define HW_CAPABILITY       (CAP_RST_OUT|CAP_RST_IN|CAP_SWD_HW|CAP_CORE_REGS|CAP_VDDSENSE) // |CAP_CDC
-#define TARGET_CAPABILITY   (CAP_RST   |CAP_ARM_SWD)
+#define HW_CAPABILITY       (CAP_RST_OUT|CAP_CDC|CAP_RST_IN|CAP_SWD_HW|CAP_CORE_REGS|CAP_VDDSENSE)
+#define TARGET_CAPABILITY   (CAP_RST    |CAP_CDC|CAP_ARM_SWD)
 #endif
 
 #define CPU  MK20D5
-
-//=================================================================================
-// Debug pin - used to check timing and hardware sequences etc.
-//
-#if (DEBUG != 0)
-#define DEBUG_PIN XXXX
-#endif
-
-//=================================================================================
-// ICP pin - used to force ICP in bootstrap code
-//
-#define ICP_PIN   DEBUG_PIN
 
 #endif // _CONFIGURE_H_
 

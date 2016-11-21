@@ -14,11 +14,12 @@
 
 /**
  * Represents a bidirectional signal e.g. 74LVC1T45 buffer
- * Assumes 2 signals: output/input, direction (0=>in, 1=>out)
- * It is desirable that there be a 1K series resistor on Data
+ * Assumes 2 signals: input/output & direction (0=>in, 1=>out)
+ * It is desirable that there be a 1K series resistor on Data as
+ * there may be a brief conflict during direction switch-over
  *
- * @tparam Data  GPIO connected to transceiver input/output
- * @tparam Direction    GPIO connected to direction control
+ * @tparam Data       GPIO connected to transceiver input/output
+ * @tparam Direction  GPIO connected to direction control
  */
 template<class Data, class Direction>
 class Lvc1t45 {
