@@ -28,7 +28,7 @@ PowerPortNamesTakePriority=0
 PushECOToAnnotationFile=1
 DItemRevisionGUID=
 ReportSuppressedErrorsInMessages=0
-OutputPath=
+OutputPath=Project Outputs for USBDM_Kinetis
 LogFolderPath=
 ManagedProjectGUID=
 
@@ -88,58 +88,54 @@ GenerateClassCluster=0
 DocumentUniqueId=ERNSGOKY
 
 [GeneratedDocument1]
-DocumentPath=Project Outputs for USBDM_Kinetis\Design Rule Check - USBDM_Kinetis.html
-DItemRevisionGUID=
-
-[GeneratedDocument2]
 DocumentPath=Project Outputs for USBDM_Kinetis\USBDM_Kinetis.DRR
 DItemRevisionGUID=
 
-[GeneratedDocument3]
+[GeneratedDocument2]
 DocumentPath=Project Outputs for USBDM_Kinetis\USBDM_Kinetis.EXTREP
 DItemRevisionGUID=
 
-[GeneratedDocument4]
+[GeneratedDocument3]
 DocumentPath=Project Outputs for USBDM_Kinetis\USBDM_Kinetis.GBL
 DItemRevisionGUID=
 
-[GeneratedDocument5]
+[GeneratedDocument4]
 DocumentPath=Project Outputs for USBDM_Kinetis\USBDM_Kinetis.GBO
 DItemRevisionGUID=
 
-[GeneratedDocument6]
+[GeneratedDocument5]
 DocumentPath=Project Outputs for USBDM_Kinetis\USBDM_Kinetis.GBS
 DItemRevisionGUID=
 
-[GeneratedDocument7]
+[GeneratedDocument6]
 DocumentPath=Project Outputs for USBDM_Kinetis\USBDM_Kinetis.GKO
 DItemRevisionGUID=
 
-[GeneratedDocument8]
+[GeneratedDocument7]
 DocumentPath=Project Outputs for USBDM_Kinetis\USBDM_Kinetis.GTL
 DItemRevisionGUID=
 
-[GeneratedDocument9]
+[GeneratedDocument8]
 DocumentPath=Project Outputs for USBDM_Kinetis\USBDM_Kinetis.GTO
 DItemRevisionGUID=
 
-[GeneratedDocument10]
+[GeneratedDocument9]
 DocumentPath=Project Outputs for USBDM_Kinetis\USBDM_Kinetis.GTS
 DItemRevisionGUID=
 
-[GeneratedDocument11]
+[GeneratedDocument10]
 DocumentPath=Project Outputs for USBDM_Kinetis\USBDM_Kinetis.LDP
 DItemRevisionGUID=
 
-[GeneratedDocument12]
+[GeneratedDocument11]
 DocumentPath=Project Outputs for USBDM_Kinetis\USBDM_Kinetis.REP
 DItemRevisionGUID=
 
-[GeneratedDocument13]
+[GeneratedDocument12]
 DocumentPath=Project Outputs for USBDM_Kinetis\USBDM_Kinetis.RUL
 DItemRevisionGUID=
 
-[GeneratedDocument14]
+[GeneratedDocument13]
 DocumentPath=Project Outputs for USBDM_Kinetis\USBDM_Kinetis.TXT
 DItemRevisionGUID=
 
@@ -154,7 +150,7 @@ GenerateBOM=1
 OutputJobsCount=0
 
 [Generic_EDE]
-OutputDir=
+OutputDir=Project Outputs for USBDM_Kinetis
 
 [OutputGroup1]
 Name=Netlist Outputs
