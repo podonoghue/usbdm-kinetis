@@ -101,6 +101,22 @@ public:
    static bool _read() {
       return Data::read();
    }
+   /**
+    * Check if receiver input is low
+    *
+    * @return true if input is low
+    */
+   static bool isLow() {
+      return !Data::read();
+   }
+   /**
+    * Check if receiver input is high
+    *
+    * @return true if input is high
+    */
+   static bool isHigh() {
+      return Data::read();
+   }
 };
 
 #endif /* PROJECT_HEADERS_BDMINTERFACE_H_ */
