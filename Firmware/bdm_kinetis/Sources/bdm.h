@@ -1,218 +1,24 @@
 /*
- * BdmInterface.h
+ * bdm.h
  *
- *  Created on: 12 Feb 2016
+ *  Created on: 26Nov.,2016
  *      Author: podonoghue
  */
 
-#ifndef PROJECT_HEADERS_BDMINTERFACE_H_
-#define PROJECT_HEADERS_BDMINTERFACE_H_
+#ifndef SOURCES_BDM_H_
+#define SOURCES_BDM_H_
+
 #include "system.h"
 #include "derivative.h"
-#include "pin_mapping.h"
+#include "hardware.h"
 #include "delay.h"
+#include "USBDM_MK20D5.h"
+
+// D6 = C6, C2 = C3
+//using Bkgd = Lvc1t45<USBDM::GpioD<6>, USBDM::GpioC<3>>;
 
 /**
- * Represents a bidirectional signal with 3-state control\n
- * e.g. 2 x 74LV125 buffers
- * Assumes 3 signals: output, input, 3-state enable
- *
- * @tparam out    GPIO connected to driver input
- * @tparam in     GPIO connected to receiver output
- * @tparam enable GPIO connected to driver 3-state control
- */
-template<class out, class enable, class in>
-class Transceiver {
-public:
-   /**
-    * Initialise Transceiver
-    *
-    * Initial state:
-    *    High-Z
-    */
-   static void initialise() {
-      // Enable high => disable driver
-      enable::high();
-      enable::setOutput();
-      // Output high (but has no effect)
-      out::high();
-      out::setOutput();
-      // Set as input
-      in::setInput();
-   }
-   /**
-    * Drive signal high
-    */
-   static void high() {
-      out::high();
-      enable::low();
-   }
-   /**
-    * Drive signal high
-    *
-    * @note Assumes driver already enabled
-    */
-   static void _high() {
-      out::high();
-   }
-   /**
-    * Drive signal low
-    */
-   static void low() {
-      out::low();
-      enable::low();
-   }
-   /**
-    * Drive signal low
-    *
-    * @note Assumes driver already enabled
-    */
-   static void _low() {
-      out::low();
-   }
-   /**
-    * Disable Transceiver (high-impedance)
-    */
-   static void highZ() {
-      enable::high();
-   }
-   /**
-    * Read value from receiver
-    *
-    * @return value on pin
-    */
-   static bool read() {
-      enable::high();
-      return in::read();
-   }
-   /**
-    * Read value from receiver
-    *
-    * @return value on pin
-    *
-    * @note Assumes already set as input
-    */
-   static bool _read() {
-      return in::read();
-   }
-};
-
-/**
- * Represents a signal with 3-state control\n
- * e.g. 74LV125 buffer, 74LVC1T45
- * Assumes 2 signals: output to Transceiver, enable to Transceiver
- *
- * @tparam out       GPIO connected to driver input
- * @tparam enable    GPIO connected to driver 3-state control (or DIR)
- * @tparam oeActive  Polarity of OE signal (true=>high to enable)
- */
-template<class out, class enable, bool oeActive=true>
-class Driver {
-public:
-   /**
-    * Initialise Driver
-    */
-   static void initialise() {
-      // Enable high => disable driver
-      enable::write(!oeActive);
-      enable::setOutput();
-      // Output high (but has no effect)
-      out::high();
-      out::setOutput();
-   }
-   /**
-    * Drive signal high
-    */
-   static void high() {
-      out::high();
-      enable::write(oeActive);
-   }
-   /**
-    * Drive signal high
-    *
-    * @note Assumes driver already enabled
-    */
-   static void _high() {
-      out::high();
-   }
-   /**
-    * Drive signal low
-    */
-   static void low() {
-      out::low();
-      enable::write(oeActive);
-   }
-   /**
-    * Drive signal low
-    *
-    * @note Assumes driver already enabled
-    */
-   static void _low() {
-      enable::low();
-   }
-   /**
-    * Disable Transceiver (high-impedance)
-    */
-   static void highZ() {
-      enable::write(!oeActive);
-   }
-};
-/**
- * Represents an Open-collector signal\n
- * e.g. 74LV125 buffer
- * Assumes 1 signal: enable to Transceiver (and output to Transceiver)
- *
- * @tparam out    GPIO connected to driver input
- * @tparam enable GPIO connected to driver 3-state control
- */
-template<class out>
-class DriverOC {
-public:
-   /**
-    * Initialise Driver
-    */
-   static void initialise() {
-      // Output high (actually 3-state)
-      out::high();
-      out::setOutput();
-   }
-   /**
-    * Drive signal high (actually 3-state)
-    */
-   static void high() {
-      out::high();
-   }
-   /**
-    * Drive signal high (actually 3-state)
-    */
-   static void _high() {
-      out::high();
-   }
-   /**
-    * Drive signal low
-    */
-   static void low() {
-      out::low();
-   }
-   /**
-    * Drive signal low
-    */
-   static void _low() {
-      out::low();
-   }
-   /**
-    * Disable Transceiver (high-impedance)
-    */
-   static void highZ() {
-      out::high();
-   }
-};
-
-//using Reset = Driver<USBDM::GpioC<0>, USBDM::GpioC<1>, 1>;
-using Bkgd  = Transceiver<USBDM::GpioA<5>, USBDM::GpioD<4>, USBDM::GpioA<1>>;
-
-/**
- * Class representing a low-level interface to a RS08/HCS08/HCS12 debug module
+ * Class representing a low-level interface to a RS08/HCS08/HCS12 background debug module
  *
  * @tparam Info               Information class for FTM
  * @tparam bkgdOutChannel     Channel to use for BKGD output to driver
@@ -220,14 +26,15 @@ using Bkgd  = Transceiver<USBDM::GpioA<5>, USBDM::GpioD<4>, USBDM::GpioA<1>>;
  * @tparam bkgdInChannel      Channel to use for BKGD input from receiver
  */
 template <class Info, uint8_t bkgdOutChannel, uint8_t bkgdEnChannel, uint8_t bkgdInChannel>
-class BackgroundDebug_T : public USBDM::CheckSignal<Info, bkgdOutChannel>, USBDM::CheckSignal<Info, bkgdEnChannel>, USBDM::CheckSignal<Info, bkgdInChannel> {
+class BackgroundDebug_T :
+   public
+   USBDM::CheckSignal<Info, bkgdOutChannel>,
+   USBDM::CheckSignal<Info, bkgdEnChannel>,
+   USBDM::CheckSignal<Info, bkgdInChannel> {
 
 protected:
    /** How long to wait for target response per bit (us) */
    static constexpr uint BIT_TIME_OUT            = 100;
-
-   /** Length of high drive before 3-state i.e. speed-up pulse (ticks) */
-   static constexpr uint SPEEDUP_PULSE_TIME      = 1;
 
    /** Width of sync pulse (us), 128 target-cycle @ 128kHz (<65536/FTMClock) */
    static constexpr uint SYNC_WIDTH              = 1000;
@@ -236,10 +43,13 @@ protected:
    static constexpr uint SYNC_TIMEOUT            = 1200;
 
    /** Time to set up Timer - This varies with optimisation! */
-   static constexpr uint TMR_SETUP_TIME          = 15;
+   static constexpr uint TMR_SETUP_TIME          = 40;//15;
+
+   /** Length of high drive before 3-state i.e. speed-up pulse (ticks) */
+   static constexpr uint SPEEDUP_PULSE_WIDTH_IN_TICKS        = 1;
 
    /** Pointer to hardware */
-   static constexpr volatile FTM_Type *tmr       = reinterpret_cast<volatile FTM_Type*>(Info::basePtr);
+   static constexpr volatile FTM_Type *tmr       = reinterpret_cast<volatile FTM_Type*>(Info::ftm);
 
    /** Pointer to clock register */
    static constexpr volatile uint32_t *clockReg  = reinterpret_cast<volatile uint32_t*>(Info::clockReg);
@@ -247,15 +57,23 @@ protected:
    /** Mask for BKGD output channel */
    static constexpr uint32_t BKGD_MASK           = (1<<bkgdInChannel);
 
-   /** PCR for BKGD in pin used by timer */
-   using BkgdInPcr        = USBDM::PcrTable_T<Info, bkgdInChannel>;
-
    /** PCR for BKGD enable pin used by timer */
-   using BkgdEnPcr        = USBDM::PcrTable_T<Info, bkgdEnChannel>;
+   using BkgdEn = USBDM::GpioTable_T<Info, bkgdEnChannel>;
 
    /** PCR for BKGD in pin used by timer */
-   using BkgdOutPcr       = USBDM::PcrTable_T<Info, bkgdOutChannel>;
+   using BkgdOut = USBDM::GpioTable_T<Info, bkgdOutChannel>;
 
+   using Bkgd = Lvc1t45<BkgdEn, BkgdOut>;
+
+//   /** PCR for BKGD in pin used by timer */
+//   using BkgdInPcr        = USBDM::PcrTable_T<Info, bkgdInChannel>;
+//
+//   /** PCR for BKGD enable pin used by timer */
+//   using BkgdEnPcr        = USBDM::PcrTable_T<Info, bkgdEnChannel>;
+//
+//   /** PCR for BKGD in pin used by timer */
+//   using BkgdOutPcr       = USBDM::PcrTable_T<Info, bkgdOutChannel>;
+//
 //   /** GPIO for BKGD in pin
 //   using BkgdIn           = USBDM::GpioTable_T<Info, bkgdInChannel>;
 //
@@ -268,6 +86,9 @@ protected:
 
    /** Calculated time for target '0' bit (Ticks) */
    static uint zeroBitTime;
+
+   /** Calculated time for to sample target response (Ticks) */
+   static uint sampleBitTime;
 
    /** Calculated time for target minimum bit period (Ticks) */
    static uint minPeriod;
@@ -293,14 +114,6 @@ private:
 
 public:
    /**
-    * Calculates the tick rate of the timer in Ticks per second (Hz)
-    *
-    * @return Tick rate in Hz
-    */
-   static uint32_t getTickRate() {
-      return SystemBusClock/(1<<(tmr->SC&FTM_SC_PS_MASK));
-   }
-   /**
     * Converts a time in microseconds to number of ticks
     *
     * @param [in] time Time in microseconds
@@ -310,10 +123,13 @@ public:
     * @note Assumes prescale has been chosen as a appropriate value. No range checking.
     */
    static uint32_t convertMicrosecondsToTicks(int time) {
-      assert((((uint64_t)time*Info::getClockFrequency())/1000000)<65536L);
+      long t = ((uint64_t)time*Info::getClockFrequency())/1000000;
+
+      assert((long)(uint32_t)t == t);
+      assert(t != 0);
 
       // Calculate period
-      return ((uint64_t)time*Info::getClockFrequency())/1000000;
+      return (uint32_t)t;
    }
    /**
     * Converts ticks to time in microseconds
@@ -325,10 +141,12 @@ public:
     * @note Assumes prescale has been chosen as a appropriate value. No range checking.
     */
    static uint32_t convertTicksToMicroseconds(int time) {
-      assert((((uint64_t)time*1000000)/Info::getClockFrequency())<65536L);
+      long t = ((uint64_t)time*1000000)/Info::getClockFrequency();
 
-      // Calculate period
-      return ((uint64_t)time*1000000)/Info::getClockFrequency();
+      assert((long)(uint32_t)t == t);
+      assert(t != 0);
+
+      return t;
    }
 
 public:
@@ -346,19 +164,42 @@ public:
       // Debug mode
       tmr->CONF     = FTM_CONF_BDMMODE(2);
 
+      // Clear s register changes have immediate effect
+      tmr->SC = 0;
+
       // Common registers
       tmr->CNTIN    = 0;
       tmr->CNT      = 0;
       tmr->MOD      = (uint32_t)-1;
 
-      // Left aligned PWM without CPWMS selected
-      tmr->SC       = Info::SC;
+      tmr->SC       =
+         FTM_SC_CPWMS(0)| // Left-Aligned
+         FTM_SC_CLKS(1)|  // Clock source = system
+         FTM_SC_TOIE(0)|  // Timer Overflow Interrupt disabled
+         FTM_SC_PS(0);    // Prescale = /1
 
-      // Use Dual Edge on BKGD in
-      tmr->COMBINE |= FTM_COMBINE_DECAPEN0_MASK<<(bkgdInChannel*4);
+      tmr->OUTINIT =
+            (0<<bkgdEnChannel)|  // Initialise low (disable buffer)
+            (1<<bkgdOutChannel); // Initialise high
 
       Reset::initialise();
-      Bkgd::initialise();
+
+      disablePins();
+      tmr->CONTROLS[bkgdEnChannel].CnSC  = USBDM::ftm_outputCompareClear;
+      tmr->CONTROLS[bkgdOutChannel].CnSC = USBDM::ftm_outputCompareSet;
+
+      // Switch pins to FTM
+      Info::initPCRs(PORT_PCR_DSE_MASK|PORT_PCR_PE_MASK); // DS+PDN
+   }
+
+   static void disablePins() {
+      tmr->SWOCTRL =
+            (0<<(bkgdEnChannel+8)) |(1<<bkgdEnChannel)|  // Force low (disable buffer)
+            (1<<(bkgdOutChannel+8))|(1<<bkgdOutChannel); // Force high
+   }
+
+   static void enablePins() {
+      tmr->SWOCTRL = 0;
    }
 
    /**
@@ -366,37 +207,38 @@ public:
     *
     * @param [out] syncLength Sync length in timer ticks
     *
-    * @return Indicates success or failure.
+    * @return Error code, BDM_RC_OK indicates success
     */
-   static bool sync(uint16_t &syncLength) {
+   static USBDM_ErrorCode sync(uint16_t &syncLength) {
 
       /* SYNC pulse width */
       const uint16_t syncPulseWidthInTicks = convertMicrosecondsToTicks(SYNC_WIDTH);
 
-      /* SYNC timeout - how long to wait for sync pulse to complete */
-      const uint16_t syncTimeoutInTicks = convertMicrosecondsToTicks(SYNC_TIMEOUT);
+      static_assert((bkgdInChannel&1)==0, "BKGD Channel must be even");
 
-      Bkgd::highZ();
-
-      // Switch control to FTM
-      BkgdEnPcr::setPCR();
-      BkgdOutPcr::setPCR();
-      BkgdInPcr::setPCR();
-
-      // Clear any flags
-      (void)tmr->CONTROLS[bkgdInChannel].CnSC;
-      (void)tmr->CONTROLS[bkgdInChannel+1].CnSC;
+      // Use Dual Edge on BKGD in
+      tmr->COMBINE |= FTM_COMBINE_DECAPEN0_MASK<<(bkgdInChannel*4);
 
       // Enable dual capture on bkgdInChannel, bkgdInChannel+1
       tmr->CONTROLS[bkgdInChannel].CnSC    = USBDM::ftm_dualEdgeCaptureOneShotFallingEdge;
       tmr->CONTROLS[bkgdInChannel+1].CnSC  = USBDM::ftm_inputCaptureRisingEdge;
 
-      // Drive BKGD low (o-low, en=high)
+      // Set up to drive BKGD low (o-low, en=high)
       tmr->CONTROLS[bkgdOutChannel].CnSC   = USBDM::ftm_outputCompareClear;
       tmr->CONTROLS[bkgdEnChannel].CnSC    = USBDM::ftm_outputCompareSet;
-      uint16_t eventTime = tmr->CNT+20;
+
+      // Schedule event in the near future
+      // This must allow enough time to complete configuration before events
+      uint16_t eventTime = tmr->CNT+100;
       tmr->CONTROLS[bkgdOutChannel].CnV    = eventTime;
       tmr->CONTROLS[bkgdEnChannel].CnV     = eventTime;
+
+      // Clear channel flags
+      tmr->STATUS &= ~((1<<bkgdInChannel)|(1<<(bkgdInChannel+1))|(1<<bkgdOutChannel)|(1<<bkgdEnChannel));
+
+      // Release force pin control
+      enablePins();
+
       // Wait for event
       while ((tmr->CONTROLS[bkgdOutChannel].CnSC&FTM_CnSC_CHF_MASK) == 0) {
          __asm__("nop");
@@ -410,10 +252,13 @@ public:
       tmr->CONTROLS[bkgdEnChannel].CnSC    = USBDM::ftm_outputCompareClear;
       eventTime += syncPulseWidthInTicks;
       tmr->CONTROLS[bkgdOutChannel].CnV    = eventTime;
-      tmr->CONTROLS[bkgdEnChannel].CnV     = eventTime+SPEEDUP_PULSE_TIME;
+      tmr->CONTROLS[bkgdEnChannel].CnV     = eventTime+SPEEDUP_PULSE_WIDTH_IN_TICKS;
 
+      static auto pollBkgdIn2Timer = [] {
+            return ((tmr->CONTROLS[bkgdInChannel+1].CnSC & FTM_CnSC_CHF_MASK) != 0);
+      };
       // Wait for dual-edge & capture
-      bool success = USBDM::waitUS(syncTimeoutInTicks, pollBkgdIn2Timer);
+      bool success = USBDM::waitUS(SYNC_TIMEOUT, pollBkgdIn2Timer);
 
       // Clear dual-edge (in case timeout)
       tmr->COMBINE &= ~(FTM_COMBINE_DECAP0_MASK<<(bkgdInChannel*4));
@@ -421,23 +266,162 @@ public:
       uint16_t rv1 = tmr->CONTROLS[bkgdInChannel].CnV;
       uint16_t rv2 = tmr->CONTROLS[bkgdInChannel+1].CnV;
 
+      disablePins();
+
       if (success) {
-         targetSyncWidth   = (uint16_t)(rv2-rv1);
-
-         zeroBitTime       = ((targetSyncWidth*4)+64)/128;     // Ticks (round)
-         oneBitTime        = ((targetSyncWidth*13)+127)/128;   // Ticks (round up)
-         minPeriod         = ((targetSyncWidth*16)+127)/128;   // Ticks (round up)
-         zeroRecoveryTime  = max(TMR_SETUP_TIME, minPeriod-zeroBitTime);   // Ticks
-         oneRecoveryTime   = max(TMR_SETUP_TIME, minPeriod-oneBitTime);    // Ticks
-
-         syncLength       = targetSyncWidth;
-         return true;
+         syncLength = targetSyncWidth;
+         return BDM_RC_OK;
       }
-      else {
-         return false;
-      }
-
+      return BDM_RC_SYNC_TIMEOUT;
    }
+
+   static void setSyncLength(uint16_t syncLength) {
+      constexpr int SYNC_RESPONSE_CYCLES = 128;    // Number of target clock cycles in the SYNC response
+      constexpr int HOST_1_CYCLES_LOW    = 4;      // Number of target clock cycles low for a 1
+      constexpr int HOST_0_CYCLES_LOW    = 13;     // Number of target clock cycles low for a 0
+      constexpr int HOST_MIN_CYCLES      = 16;     // Minimum number of target clock cycles for entire transfer
+      constexpr int HOST_SAMPLE_CYCLE    = 10;     // Number of target clock cycles for sample
+
+      targetSyncWidth   = syncLength;
+
+      // Calculate communication parameters
+      zeroBitTime       = ((syncLength*HOST_1_CYCLES_LOW)+(SYNC_RESPONSE_CYCLES/2))/SYNC_RESPONSE_CYCLES;  // Ticks (round)
+      oneBitTime        = ((syncLength*HOST_0_CYCLES_LOW)+(SYNC_RESPONSE_CYCLES-1))/SYNC_RESPONSE_CYCLES;  // Ticks (round up)
+      sampleBitTime     = ((syncLength*HOST_SAMPLE_CYCLE)+(SYNC_RESPONSE_CYCLES/2))/SYNC_RESPONSE_CYCLES;  // Ticks (round)
+      minPeriod         = ((syncLength*HOST_MIN_CYCLES)+(SYNC_RESPONSE_CYCLES-1))/SYNC_RESPONSE_CYCLES;    // Ticks (round up)
+
+      zeroRecoveryTime  = max(TMR_SETUP_TIME, minPeriod-zeroBitTime);   // Ticks
+      oneRecoveryTime   = max(TMR_SETUP_TIME, minPeriod-oneBitTime);    // Ticks
+   }
+
+   static USBDM_ErrorCode rxDualEdgePulse(uint8_t *p) {
+
+      /** Time to set up Timer - This varies with optimisation! */
+      static constexpr uint TMR_SETUP_TIME = 40;
+
+      Reset::low();
+
+      tmr->SC = 0;
+
+      enablePins();
+      tmr->COMBINE |=
+            FTM_COMBINE_COMBINE0_MASK<<(bkgdEnChannel*4)|
+            FTM_COMBINE_COMBINE0_MASK<<(bkgdOutChannel*4);
+
+      // Positive pulse for buffer enable
+      tmr->CONTROLS[bkgdEnChannel].CnSC    = FTM_CnSC_ELS(2);
+      tmr->CONTROLS[bkgdEnChannel].CnV     = TMR_SETUP_TIME;
+      tmr->CONTROLS[bkgdEnChannel+1].CnV   = TMR_SETUP_TIME+zeroBitTime-SPEEDUP_PULSE_WIDTH_IN_TICKS;
+
+      // Negative pulse for BKGD out
+      tmr->CONTROLS[bkgdOutChannel].CnSC   = FTM_CnSC_ELS(1);
+      tmr->CONTROLS[bkgdOutChannel].CnV    = TMR_SETUP_TIME;
+      tmr->CONTROLS[bkgdOutChannel+1].CnV  = TMR_SETUP_TIME+zeroBitTime;
+
+      // Capture rising edge of BKGD in
+      tmr->CONTROLS[bkgdInChannel].CnSC    = USBDM::ftm_inputCaptureRisingEdge;
+
+      tmr->SC =
+            FTM_SC_CPWMS(0)| // Left-Aligned
+            FTM_SC_CLKS(1)|  // Clock source = system
+            FTM_SC_TOIE(0)|  // Timer Overflow Interrupt disabled
+            FTM_SC_PS(0);    // Prescale = /1
+
+      bool success;
+      for (int bitNum=0; bitNum<8; bitNum++) {
+         tmr->CNT = 0;
+
+         // Clear channel flags
+         tmr->STATUS &= ~(
+               (1<<bkgdEnChannel) |(1<<(bkgdEnChannel+1))|
+               (1<<bkgdOutChannel)|(1<<(bkgdOutChannel+1))|
+               (1<<bkgdInChannel));
+
+         // Wait until end of bit
+         do {
+            __asm("nop");
+         } while (tmr->CNT < 2*minPeriod);
+
+         // Should have captured a rising edge from target (or float?)
+         success = (tmr->CONTROLS[bkgdInChannel].CnSC & FTM_CnSC_CHF_MASK) != 0;
+
+         volatile uint16_t eventTime = tmr->CONTROLS[bkgdInChannel].CnV;
+         *p = (eventTime>sampleBitTime)?1:0;
+      }
+      disablePins();
+      Reset::high();
+      if (!success) {
+         return BDM_RC_BKGD_TIMEOUT;
+      }
+
+      return BDM_RC_OK;
+   }
+
+   static USBDM_ErrorCode txDualEdgePulse(uint8_t data) {
+
+      /** Time to set up Timer - This varies with optimisation! */
+      static constexpr uint TMR_SETUP_TIME = 40;
+
+      Reset::low();
+
+      tmr->SC = 0;
+      tmr->SYNCONF |= FTM_SYNCONF_SYNCMODE(1)|FTM_SYNCONF_SWWRBUF(1);
+
+      enablePins();
+      tmr->COMBINE |=
+            FTM_COMBINE_SYNCEN0_MASK<<(bkgdEnChannel*4)|
+            FTM_COMBINE_COMBINE0_MASK<<(bkgdEnChannel*4)|
+            FTM_COMBINE_SYNCEN0_MASK<<(bkgdOutChannel*4)|
+            FTM_COMBINE_COMBINE0_MASK<<(bkgdOutChannel*4);
+
+      // Positive pulse for buffer enable
+      tmr->CONTROLS[bkgdEnChannel].CnSC    = FTM_CnSC_ELS(2);
+      tmr->CONTROLS[bkgdEnChannel].CnV     = TMR_SETUP_TIME;
+      tmr->CONTROLS[bkgdEnChannel+1].CnV   = TMR_SETUP_TIME+zeroBitTime+SPEEDUP_PULSE_WIDTH_IN_TICKS;
+
+      // Negative pulse for BKGD out
+      tmr->CONTROLS[bkgdOutChannel].CnSC   = FTM_CnSC_ELS(1);
+      tmr->CONTROLS[bkgdOutChannel].CnV    = TMR_SETUP_TIME;
+      tmr->CONTROLS[bkgdOutChannel+1].CnV  = TMR_SETUP_TIME+zeroBitTime;
+
+      tmr->SC =
+            FTM_SC_CPWMS(0)| // Left-Aligned
+            FTM_SC_CLKS(1)|  // Clock source = system
+            FTM_SC_TOIE(0)|  // Timer Overflow Interrupt disabled
+            FTM_SC_PS(0);    // Prescale = /1
+
+      bool success;
+      for (int bitNum=0; bitNum<8; bitNum++) {
+         int width;
+         if (data&1) {
+            width = TMR_SETUP_TIME+oneBitTime;
+         }
+         else {
+            width = TMR_SETUP_TIME+zeroBitTime;
+         }
+         data >>= 1;
+         tmr->CNT = 0;
+         tmr->CONTROLS[bkgdOutChannel+1].CnV  = width;
+         tmr->CONTROLS[bkgdEnChannel+1].CnV   = width+SPEEDUP_PULSE_WIDTH_IN_TICKS;
+         tmr->SYNC     = FTM_SYNC_SWSYNC(1);
+
+         // Clear channel flags
+         tmr->STATUS &= ~(
+               (1<<bkgdEnChannel) |(1<<(bkgdEnChannel+1))|
+               (1<<bkgdOutChannel)|(1<<(bkgdOutChannel+1)));
+
+         // Wait until end of bit
+         do {
+            __asm("nop");
+         } while (tmr->CNT < 2*minPeriod);
+
+         __asm("nop");
+      }
+      disablePins();
+      Reset::high();
+      return BDM_RC_OK;
+   }
+
    /**
     * Transmit a 8-bit value
     *
@@ -445,10 +429,7 @@ public:
     */
    static void tx(uint32_t data) {
 
-      // Switch control to FTM
-      BkgdEnPcr::setPCR();
-      BkgdOutPcr::setPCR();
-      BkgdInPcr::setPCR();
+      enablePins();
 
       (void)tmr->CONTROLS[bkgdInChannel].CnSC;
       (void)tmr->CONTROLS[bkgdInChannel+1].CnSC;
@@ -488,6 +469,8 @@ public:
          }
       }
       Reset::high();
+
+      disablePins();
    }
    /**
      * Transmit a 8-bit value
@@ -499,9 +482,7 @@ public:
        Bkgd::highZ();
 
        // Switch control to FTM
-       BkgdEnPcr::setPCR();
-       BkgdOutPcr::setPCR();
-       BkgdInPcr::setPCR();
+       Info::initPCRs(PORT_PCR_DSE_MASK|PORT_PCR_PE_MASK); // DS+PUD
 
        (void)tmr->CONTROLS[bkgdInChannel].CnSC;
        (void)tmr->CONTROLS[bkgdInChannel+1].CnSC;
@@ -548,9 +529,7 @@ public:
       Bkgd::highZ();
 
       // Switch control to FTM
-      BkgdEnPcr::setPCR();
-      BkgdOutPcr::setPCR();
-      BkgdInPcr::setPCR();
+      Info::initPCRs(PORT_PCR_DSE_MASK|PORT_PCR_PE_MASK); // DS+PUD
 
       // Enable dual capture on bkgdInChannel, bkgdInChannel+1
       (void)tmr->CONTROLS[bkgdInChannel].CnSC;
@@ -576,7 +555,7 @@ public:
       tmr->CONTROLS[bkgdEnChannel].CnSC    = USBDM::ftm_outputCompareSet;
       now = tmr->CNT;
       tmr->CONTROLS[bkgdOutChannel].CnV    = now+lowTime;
-      tmr->CONTROLS[bkgdEnChannel].CnV     = now+lowTime+SPEEDUP_PULSE_TIME;
+      tmr->CONTROLS[bkgdEnChannel].CnV     = now+lowTime+SPEEDUP_PULSE_WIDTH_IN_TICKS;
 
       // Wait for dual-edge capture
       bool success = USBDM::waitUS(BIT_TIME_OUT, pollBkgdIn2Timer);
@@ -609,18 +588,6 @@ public:
          USBDM::waitUS(1);
          Bkgd::highZ();
          USBDM::waitUS(1);
-      }
-   }
-
-   /**
-    * Pulse RESET signal continuously LOW-3STATE
-    */
-   static void testReset() {
-      for(;;) {
-         Reset::low();
-         USBDM::waitUS(1000);
-         Reset::highZ();
-         USBDM::waitUS(5000);
       }
    }
 
@@ -660,6 +627,10 @@ uint BackgroundDebug_T<info, bkgdOutChannel,bkgdEnChannel, bkgdInChannel>::oneBi
 template <class info, uint8_t bkgdOutChannel, uint8_t bkgdEnChannel, uint8_t bkgdInChannel>
 uint BackgroundDebug_T<info, bkgdOutChannel,bkgdEnChannel, bkgdInChannel>::zeroBitTime;
 
+/** Calculated time for target '0' bit (Ticks) */
+template <class info, uint8_t bkgdOutChannel, uint8_t bkgdEnChannel, uint8_t bkgdInChannel>
+uint BackgroundDebug_T<info, bkgdOutChannel,bkgdEnChannel, bkgdInChannel>::sampleBitTime;
+
 /** Calculated time for target minimum bit period (Ticks) */
 template <class info, uint8_t bkgdOutChannel, uint8_t bkgdEnChannel, uint8_t bkgdInChannel>
 uint BackgroundDebug_T<info, bkgdOutChannel,bkgdEnChannel, bkgdInChannel>::minPeriod;
@@ -672,87 +643,11 @@ uint BackgroundDebug_T<info, bkgdOutChannel,bkgdEnChannel, bkgdInChannel>::oneRe
 template <class info, uint8_t bkgdOutChannel, uint8_t bkgdEnChannel, uint8_t bkgdInChannel>
 uint BackgroundDebug_T<info, bkgdOutChannel,bkgdEnChannel, bkgdInChannel>::zeroRecoveryTime;
 
-using BackgroundDebugInterface = BackgroundDebug_T<USBDM::Ftm0Info, 6, 2, 4>;
-
 /**
- * Determine connection speed using sync pulse
- *
- * @param [out] syncLength Sync length in timer ticks
- *
- * @return Indicates success or failure.
+ * bkgdOutChannel  D6(ch6)
+ * bkgdEnChannel   C3(ch2)
+ * bkgdInChannel   D4(ch4)
  */
-//   static void txByte(uint8_t byte) {
-//      uint16_t data[] = {convertMicrosecondsToTicks(10), convertMicrosecondsToTicks(15), convertMicrosecondsToTicks(20), convertMicrosecondsToTicks(30)};
-//      USBDM::DMAChannel::SingleTransferInfo info = {data, sizeof(data), &FTM0->CONTROLS[0].CnV, 0};
-//      using DMAChannel0 = USBDM::DMAChannel_T<USBDM::DmaInfo, 0, USBDM::DMA0_SLOT_FTM0_Ch_0+bkgdOutChannel>;
-//
-//      DMAChannel0::configure(&info);
-//      BkgdOutPcr::setPCR();
-//
-//      // Schedule falling edge event Now+20 ticks
-//      tmr->CONTROLS[bkgdOutChannel].CnSC = USBDM::ftm_outputCompareToggle|FTM_CnSC_DMA_MASK;
-//      tmr->CONTROLS[bkgdOutChannel].CnV  = tmr->CNT+20;
-//
-//      DMAChannel0::waitUntilComplete();
-//      __asm__("nop");
+using Bdm = BackgroundDebug_T<USBDM::Ftm0Info, 6, 2, 4>;
 
-//      // Enable BKGD pin so it can be driven low
-//      BkgdEnableGpio::low();
-//
-//      // 1st read to enable clear status
-//      (void)tmr->CONTROLS[bkgdChannel].CnSC;
-//
-//      // Schedule falling edge event Now+20 ticks
-//      tmr->CONTROLS[bkgdChannel].CnSC = ftm_outputCompareClear;
-//      tmr->CONTROLS[bkgdChannel].CnV  = tmr->CNT+20;
-//      // Wait for event
-//      while ((tmr->CONTROLS[bkgdChannel].CnSC & FTM_CnSC_CHF_MASK) == 0) {
-//      }
-//      BkgdEnableGpio::low();
-//   }
-
-//static void tryIt2() {
-//   constexpr uint base  = 100; //
-//   constexpr uint width = 18;  // 24=500ns, 18=375ns, 15 fails
-//   const struct {
-//      uint32_t CnSC;
-//      uint32_t CnV;
-//   } data[] = {
-//      {FTM_CnSC_CHIE_MASK|FTM_CnSC_DMA_MASK|USBDM::ftm_outputCompareClear, 10, },
-//      {FTM_CnSC_CHIE_MASK|FTM_CnSC_DMA_MASK|USBDM::ftm_outputCompareClear, (base), },
-//      {FTM_CnSC_CHIE_MASK|FTM_CnSC_DMA_MASK|USBDM::ftm_outputCompareSet,   (base+width), },
-//      {FTM_CnSC_CHIE_MASK|FTM_CnSC_DMA_MASK|USBDM::ftm_outputCompareClear, (base+width+width), },
-//      {FTM_CnSC_CHIE_MASK|FTM_CnSC_DMA_MASK|USBDM::ftm_outputCompareSet,   (base+width+width+2*width),},
-//      {0,                                                                  0, },
-//   };
-//   using DmaChannel = USBDM::DmaChannel_T<USBDM::DmaInfo, 0, USBDM::DMA0_SLOT_FTM0_Ch_0+bkgdOutChannel>;
-//
-//   Bkgd::high();
-//   BkgdOutPcr::setPCR();
-//
-//   static const USBDM::DmaChannel::MultipleTransferInfo info = {
-//      /* sourceAddress        */ data,
-//      /* destinationAddress   */ &tmr->CONTROLS[bkgdOutChannel],
-//      /* nBytes               */ DMA_NBYTES_MLOFFYES_DMLOE_MASK|
-//                                 DMA_NBYTES_MLOFFYES_MLOFF(-sizeof(data[0]))|
-//                                 DMA_NBYTES_MLOFFYES_NBYTES(sizeof(data[0])),
-//      /* attributes           */ DMA_ATTR_SMOD(0)|
-//                                 DMA_ATTR_SSIZE(DmaChannel::getAttrSize(4))|
-//                                 DMA_ATTR_DMOD(0)|
-//                                 DMA_ATTR_DSIZE(DmaChannel::getAttrSize(4)),
-//      /* sourceOffset         */ 4,
-//      /* destinationOffset    */ 4,
-//      /* numberOfTransactions */ sizeof(data)/sizeof(data[0]),
-//   };
-////      tmr->CONTROLS[bkgdOutChannel].CnSC = FTM_CnSC_CHIE_MASK|FTM_CnSC_DMA_MASK|USBDM::ftm_outputCompare;
-//   DmaChannel::configure(&info);
-//   Reset::low();
-//   tmr->CNT = 0;
-//   DmaChannel::enableRequests();
-//   DmaChannel::waitUntilComplete();
-//   DmaChannel::disableRequests();
-//   Reset::high();
-//   __asm__("nop");
-//}
-
-#endif /* PROJECT_HEADERS_BDMINTERFACE_H_ */
+#endif /* SOURCES_BDM_H_ */

@@ -177,6 +177,13 @@ uint32_t getSpeed();
 void initialise();
 
 /**
+ * Check status of SWDDIO signal
+ *
+ * @return Value on SWDIO pin
+ */
+bool readSwdDin();
+
+/**
  *  Switches interface to SWD and confirm connection to target
  *
  *  Reference ARM Debug Interface v5 Architecture Specification

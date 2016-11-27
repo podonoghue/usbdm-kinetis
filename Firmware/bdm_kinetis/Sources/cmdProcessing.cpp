@@ -12,24 +12,21 @@
 #include "configure.h"
 #include "delay.h"
 #include "bdmCommon.h"
-
+#include "swd.h"
 #include "usb.h"
 
-/**  Buffer for USB command in, result out */
+/** Buffer for USB command in, result out */
 uint8_t commandBuffer[MAX_COMMAND_SIZE+4];
 
-/**  Size of command return result */
+/** Size of command return result */
 int returnSize;
 
 /**
  *  Status of the BDM
- *
- *  see \ref CableStatus_t
  */
 CableStatus_t cable_status;
 
-/**
- *  Options for the BDM
+/**  Options for the BDM
  *
  *  see \ref BDM_Option_t
  */
@@ -443,9 +440,8 @@ uint16_t word;
 void getPinStatus(void) {
 uint16_t status = 0;
 
-#ifdef RESET_IS_LOW
-   status = RESET_IS_LOW()?PIN_RESET_LOW:PIN_RESET_HIGH;
-#endif
+   status  = Reset::isHigh()?PIN_RESET_LOW:PIN_RESET_HIGH;
+   status |= Swd::readSwdDin()?PIN_SWD_LOW:PIN_SWD_LOW;
 
    commandBuffer[1] = (uint8_t) (status>>8);
    commandBuffer[2] = (uint8_t) status;
@@ -571,8 +567,7 @@ USBDM_ErrorCode f_CMD_CONTROL_PINS(void) {
    case PIN_RESET_3STATE :
       Reset::highZ();
 #if (HW_CAPABILITY & CAP_RST_IN)
-      USBDM::waitMS(200);// WAIT_WITH_TIMEOUT_MS(200, (RESET_IS_HIGH()));
-      if (!Reset::read()) {
+      if (!USBDM::waitMS(200, Reset::read)) {
           return(BDM_RC_RESET_TIMEOUT_RISE);
       }
 #endif // (HW_CAPABILITY&CAP_RST_IN)

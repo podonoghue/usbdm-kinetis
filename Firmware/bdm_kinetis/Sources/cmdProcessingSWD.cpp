@@ -36,6 +36,7 @@
 #include "targetDefines.h"
 #include "cmdProcessingSWD.h"
 #include "swd.h"
+#include "bdmCommon.h"
 
 namespace Swd {
 
@@ -43,31 +44,34 @@ namespace Swd {
  *  SWD - Try to connect to the target
  *
  *  This will do the following:
+ *  - Check target Vdd
  *  - Switch the interface to SWD mode
  *  - Read IDCODE
  *  - Clear any sticky errors
  *
- *  @return
- *     == \ref BDM_RC_OK => success        \n
- *     != \ref BDM_RC_OK => error
+ *  @return BDM_RC_OK => success, error otherwise
  */
 USBDM_ErrorCode f_CMD_CONNECT(void) {
-   USBDM_ErrorCode rc = Swd::connect();
-   //   if (rc == BDM_RC_OK) {
-   //      rc = Swd::powerUp();
-   //   }
-   (void)Swd::clearStickyBits();
+
+   USBDM_ErrorCode rc = bdm_checkTargetVdd();
+   if (rc != BDM_RC_OK) {
+      return rc;
+   }
+   rc = Swd::connect();
+   if (rc != BDM_RC_OK) {
+      return rc;
+   }
+   rc = Swd::clearStickyBits();
    return rc;
 }
+
 /*  Set communication speed in kHz
  *
  *  @note
  *   commandBuffer\n
  *    - [2..3]  =>  speed in kHz
  *
- *  @return
- *     == \ref BDM_RC_OK => success \n
- *     != \ref BDM_RC_OK => error
+ *  @return BDM_RC_OK => success, error otherwise
  */
 USBDM_ErrorCode f_CMD_SET_SPEED(void) {
    uint16_t freq = (commandBuffer[2]<<8)|commandBuffer[3]; // Get the new speed
@@ -80,9 +84,7 @@ USBDM_ErrorCode f_CMD_SET_SPEED(void) {
  *   commandBuffer\n
  *    - [1..2]  =>  speed in kHz
  *
- *  @return
- *     == \ref BDM_RC_OK => success \n
- *     != \ref BDM_RC_OK => error
+ *  @return BDM_RC_OK => success, error otherwise
  */
 USBDM_ErrorCode f_CMD_GET_SPEED(void) {
    uint32_t freq = (uint32_t)round(Swd::getSpeed()/1000.0);
@@ -100,8 +102,7 @@ USBDM_ErrorCode f_CMD_GET_SPEED(void) {
  *    - [2..3]  =>  3-bit register number [MSB ignored]
  *    - [4..7]  =>  32-bit register value in BIG-ENDIAN order
  *
- *  @return
- *   == \ref BDM_RC_OK => success
+ *  @return BDM_RC_OK => success, error otherwise
  *
  *  @note Action depends on register (some responses are pipelined) \n
  *    SWD_WR_DP_ABORT   - Write value to ABORT register (accepted) \n
@@ -123,8 +124,7 @@ USBDM_ErrorCode f_CMD_WRITE_DREG(void) {
  *   commandBuffer\n
  *    - [2..3]  =>  3-bit register number [MSB ignored]
  *
- *  @return
- *   == \ref BDM_RC_OK => success         \n
+ *  @return BDM_RC_OK => success          \n
  *                                        \n
  *   commandBuffer                        \n
  *    - [1..4]  =>  32-bit register value in BIG-ENDIAN order
@@ -155,8 +155,7 @@ USBDM_ErrorCode f_CMD_READ_DREG(void) {
  *
  *    - [4..7]  =>  32-bit register value in BIG-ENDIAN order
  *
- *  @return
- *   == \ref BDM_RC_OK => success
+ *  @return BDM_RC_OK => success, error otherwise
  *
  *  @note - Access is completed before return
  */
@@ -176,8 +175,7 @@ USBDM_ErrorCode f_CMD_WRITE_CREG(void) {
  *
  *    - [1..4]  =>  32-bit register value in BIG-ENDIAN order
  *
- *  @return
- *   == \ref BDM_RC_OK => success
+ *  @return BDM_RC_OK => success, error otherwise
  *
  *  @note - Access is completed before return
  */
@@ -197,9 +195,7 @@ USBDM_ErrorCode f_CMD_READ_CREG(void) {
  *    - [4..7]  =>  Memory address in BIG-ENDIAN order
  *    - [8..N]  =>  Data to write
  *
- *  @return \n
- *   == \ref BDM_RC_OK => success         \n
- *   != \ref BDM_RC_OK => various errors
+ *  @return BDM_RC_OK => success, error otherwise
  */
 USBDM_ErrorCode f_CMD_WRITE_MEM(void) {
    return Swd::writeMemory(commandBuffer[2], commandBuffer[3], Swd::pack32BE(commandBuffer+4), commandBuffer+8);
@@ -214,8 +210,7 @@ USBDM_ErrorCode f_CMD_WRITE_MEM(void) {
  *    - [4..7]  =>  Memory address in BIG-ENDIAN order
  *
  *  @return
- *   == \ref BDM_RC_OK => success         \n
- *   != \ref BDM_RC_OK => various errors  \n
+ *  BDM_RC_OK => success, error otherwise \n
  *                                        \n
  *   commandBuffer                        \n
  *    - [1..N]  =>  Data read
@@ -230,9 +225,7 @@ USBDM_ErrorCode f_CMD_READ_MEM(void) {
    return rc;
 }
 
-
-
-// Maps register index into magic number for ARM device register number
+/** Maps register index into magic number for ARM device register */
 static const uint8_t regIndexMap[] = {
       ARM_RegR0, ARM_RegR1, ARM_RegR2, ARM_RegR3, ARM_RegR4, ARM_RegR5, ARM_RegR6, ARM_RegR7,
       ARM_RegR8, ARM_RegR9, ARM_RegR10, ARM_RegR11, ARM_RegR12, ARM_RegSP, ARM_RegLR, ARM_RegPC,
@@ -247,6 +240,7 @@ static const uint8_t regIndexMap[] = {
       ARM_RegFPS0+0x18, ARM_RegFPS0+0x19, ARM_RegFPS0+0x1A, ARM_RegFPS0+0x1B,
       ARM_RegFPS0+0x1C, ARM_RegFPS0+0x1D, ARM_RegFPS0+0x1E, ARM_RegFPS0+0x1F,
 };
+
 /**  Read all core registers
  *
  *  @note
@@ -255,33 +249,31 @@ static const uint8_t regIndexMap[] = {
  *    - [3]  =>  register index to start at
  *    - [4]  =>  register index to end at
  *
- *  @return
- *   == \ref BDM_RC_OK => success         \n
- *                                        \n
- *   commandBuffer                        \n
+ *  @return BDM_RC_OK => success, error otherwise \n
+ *                                                \n
+ *   commandBuffer                                \n
  *    - [1..N]  =>  32-bit register values
  */
 USBDM_ErrorCode f_CMD_READ_ALL_CORE_REGS(void) {
-   USBDM_ErrorCode  rc;
-   uint8_t  regIndex    = commandBuffer[3];
-   uint8_t  endRegister = commandBuffer[4];
-   uint8_t* outputPtr   = commandBuffer+1;
-   uint8_t  command[4];
-   returnSize = 1;
    if (commandBuffer[2] != 0) {
       // Check flag is zero
       return BDM_RC_ILLEGAL_PARAMS;
    }
+   uint8_t  regIndex    = commandBuffer[3];
+   uint8_t  endRegister = commandBuffer[4];
+   uint8_t* outputPtr   = commandBuffer+1;
+   returnSize = 1;
    while (regIndex<=endRegister) {
-      rc = Swd::readCoreRegister(regIndexMap[regIndex], command);
+      uint8_t regValue[4];
+      USBDM_ErrorCode rc = Swd::readCoreRegister(regIndexMap[regIndex], regValue);
       if (rc != BDM_RC_OK) {
          return rc;
       }
-      // Write to buffer (target format - Little-endian ARM)
-      *outputPtr++ = command[3];
-      *outputPtr++ = command[2];
-      *outputPtr++ = command[1];
-      *outputPtr++ = command[0];
+      // Write to buffer (target format - LITTLE-ENDIAN ARM)
+      *outputPtr++ = regValue[3];
+      *outputPtr++ = regValue[2];
+      *outputPtr++ = regValue[1];
+      *outputPtr++ = regValue[0];
       returnSize += 4;
       regIndex++;
    }
@@ -294,10 +286,9 @@ USBDM_ErrorCode f_CMD_READ_ALL_CORE_REGS(void) {
  *   commandBuffer\n
  *    - [2..3]  =>  16-bit register number [MSB ignored]
  *
- *  @return
- *   == \ref BDM_RC_OK => success         \n
- *                                        \n
- *   commandBuffer                        \n
+ *  @return BDM_RC_OK => success, error otherwise \n
+ *                                                \n
+ *   commandBuffer                                \n
  *    - [1..4]  =>  32-bit register value
  */
 USBDM_ErrorCode f_CMD_READ_REG(void) {
@@ -312,8 +303,7 @@ USBDM_ErrorCode f_CMD_READ_REG(void) {
  *    - [2..3]  =>  16-bit register number [MSB ignored]
  *    - [4..7]  =>  32-bit register value
  *
- *  @return
- *   == \ref BDM_RC_OK => success
+ *  @return BDM_RC_OK => success, error otherwise
  */
 USBDM_ErrorCode f_CMD_WRITE_REG(void) {
    return Swd::writeCoreReg(commandBuffer[3], commandBuffer+4);
@@ -321,9 +311,7 @@ USBDM_ErrorCode f_CMD_WRITE_REG(void) {
 
 /**  ARM-SWD -  Step over 1 instruction
  *
- *  @return
- *     == \ref BDM_RC_OK => success       \n
- *     != \ref BDM_RC_OK => error         \n
+ *  @return BDM_RC_OK => success, error otherwise
  */
 USBDM_ErrorCode f_CMD_TARGET_STEP(void) {
    // Preserve DHCSR_C_MASKINTS value
@@ -332,9 +320,7 @@ USBDM_ErrorCode f_CMD_TARGET_STEP(void) {
 
 /**  ARM-SWD -  Start code execution
  *
- *  @return
- *     == \ref BDM_RC_OK => success       \n
- *     != \ref BDM_RC_OK => error         \n
+ *  @return BDM_RC_OK => success, error otherwise
  */
 USBDM_ErrorCode f_CMD_TARGET_GO(void) {
    return modifyDHCSR(DHCSR_C_MASKINTS, DHCSR_C_DEBUGEN);
@@ -342,13 +328,10 @@ USBDM_ErrorCode f_CMD_TARGET_GO(void) {
 
 /* ARM-SWD -  Stop the target
  *
- *  @return
- *     == \ref BDM_RC_OK => success       \n
- *     != \ref BDM_RC_OK => error         \n
+ *  @return BDM_RC_OK => success, error otherwise
  */
 USBDM_ErrorCode f_CMD_TARGET_HALT(void) {
    return modifyDHCSR(DHCSR_C_MASKINTS, DHCSR_C_HALT|DHCSR_C_DEBUGEN);
 }
-
 
 }; // End namespace Swd

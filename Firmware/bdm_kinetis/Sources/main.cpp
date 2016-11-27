@@ -18,6 +18,7 @@
 #include "commands.h"
 #include "cmdProcessingSWD.h"
 #include "usb.h"
+#include "bdm.h"
 
 /** Check error code from USBDM API function
  *
@@ -224,10 +225,44 @@ void testReset() {
 //char logIndex = 0;
 
 int main() {
-
    // Need to initialise for debug UART0
    initialise();
 
+   Bdm::initialise();
+
+   PRINTF("Target Vdd = %f\n", TargetVdd::readVoltage());
+
+   //   uint16_t syncLength = 0;
+//   USBDM_ErrorCode rc;
+//   do {
+//      rc = Bdm::sync(syncLength);
+//      if (rc == BDM_RC_OK) {
+//         PRINTF("Sync = %d\n", syncLength);
+//         Bdm::setSyncLength(syncLength);
+//      }
+//      else {
+//         PRINTF("Sync failed\n");
+//      }
+//   } while (rc != BDM_RC_OK);
+
+   Bdm::setSyncLength(660);
+
+   for(;;) {
+//      USBDM_ErrorCode rc = BDM_RC_OK;
+////      rc = Bdm::sync(syncLength);
+//      if (rc != BDM_RC_OK) {
+//         PRINTF("Sync Failed\n");
+//      }
+//      else {
+////         PRINTF("Sync = %d\n", syncLength);
+//         Bdm::tx(0xA5);
+//      }
+      uint8_t res[10];
+      Bdm::txDualEdgePulse(0xA5);
+//      Bdm::rxDualEdgePulse(res);
+//      USBDM::waitMS(100);
+//      __asm__("nop");
+   }
    PRINTF("SystemBusClock  = %ld\n", SystemBusClock);
    PRINTF("SystemCoreClock = %ld\n", SystemCoreClock);
 
