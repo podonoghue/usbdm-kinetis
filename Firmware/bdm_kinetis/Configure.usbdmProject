@@ -44,10 +44,10 @@
    <item key="$signal$PTC1_muxSetting"                     value="mux1" />
    <item key="$signal$PTC1_pcrSetting"                     value="3" />
    <item key="$signal$PTC2_descriptionSetting"             value="BKGD/SWD_DIR" />
-   <item key="$signal$PTC2_muxSetting"                     value="mux1" />
+   <item key="$signal$PTC2_muxSetting"                     value="mux2" />
    <item key="$signal$PTC2_pcrSetting"                     value="3" />
    <item key="$signal$PTC3_descriptionSetting"             value="BKGD/SWD_DIR" />
-   <item key="$signal$PTC3_muxSetting"                     value="mux2" />
+   <item key="$signal$PTC3_muxSetting"                     value="mux4" />
    <item key="$signal$PTC3_pcrSetting"                     value="3" />
    <item key="$signal$PTC4_descriptionSetting"             value="SWD_EN" />
    <item key="$signal$PTC4_pcrSetting"                     value="3" />
