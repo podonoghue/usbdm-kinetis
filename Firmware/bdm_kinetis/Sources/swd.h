@@ -92,7 +92,8 @@ static constexpr uint32_t  DHCSR_C_DEBUGEN         = (1<<0);
  *
  * @return Value
  */
-static inline constexpr uint32_t pack32LE(const uint8_t data[4]) {
+static inline
+constexpr uint32_t pack32LE(const uint8_t data[4]) {
    return data[0]+(data[1]<<8)+(data[2]<<16)+(data[3]<<24);
 }
 
@@ -144,7 +145,8 @@ void unpack32LE(uint32_t data, uint8_t ar[4]) {
  *
  * @return Value
  */
-static inline void unpack32BE(uint32_t data, uint8_t ar[4]) {
+static inline
+void unpack32BE(uint32_t data, uint8_t ar[4]) {
    ar[0] = data>>24;
    ar[1] = data>>16;
    ar[2] = data>>8;

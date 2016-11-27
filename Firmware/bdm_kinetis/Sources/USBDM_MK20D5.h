@@ -12,8 +12,8 @@
 #ifndef _CONFIGURE_H_
 #define _CONFIGURE_H_
 
+#include "transceiver.h"
 #include "utilities.h"
-#include "bdmInterface.h"
 
 /**
  * GPIO for Activity LED

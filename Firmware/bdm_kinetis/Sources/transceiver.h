@@ -13,8 +13,8 @@
 #include "delay.h"
 
 /**
- * Represents a bidirectional signal e.g. 74LVC1T45 buffer
- * Assumes 2 signals: input/output & direction (0=>in, 1=>out)
+ * Represents a bidirectional signal using a buffer e.g. 74LVC1T45 buffer
+ * Assumes 2 GPIOs: input/output & direction (0=>in, 1=>out)
  * It is desirable that there be a 1K series resistor on Data as
  * there may be a brief conflict during direction switch-over
  *

@@ -45,6 +45,7 @@ void check(USBDM_ErrorCode rc , const char *file = NULL, unsigned lineNum = 0 ) 
  */
 #define CHECK(x) check((x), __FILE__, __LINE__)
 
+#if 0
 USBDM_ErrorCode recover() {
    Swd::initialise();
    USBDM_ErrorCode rc = Swd::lineReset();
@@ -91,15 +92,6 @@ void testMassErase() {
    else {
       PRINTF("OK massErase()\n");
    }
-}
-
-void initialise() {
-   Reset::initialise();
-   UsbLed::initialise();
-   PowerLed::initialise();
-   TargetVdd::initialise();
-   Swd_enable::setOutput();
-   Swd_enable::high();
 }
 
 uint8_t buffer[20] = {
@@ -218,6 +210,16 @@ void testReset() {
       Reset::highZ();
       USBDM::waitMS(100);
    }
+}
+#endif
+
+void initialise() {
+   Reset::initialise();
+   UsbLed::initialise();
+   PowerLed::initialise();
+   TargetVdd::initialise();
+   Swd_enable::setOutput();
+   Swd_enable::high();
 }
 
 //char debugBuffer[200] = {0};

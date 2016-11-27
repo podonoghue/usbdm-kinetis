@@ -540,61 +540,6 @@ void bdm_suspend(void){
 //!  Turns off the BDM interface
 //!
 void bdm_interfaceOff( void ) {
-#if (HW_CAPABILITY&CAP_CFVx)
-#ifndef SPI1C1
-#define SPI1C1 SPIC1
-#endif
-   SPI1C1 = 0; // Disable SPI1
-#endif
-#if (HW_CAPABILITY&CAP_FLASH)
-   (void)bdmSetVpp(BDM_TARGET_VPP_OFF);
-#endif
-#ifdef TA_3STATE
-   TA_3STATE();
-#endif
-#ifdef JTAG_DRV_DISABLE
-   JTAG_DRV_DISABLE();
-#endif
-#ifdef BKPT_DISABLE
-   BKPT_DISABLE();
-#endif
-#ifdef RESET_IN_FINI
-   RESET_IN_FINI();
-#endif
-#ifdef RESET_OUT_FINI
-   RESET_OUT_FINI();
-#endif
-#ifdef CF_DRV_DISABLE
-   CF_DRV_DISABLE();
-#endif
-#ifdef TCLK_DISABLE
-   TCLK_DISABLE();
-#endif   
-#ifdef DSCLK_DRV_DISABLE
-   DSCLK_DRV_DISABLE();
-#endif
-#ifdef TRST_3STATE
-   TRST_3STATE();
-#endif
-#ifdef TDI_DISABLE
-   TDI_DISABLE();
-#endif
-#ifdef BDM_3STATE
-   BDM_3STATE();
-#endif
-#ifdef TCLK_CTL_DISABLE
-   TCLK_CTL_DISABLE();
-#endif
-#ifdef SWD_OUT_FINI
-   SWD_OUT_FINI();
-#endif
-#ifdef SWCLK_OUT_FINI
-   SWCLK_OUT_FINI();
-#endif
-#ifdef SWD_IN_FINI
-   SWD_IN_FINI();
-#endif
-//   SPIxC1 = SPIxC1_OFF; // Disable SPI (MOSI/MISO pins now GPIO)
 }
 
 //!  Turns off the BDM interface
