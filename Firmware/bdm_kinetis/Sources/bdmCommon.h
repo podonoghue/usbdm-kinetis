@@ -25,7 +25,7 @@
 // General Time intervals
 #define VDD_RISE_TIMEus    2000U // us - minimum time to allow for controlled target Vdd rise
 #define BKGD_WAITus        2000U // us - time to hold BKGD pin low after reset pin rise for special modes (allowance made for slow Reset rise)
-#define RESET_SETTLEms        3U // ms - time to wait for signals to settle in us, this should certainly be longer than the soft reset time
+#define RESET_SETTLEms        3U // ms - time to wait for signals to settle in us, this should be longer than the soft reset time
 #define RESET_RECOVERYms     10U // ms - how long to wait after reset before new commands are allowed
 
 //! Initialises the timers, input captures and interrupts

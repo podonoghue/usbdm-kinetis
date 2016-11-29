@@ -34,7 +34,7 @@ void check(USBDM_ErrorCode rc , const char *file = NULL, unsigned lineNum = 0 ) 
    (void)file;
    (void)lineNum;
    if (rc == BDM_RC_OK) {
-//      PRINTF("OK,     [%s:#%4d]\n", file, lineNum);
+      //      PRINTF("OK,     [%s:#%4d]\n", file, lineNum);
       return;
    }
    PRINTF("Failed, [%s:#%4d] Reason= %d\n", file, lineNum, rc);
@@ -220,8 +220,55 @@ void initialise() {
    TargetVdd::initialise();
    Swd_enable::setOutput();
    Swd_enable::high();
+
+   // Turn off important things
+#if (HW_CAPABILITY&CAP_VDDCONTROL)
+   (void)Vdd::initialise();
+#endif
 }
 
+void testing () {
+   // Need to initialise for debug UART0
+   initialise();
+
+   PRINTF("SystemBusClock  = %ld\n", SystemBusClock);
+   PRINTF("SystemCoreClock = %ld\n", SystemCoreClock);
+
+   PRINTF("Target Vdd = %f\n", TargetVdd::readVoltage());
+
+   Bdm::initialise();
+
+   //   uint16_t syncLength = 0;
+   //   USBDM_ErrorCode rc;
+   //   do {
+   //      rc = Bdm::sync(syncLength);
+   //      if (rc == BDM_RC_OK) {
+   //         PRINTF("Sync = %d\n", syncLength);
+   //         Bdm::setSyncLength(syncLength);
+   //      }
+   //      else {
+   //         PRINTF("Sync failed\n");
+   //      }
+   //   } while (rc != BDM_RC_OK);
+
+   Bdm::setSyncLength(660);
+
+   for(;;) {
+      //      USBDM_ErrorCode rc = BDM_RC_OK;
+      ////      rc = Bdm::sync(syncLength);
+      //      if (rc != BDM_RC_OK) {
+      //         PRINTF("Sync Failed\n");
+      //      }
+      //      else {
+      ////         PRINTF("Sync = %d\n", syncLength);
+      //         Bdm::tx(0xA5);
+      //      }
+      Bdm::cmd_0_0(0x23);
+      //      USBDM::waitMS(100);
+      //      __asm__("nop");
+   }
+
+}
 //char debugBuffer[200] = {0};
 //char logBuffer[128] = {0};
 //char logIndex = 0;
@@ -230,41 +277,6 @@ int main() {
    // Need to initialise for debug UART0
    initialise();
 
-   Bdm::initialise();
-
-   PRINTF("Target Vdd = %f\n", TargetVdd::readVoltage());
-
-   //   uint16_t syncLength = 0;
-//   USBDM_ErrorCode rc;
-//   do {
-//      rc = Bdm::sync(syncLength);
-//      if (rc == BDM_RC_OK) {
-//         PRINTF("Sync = %d\n", syncLength);
-//         Bdm::setSyncLength(syncLength);
-//      }
-//      else {
-//         PRINTF("Sync failed\n");
-//      }
-//   } while (rc != BDM_RC_OK);
-
-   Bdm::setSyncLength(660);
-
-   for(;;) {
-//      USBDM_ErrorCode rc = BDM_RC_OK;
-////      rc = Bdm::sync(syncLength);
-//      if (rc != BDM_RC_OK) {
-//         PRINTF("Sync Failed\n");
-//      }
-//      else {
-////         PRINTF("Sync = %d\n", syncLength);
-//         Bdm::tx(0xA5);
-//      }
-      uint8_t res[10];
-      Bdm::txDualEdgePulse(0xA5);
-//      Bdm::rxDualEdgePulse(res);
-//      USBDM::waitMS(100);
-//      __asm__("nop");
-   }
    PRINTF("SystemBusClock  = %ld\n", SystemBusClock);
    PRINTF("SystemCoreClock = %ld\n", SystemCoreClock);
 
@@ -272,20 +284,6 @@ int main() {
 
    USBDM::UsbImplementation::initialise();
 
-//   Queue<100> q;
-//
-//   for (int i=0; i<75; i++) {
-//      q.enQueue(i);
-//   }
-//   for (int i=0; i<50; i++) {
-//      PRINTF("v = %d\n", q.deQueue());
-//   }
-//   for (int i=0; i<75; i++) {
-//      q.enQueue(i);
-//   }
-//   while (!q.isEmpty()) {
-//      PRINTF("v = %d\n", q.deQueue());
-//   }
    for(;;) {
       // Wait for USB connection
       while(!USBDM::UsbImplementation::isConfigured()) {
