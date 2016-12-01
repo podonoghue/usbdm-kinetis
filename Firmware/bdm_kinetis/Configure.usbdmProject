@@ -5,7 +5,7 @@
 -->
 
 <section name="USBDM">
-   <item key="$$DeviceInfo_Device_Variant"                 value="MK22DX128VLF5" />
+   <item key="$$DeviceInfo_Device_Variant"                 value="MK22DX256VLF5" />
    <item key="$$DeviceInfo_Target_Device"                  value="MK22DX256M5" />
    <item key="$$Hardware_Source_Filename"                  value="MK22D5.usbdmHardware" />
    <item key="$signal$ADC0_DM0_descriptionSetting"         value="N/C" />

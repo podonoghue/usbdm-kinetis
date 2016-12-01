@@ -1017,12 +1017,12 @@ uint8_t rc;
  *
  *  @note ACK is expected
  */
-uint8_t cmd_1A1L_0(uint8_t cmd, uint32_t addr, uint32_t *value) {
+uint8_t cmd_1A1L_0(uint8_t cmd, uint32_t addr, uint32_t value) {
 uint8_t rc;
    txInit();
    tx8(cmd);
    tx24(addr);
-   tx32(*value);
+   tx32(value);
    rc = acknowledgeOrWait150();
    txComplete();
    return rc;

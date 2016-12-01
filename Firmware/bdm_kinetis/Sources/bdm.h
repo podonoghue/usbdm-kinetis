@@ -304,7 +304,7 @@ uint8_t cmd_1A1W_0(uint8_t cmd, uint32_t addr, uint16_t value);
  *
  *  @note ACK is expected
  */
-uint8_t cmd_1A1L_0(uint8_t cmd, uint32_t addr, uint32_t *value);
+uint8_t cmd_1A1L_0(uint8_t cmd, uint32_t addr, uint32_t value);
 
 /**
  *  Write cmd, 24-bit value & read byte
@@ -318,5 +318,7 @@ uint8_t cmd_1A1L_0(uint8_t cmd, uint32_t addr, uint32_t *value);
 uint8_t cmd_1A_1B(uint8_t cmd, uint32_t addr, uint8_t *result);
 
 }; // End namespace Bdm
+
+#include "BDMMacros.h"
 
 #endif /* SOURCES_H_ */
