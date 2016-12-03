@@ -55,7 +55,7 @@
 
 //=============================================================================================================================================
 /** Longest time needed for soft reset of the BDM interface (512 BDM cycles @ 400kHz = 1280us) */
-static constexpr int SOFT_RESET_us = 1280U;
+//static constexpr int SOFT_RESET_us = 1280U;
 
 ///=========================================================================
 // Target monitoring and status routines
