@@ -308,7 +308,7 @@ void Usb0::startCdcIn() {
    if ((epCdcDataIn.getState() == EPIdle) && (cdcOutByteCount>0)) {
       static_assert(epCdcDataIn.BUFFER_SIZE>sizeof(cdcOutBuff), "Buffer too small");
       memcpy(epCdcDataIn.getBuffer(), cdcOutBuff, cdcOutByteCount);
-      //TODO check this
+      //TODO Check if need ZLP
       epCdcDataIn.setNeedZLP();
       epCdcDataIn.startTxTransaction(EPDataIn, cdcOutByteCount);
       cdcOutByteCount = 0;

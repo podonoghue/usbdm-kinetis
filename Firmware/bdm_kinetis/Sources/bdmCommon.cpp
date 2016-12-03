@@ -54,19 +54,22 @@
 #include "bdm.h"
 
 //=============================================================================================================================================
-#define SOFT_RESETus       1280U //!< us - longest time needed for soft reset of the BDM interface (512 BDM cycles @ 400kHz = 1280us)
+/** Longest time needed for soft reset of the BDM interface (512 BDM cycles @ 400kHz = 1280us) */
+static constexpr int SOFT_RESET_us = 1280U;
 
 ///=========================================================================
 // Target monitoring and status routines
 //
 //=========================================================================
 
-//! Interrupt function servicing the IC interrupt from Vdd changes
-//! This routine has several purposes:
-//!  - Triggers POR into Debug mode on RS08/HCS08/CFV1 targets\n
-//!  - Turns off Target power on overload\n
-//!  - Updates Target power status\n
-//!
+/**
+ *  Interrupt function servicing the IC interrupt from Vdd changes
+ *  This routine has several purposes:
+ *   - Triggers POR into Debug mode on RS08/HCS08/CFV1 targets\n
+ *   - Turns off Target power on overload\n
+ *   - Updates Target power status\n
+ */
+//TODO bdm_targetVddSense()
 void bdm_targetVddSense(void) {
 
 //#if (HW_CAPABILITY&CAP_VDDSENSE)
@@ -106,8 +109,10 @@ void bdm_targetVddSense(void) {
 }
 
 #ifdef CLEAR_RESET_SENSE_FLAG
-//! Interrupt function servicing the IC interrupt from RESET_IN assertion
-//!
+/*
+ * Interrupt function servicing the IC interrupt from RESET_IN assertion
+ */
+//TODO bdm_resetSense()
 void bdm_resetSense(void) {
 //   CLEAR_RESET_SENSE_FLAG();             // Acknowledge RESET IC Event
    if (RESET_IS_LOW()) {
@@ -116,28 +121,6 @@ void bdm_resetSense(void) {
 }
 #endif
 
-//! Keyboard interrupt (KBI) handler
-//!
-//! Reset sensing on JS16CWJ(KBIP3), 56F8006Demo(KBIP2)
-//! Target Vdd sense on 56F8006Demo(KBIP5) - incomplete
-void kbiHandler(void) {
-#ifdef CLEAR_RESET_SENSE_FLAG
-	bdm_resetSense();
-#endif	
-#if TARGET_HARDWARE==H_USBDM_MC56F8006DEMO   
-//	bdm_targetVddSense();
-#endif   
-}
-
-//! Timer interrupt handling
-//!
-//! Reset sensing on CF_JMxxCLD, JMxxCLD, JMxxCLC
-//!
-void FTM0_IRQHandler(void) {
-#ifdef CLEAR_RESET_SENSE_FLAG
-	bdm_resetSense();
-#endif
-}
 
 //=========================================================================
 // Target power control
@@ -193,12 +176,12 @@ USBDM_ErrorCode checkTargetVdd(void) {
 
 #if (HW_CAPABILITY&CAP_VDDCONTROL)
 
-//! Turns on Target Vdd if enabled.
-//!
-//!  @return
-//!   \ref BDM_RC_OK                => Target Vdd confirmed on target \n
-//!   \ref BDM_RC_VDD_NOT_PRESENT   => Target Vdd not present
-//!
+/**
+ *  Turns on Target Vdd if enabled.
+ *
+ * @return BDM_RC_OK                => Target Vdd confirmed on target \n
+ * @return BDM_RC_VDD_NOT_PRESENT   => Target Vdd not present
+ */
 uint8_t setTargetVdd( void ) {
 uint8_t rc = BDM_RC_OK;
 
@@ -246,22 +229,23 @@ uint8_t rc = BDM_RC_OK;
 
 #endif // CAP_VDDCONTROL
 
-//!  Cycle power ON to target
-//!
-//! @param mode
-//!    - \ref RESET_SPECIAL => Power on in special mode,
-//!    - \ref RESET_NORMAL  => Power on in normal mode
-//!
-//!  BKGD/BKPT is held low when power is re-applied to start
-//!  target with BDM active if RESET_SPECIAL
-//!
-//!  @return
-//!   \ref BDM_RC_OK                	=> Target Vdd confirmed on target \n
-//!   \ref BDM_RC_VDD_WRONG_MODE    	=> Target Vdd not controlled by BDM interface \n
-//!   \ref BDM_RC_VDD_NOT_PRESENT   	=> Target Vdd failed to rise 		\n
-//!   \ref BDM_RC_RESET_TIMEOUT_RISE    => RESET signal failed to rise 		\n
-//!   \ref BDM_RC_BKGD_TIMEOUT      	=> BKGD signal failed to rise
-//!
+/**
+ *   Cycle power ON to target
+ *
+ *  @param mode
+ *     - \ref RESET_SPECIAL => Power on in special mode,
+ *     - \ref RESET_NORMAL  => Power on in normal mode
+ *
+ *   BKGD/BKPT is held low when power is re-applied to start
+ *   target with BDM active if RESET_SPECIAL
+ *
+ *   @return
+ *    \ref BDM_RC_OK                	=> Target Vdd confirmed on target \n
+ *    \ref BDM_RC_VDD_WRONG_MODE    	=> Target Vdd not controlled by BDM interface \n
+ *    \ref BDM_RC_VDD_NOT_PRESENT   	=> Target Vdd failed to rise 		\n
+ *    \ref BDM_RC_RESET_TIMEOUT_RISE    => RESET signal failed to rise 		\n
+ *    \ref BDM_RC_BKGD_TIMEOUT      	=> BKGD signal failed to rise
+ */
 USBDM_ErrorCode bdm_cycleTargetVddOn(uint8_t mode) {
    USBDM_ErrorCode rc = BDM_RC_OK;
 
@@ -384,13 +368,14 @@ cleanUp:
    return(rc);
 }
 
-//!  Cycle power OFF to target
-//!
-//!  @return
-//!   \ref BDM_RC_OK                => No error  \n
-//!   \ref BDM_RC_VDD_WRONG_MODE    => Target Vdd not controlled by BDM interface \n
-//!   \ref BDM_RC_VDD_NOT_REMOVED   => Target Vdd failed to fall \n
-//!
+/**
+ *   Cycle power OFF to target
+ *
+ *   @return
+ *    \ref BDM_RC_OK                => No error  \n
+ *    \ref BDM_RC_VDD_WRONG_MODE    => Target Vdd not controlled by BDM interface \n
+ *    \ref BDM_RC_VDD_NOT_REMOVED   => Target Vdd failed to fall \n
+ */
 USBDM_ErrorCode cycleTargetVddOff(void) {
    USBDM_ErrorCode rc = BDM_RC_OK;
 
@@ -481,10 +466,11 @@ USBDM_ErrorCode cycleTargetVdd(uint8_t mode) {
    return rc;
 }
 
-//!  Measures Target Vdd
-//!
-//!  @return 8-bit value representing the Target Vdd, N ~ (N/255) * 5V \n
-//!
+ /**
+  *   Measures Target Vdd
+  *
+  *   @return 8-bit value representing the Target Vdd, N ~ (N/255) * 5V \n
+  */
 uint16_t targetVddMeasure(void) {
 #if ((HW_CAPABILITY&CAP_VDDSENSE) == 0)
    // No Target Vdd measurement - Assume external Vdd supplied
@@ -500,11 +486,11 @@ uint16_t targetVddMeasure(void) {
 //
 //=========================================================================
 
-//!  Sets the BDM interface to a suspended state
-//!
-//!  - All signals idle \n
-//!  - All voltages off.
-//!
+/**   Sets the BDM interface to a suspended state
+ *
+ *   - All signals idle \n
+ *   - All voltages off.
+ */
 void suspend(void){
 #if (HW_CAPABILITY&CAP_FLASH)
    (void)bdmSetVpp(BDM_TARGET_VPP_OFF);
@@ -520,17 +506,18 @@ void suspend(void){
 #endif
 }
 
-//!  Turns off the BDM interface
-//!
-//!  Depending upon settings, may leave target power on.
-//!
+/**
+ *
+ *  Turns off the BDM interface
+ *
+ *   Depending upon settings, may leave target power on.
+ */
 void interfaceOff( void ) {
    Swd::disable();
    Bdm::disable();
 
    if (!bdm_option.leaveTargetPowered) {
-      // TODO
-//      VDD_OFF();
+      // TODO VDD_OFF
    }
 }
 

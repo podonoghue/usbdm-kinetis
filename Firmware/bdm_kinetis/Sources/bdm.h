@@ -280,7 +280,7 @@ void cmd_1B_0_NOACK(uint8_t cmd, uint8_t parameter);
  *
  *  @note No ACK is expected
  */
-void cmd_0_1W_NOACK(uint8_t cmd, uint16_t *result);
+void cmd_0_1W_NOACK(uint8_t cmd, uint8_t result[2]);
 
 /**
  *  Write command & word without ACK
@@ -301,7 +301,7 @@ void cmd_1W_0_NOACK(uint8_t cmd, uint16_t parameter);
  *
  *  @note no ACK is expected
  */
-void cmd_1W_1W_NOACK(uint8_t cmd, uint16_t parameter, uint16_t *result);
+void cmd_1W_1W_NOACK(uint8_t cmd, uint16_t parameter, uint8_t result[2]);
 
 /**
  *  Write command, word, byte & read byte without ACK
@@ -342,7 +342,7 @@ USBDM_ErrorCode cmd_0_1B(uint8_t cmd, uint8_t *result);
  *
  *  @note ACK is expected
  */
-USBDM_ErrorCode cmd_0_1W(uint8_t cmd, uint16_t *result);
+USBDM_ErrorCode cmd_0_1W(uint8_t cmd, uint8_t result[2]);
 
 /**
  *  Write command & read longword
@@ -352,7 +352,7 @@ USBDM_ErrorCode cmd_0_1W(uint8_t cmd, uint16_t *result);
  *
  *  @note ACK is expected
  */
-USBDM_ErrorCode cmd_0_1L(uint8_t cmd, uint32_t *result);
+USBDM_ErrorCode cmd_0_1L(uint8_t cmd, uint8_t result[4]);
 
 /**
  *  Write command & byte
@@ -415,7 +415,19 @@ USBDM_ErrorCode cmd_2W_0(uint8_t cmd, uint16_t parameter1, uint16_t parameter2);
  *
  *  @note ACK is expected
  */
-USBDM_ErrorCode cmd_1W_1W(uint8_t cmd, uint16_t parameter, uint16_t *result);
+USBDM_ErrorCode cmd_1W_1W(uint8_t cmd, uint16_t parameter, uint8_t result[2]);
+
+/**
+ *  Write cmd, word, byte & read byte
+ *
+ *  @param cmd        command byte to write
+ *  @param parameter  word to write
+ *  @param value      byte to write
+ *  @param status     byte pointer for read
+ *
+ *  @note ACK is expected
+ */
+USBDM_ErrorCode cmd_1W1B_1B(uint8_t cmd, uint16_t parameter, uint8_t value, uint8_t *status);
 
 /**
  *  Write command, word and a byte

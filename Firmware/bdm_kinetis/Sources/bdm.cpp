@@ -69,6 +69,9 @@ static constexpr unsigned SYNC_WIDTH_us = 1000;
 /** Time to wait for end of target sync pulse response (us), (<65536/FTMClock) */
 static constexpr unsigned SYNC_TIMEOUT_us = 1200;
 
+/** Longest time after which the target should produce ACKN pulse (150 cycles @ 400kHz = 375us) */
+static constexpr unsigned ACKN_TIMEOUT_us = 2500;
+
 /** Length of high drive before 3-state i.e. speed-up pulse (ticks) */
 static constexpr unsigned SPEEDUP_PULSE_WIDTH_ticks = 1;
 
@@ -409,12 +412,17 @@ USBDM_ErrorCode sync(uint16_t &syncLength) {
  */
 USBDM_ErrorCode acknowledgeOrWait64(void) {
    if (cable_status.ackn==ACKN) {
-      //      // Wait for pin capture or timeout
-      //     enableInterrupts();
-      //      WAIT_WITH_TIMEOUT_US(ACKN_TIMEOUTus, (BKGD_TPMxCnSC_CHF!=0));
-      //     if (BKGD_TPMxCnSC_CHF==0) {
-      return BDM_RC_ACK_TIMEOUT;  //   Return timeout error
-      //     }
+      // Wait for pin capture or timeout
+      enableInterrupts();
+      static auto fn = [] {
+            return ((ftm->CONTROLS[bkgdInChannel].CnSC&FTM_CnSC_CHF_MASK) != 0) ||
+                   ((ftm->CONTROLS[bkgdInChannel+1].CnSC&FTM_CnSC_CHF_MASK) != 0);
+      };
+      USBDM::waitMS(ACKN_TIMEOUT_us, fn);
+      if ((ftm->CONTROLS[bkgdInChannel].CnSC&FTM_CnSC_CHF_MASK) == 0) {
+         // No ACKN - Return timeout error
+         return BDM_RC_ACK_TIMEOUT;
+      }
    }
    else {
       USBDM::waitUS(targetClocks64TimeUS);
@@ -434,12 +442,17 @@ USBDM_ErrorCode acknowledgeOrWait64(void) {
  */
 USBDM_ErrorCode acknowledgeOrWait150(void) {
    if (cable_status.ackn==ACKN) {
-      //      // Wait for pin capture or timeout
-      //      enableInterrupts();
-      //      WAIT_WITH_TIMEOUT_US(ACKN_TIMEOUTus, (BKGD_TPMxCnSC_CHF!=0));
-      //      if (BKGD_TPMxCnSC_CHF==0) {
-      return BDM_RC_ACK_TIMEOUT;  //   Return timeout error
-      //      }
+      // Wait for pin capture or timeout
+      enableInterrupts();
+      static auto fn = [] {
+            return ((ftm->CONTROLS[bkgdInChannel].CnSC&FTM_CnSC_CHF_MASK) != 0) ||
+                   ((ftm->CONTROLS[bkgdInChannel+1].CnSC&FTM_CnSC_CHF_MASK) != 0);
+      };
+      USBDM::waitMS(ACKN_TIMEOUT_us, fn);
+      if ((ftm->CONTROLS[bkgdInChannel].CnSC&FTM_CnSC_CHF_MASK) == 0) {
+         // No ACKN - Return timeout error
+         return BDM_RC_ACK_TIMEOUT;
+      }
    }
    else {
       USBDM::waitUS(targetClocks150TimeUS);
@@ -527,10 +540,10 @@ USBDM_ErrorCode rx8(uint8_t *data) {
  * @param [out] data   Data received
  */
 inline
-USBDM_ErrorCode rx16(uint16_t *data) {
+USBDM_ErrorCode rx16(uint8_t *data) {
    unsigned value;
    USBDM_ErrorCode rc = rx(16, value);
-   *data = (uint16_t)value;
+   unpack16BE(value, data);
    return rc;
 }
 
@@ -540,10 +553,10 @@ USBDM_ErrorCode rx16(uint16_t *data) {
  * @param [out] data   Data received
  */
 inline
-USBDM_ErrorCode rx32(uint32_t *data) {
+USBDM_ErrorCode rx32(uint8_t *data) {
    unsigned value;
    USBDM_ErrorCode rc = rx(32, value);
-   *data = value;
+   unpack32BE(value, data);
    return rc;
 }
 
@@ -583,12 +596,19 @@ USBDM_ErrorCode tx(int length, unsigned data) {
          FTM_COMBINE_COMBINE0_MASK<<(bkgdOutChannel*4);
 
    // Positive pulse for buffer enable
-   ftm->CONTROLS[bkgdEnChannel].CnSC    = FTM_CnSC_ELS(2);
+   ftm->CONTROLS[bkgdEnChannel].CnSC    = USBDM::ftm_CombinePositivePulse;
    ftm->CONTROLS[bkgdEnChannel].CnV     = TMR_SETUP_TIME;
 
    // Negative pulse for BKGD out
-   ftm->CONTROLS[bkgdOutChannel].CnSC   = FTM_CnSC_ELS(1);
+   ftm->CONTROLS[bkgdOutChannel].CnSC   = USBDM::ftm_CombineNegativePulse;
    ftm->CONTROLS[bkgdOutChannel].CnV    = TMR_SETUP_TIME;
+
+   // Data sample capture rising edge of BKGD in
+   ftm->CONTROLS[bkgdInChannel].CnSC    = USBDM::ftm_inputCaptureRisingEdge;
+
+   // ACKN timeout
+   ftm->CONTROLS[bkgdInChannel+1].CnSC  = USBDM::ftm_outputCompare;
+   ftm->CONTROLS[bkgdInChannel+1].CnV   = TMR_SETUP_TIME+ACKN_TIMEOUT_us;
 
    while (mask>0) {
       int width;
@@ -598,6 +618,8 @@ USBDM_ErrorCode tx(int length, unsigned data) {
       else {
          width = TMR_SETUP_TIME+zeroBitTime;
       }
+      mask >>= 1;
+      disableFtmClock();
       ftm->CNT = 0;
       ftm->CONTROLS[bkgdOutChannel+1].CnV  = width;
       ftm->CONTROLS[bkgdEnChannel+1].CnV   = width+SPEEDUP_PULSE_WIDTH_ticks;
@@ -605,18 +627,17 @@ USBDM_ErrorCode tx(int length, unsigned data) {
 
       enableFtmClock();
 
-      // Clear channel flags
-      ftm->STATUS &= ~(
-            (1<<bkgdEnChannel) |(1<<(bkgdEnChannel+1))|
-            (1<<bkgdOutChannel)|(1<<(bkgdOutChannel+1)));
-
       // Wait until end of bit
       do {
          __asm("nop");
       } while (ftm->CNT < TMR_SETUP_TIME+minPeriod);
-      disableFtmClock();
-      mask >>= 1;
    }
+   // Clear channel flags
+   ftm->STATUS &= ~(
+         (1<<bkgdEnChannel) |(1<<(bkgdEnChannel+1))|
+         (1<<bkgdOutChannel)|(1<<(bkgdOutChannel+1))|
+         (1<<bkgdInChannel)|(1<<(bkgdInChannel+1)));
+
    return BDM_RC_OK;
 }
 
@@ -626,17 +647,17 @@ USBDM_ErrorCode tx8(uint8_t data) {
 }
 
 inline
-USBDM_ErrorCode tx16(uint8_t data) {
+USBDM_ErrorCode tx16(uint16_t data) {
    return tx(16, data);
 }
 
 inline
-USBDM_ErrorCode tx24(uint8_t data) {
+USBDM_ErrorCode tx24(uint32_t data) {
    return tx(24, data);
 }
 
 inline
-USBDM_ErrorCode tx32(uint8_t data) {
+USBDM_ErrorCode tx32(uint32_t data) {
    return tx(32, data);
 }
 
@@ -748,7 +769,7 @@ void cmd_1B_0_NOACK(uint8_t cmd, uint8_t parameter) {
  *
  *  @note No ACK is expected
  */
-void cmd_0_1W_NOACK(uint8_t cmd, uint16_t *result) {
+void cmd_0_1W_NOACK(uint8_t cmd, uint8_t *result) {
    txInit();
    tx8(cmd);
    rx16(result);
@@ -779,7 +800,7 @@ void cmd_1W_0_NOACK(uint8_t cmd, uint16_t parameter) {
  *
  *  @note no ACK is expected
  */
-void cmd_1W_1W_NOACK(uint8_t cmd, uint16_t parameter, uint16_t *result) {
+void cmd_1W_1W_NOACK(uint8_t cmd, uint16_t parameter, uint8_t result[2]) {
    txInit();
    tx8(cmd);
    tx16(parameter);
@@ -807,7 +828,7 @@ void cmd_1W1B_1B_NOACK(uint8_t cmd, uint16_t parameter, uint8_t value, uint8_t *
 }
 
 //====================================================================
-// The following DO expect an ACK or wait at end of the command phase
+// The following DO expect an ACK or wait at end of the transmit phase
 
 /**
  *  Write cmd
@@ -849,7 +870,7 @@ USBDM_ErrorCode cmd_0_1B(uint8_t cmd, uint8_t *result) {
  *
  *  @note ACK is expected
  */
-USBDM_ErrorCode cmd_0_1W(uint8_t cmd, uint16_t *result) {
+USBDM_ErrorCode cmd_0_1W(uint8_t cmd, uint8_t *result) {
    txInit();
    tx8(cmd);
    USBDM_ErrorCode rc = acknowledgeOrWait64();
@@ -866,7 +887,7 @@ USBDM_ErrorCode cmd_0_1W(uint8_t cmd, uint16_t *result) {
  *
  *  @note ACK is expected
  */
-USBDM_ErrorCode cmd_0_1L(uint8_t cmd, uint32_t *result) {
+USBDM_ErrorCode cmd_0_1L(uint8_t cmd, uint8_t result[4]) {
    txInit();
    tx8(cmd);
    USBDM_ErrorCode rc = acknowledgeOrWait64();
@@ -979,7 +1000,7 @@ USBDM_ErrorCode cmd_2W_0(uint8_t cmd, uint16_t parameter1, uint16_t parameter2) 
  *
  *  @note ACK is expected
  */
-USBDM_ErrorCode cmd_1W_1W(uint8_t cmd, uint16_t parameter, uint16_t *result) {
+USBDM_ErrorCode cmd_1W_1W(uint8_t cmd, uint16_t parameter, uint8_t result[2]) {
    txInit();
    tx8(cmd);
    tx16(parameter);
@@ -989,6 +1010,26 @@ USBDM_ErrorCode cmd_1W_1W(uint8_t cmd, uint16_t parameter, uint16_t *result) {
    return rc;
 }
 
+/**
+ *  Write cmd, word, byte & read byte
+ *
+ *  @param cmd        command byte to write
+ *  @param parameter  word to write
+ *  @param value      byte to write
+ *  @param status     byte pointer for read
+ *
+ *  @note ACK is expected
+ */
+USBDM_ErrorCode cmd_1W1B_1B(uint8_t cmd, uint16_t parameter, uint8_t value, uint8_t *status) {
+   txInit();
+   tx8(cmd);
+   tx16(parameter);
+   tx8(value);
+   USBDM_ErrorCode rc = acknowledgeOrWait64();
+   rx8(status);
+   txComplete();
+   return rc;
+}
 /**
  *  Write cmd, word and a byte
  *  (sends 2 words, the byte in both high and low byte of the 16-bit value)
@@ -1217,10 +1258,6 @@ USBDM_ErrorCode readBDMStatus(uint8_t *status) {
 void enableACKNMode(void) {
    USBDM_ErrorCode rc;
 
-   // TODO
-   cable_status.ackn = WAIT;
-   return;
-
    // Switch ACKN on
    cable_status.ackn = ACKN;
 
@@ -1230,6 +1267,7 @@ void enableACKNMode(void) {
    }
    else {
       rc = BDM_CMD_ACK_ENABLE();
+//      rc = BDM_CMD_ACK_DISABLE();
    }
    // If ACKN fails turn off ACKN (RS08 or early HCS12 target)
    if (rc == BDM_RC_ACK_TIMEOUT) {
@@ -1289,7 +1327,7 @@ USBDM_ErrorCode physicalConnect(void) {
       // Speed determined by SYNC method
       cable_status.speed = SPEED_SYNC;
    }
-   //TODO
+   //TODO bdmHC12_alt_speed_detect()
    //   else if ((bdm_option.guessSpeed) &&          // Try alternative method if enabled
    //       (cable_status.target_type == T_HC12)) { // and HC12 target
    //      rc = bdmHC12_alt_speed_detect();     // Try alternative method (guessing!)
@@ -1498,7 +1536,7 @@ USBDM_ErrorCode targetReset( uint8_t mode ) {
 
    // Power-cycle-reset - applies to all chips
    if (bdm_option.cycleVddOnReset) {
-      // TODO
+      // TODO cycleTargetVdd()
       //      rc = cycleTargetVdd(mode);
    }
    if (rc != BDM_RC_OK) {
@@ -1531,17 +1569,12 @@ USBDM_ErrorCode halt(void) {
  * Commences full-speed execution on the target
  */
 USBDM_ErrorCode go(void) {
-   uint32_t csr;
-
    if (cable_status.target_type == T_CFV1) {
       // Clear Single-step mode
-      (void)BDMCF_CMD_READ_DREG(CFV1_CSR, &csr);
+      uint32_t csr;
+      BDMCF_CMD_READ_DREG(CFV1_CSR, csr);
       csr &= ~CFV1_CSR_SSM;
-#ifdef MC51AC256_HACK
-      csr |= CFV1_CSR_VBD; // Hack for MC51AC256 - turn off Bus visibility
-#endif
-      (void)BDMCF_CMD_WRITE_DREG(CFV1_CSR,csr);
-
+      BDMCF_CMD_WRITE_DREG(CFV1_CSR, csr);
       return BDMCF_CMD_GO();
    }
    else {
@@ -1553,17 +1586,12 @@ USBDM_ErrorCode go(void) {
  *  Executes a single instruction on the target
  */
 USBDM_ErrorCode step(void) {
-   uint32_t csr;
-
    if (cable_status.target_type == T_CFV1) {
       // Set Single-step mode
-      (void)BDMCF_CMD_READ_DREG(CFV1_CSR, &csr);
+      uint32_t csr;
+      BDMCF_CMD_READ_DREG(CFV1_CSR, csr);
       csr |= CFV1_CSR_SSM;
-#ifdef MC51AC256_HACK
-      csr |= CFV1_CSR_VBD; // Hack for MC51AC256 - turn off Bus visibility
-#endif
-      (void)BDMCF_CMD_WRITE_DREG(CFV1_CSR, csr);
-
+      BDMCF_CMD_WRITE_DREG(CFV1_CSR, csr);
       return BDMCF_CMD_GO();
    }
 #if TARGET_CAPABILITY & CAP_S12Z

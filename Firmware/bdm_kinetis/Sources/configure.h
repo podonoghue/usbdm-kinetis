@@ -53,7 +53,7 @@ extern void dputs(char *msg);
 // Capabilities of the hardware - used to enable/disable appropriate code in build
 // HW_CAPABILITY
 //
-#define CAP_RST_OUT      (1<<0)   // RESET can be driven/sensed (req. for HC12)
+#define CAP_RST_OUT     (1<<0)   // RESET can be driven/sensed (req. for HC12)
 #define CAP_FLASH       (1<<1)   // 12 V Flash programming supply available (req. RS08)
 #define CAP_VDDCONTROL  (1<<2)   // Control over target Vdd
 #define CAP_VDDSENSE    (1<<3)   // Sensing of target Vdd

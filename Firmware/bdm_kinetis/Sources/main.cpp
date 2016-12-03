@@ -308,8 +308,12 @@ void hcs08Testing () {
       if (rc != BDM_RC_OK) {
          continue;
       }
+      rc = f_CMD_HALT();
+      if (rc != BDM_RC_OK) {
+         continue;
+      }
       testmem(0x80,1024);
-   } while (rc != BDM_RC_OK);
+   } while (true);
 
    for(;;) {
    }

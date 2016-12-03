@@ -276,7 +276,6 @@ USBDM_ErrorCode f_CMD_RESET(void) {
    }
    cable_status.bdmpprValue = 0x00;
 
-   // ToDo - check more
    switch (commandBuffer[2] & RESET_METHOD_MASK) {
 #if (HW_CAPABILITY&CAP_RST_IO)   
       case RESET_HARDWARE :
@@ -631,7 +630,7 @@ USBDM_ErrorCode f_CMD_HCS12_READ_MEM(void) {
       rc = BDM12_CMD_WRITE_X(addr-2);
       // Exclude 0xFF00-0xFFFF as BDM code in Memory map
       while ((count > 1) && (rc == BDM_RC_OK) && ((addr&0xFF00) != 0xFF00)) {
-         rc = BDM12_CMD_READ_NEXT((uint16_t*)data_ptr);
+         rc = BDM12_CMD_READ_NEXT(data_ptr);
          addr     +=2;                    // increment memory address
          data_ptr +=2;                    // increment buffer pointer
          count    -=2;                    // decrement count of bytes
@@ -639,7 +638,7 @@ USBDM_ErrorCode f_CMD_HCS12_READ_MEM(void) {
    }
    while ((count > 1) && (rc == BDM_RC_OK)) {
       // Slow Word reads
-      rc = BDM12_CMD_READW(addr,(uint16_t*)data_ptr);  // fetch a word
+      rc = BDM12_CMD_READW(addr,data_ptr);  // fetch a word
       addr     +=2;                          // increment memory address
       data_ptr +=2;                          // increment buffer pointer
       count    -=2;                          // decrement count of bytes
@@ -749,7 +748,7 @@ USBDM_ErrorCode f_CMD_HCS12_READ_REG(void) {
    if ((commandBuffer[3]<HCS12_RegPC) || (commandBuffer[3]>HCS12_RegSP)) {
       return BDM_RC_ILLEGAL_PARAMS;
    }
-   return BDM12_CMD_READ_REG(commandBuffer[3],(uint16_t*)(commandBuffer+3));
+   return BDM12_CMD_READ_REG(commandBuffer[3],commandBuffer+3);
 }
 
 }; // end namespace HCS
@@ -787,31 +786,39 @@ USBDM_ErrorCode f_CMD_WRITE_MEM(void) {
       rc = BDM08_CMD_WRITE_HX(addr-1);
       while ((count > 0) && (rc == BDM_RC_OK)) {
          rc = BDM08_CMD_WRITE_NEXT(*data_ptr);
-         data_ptr +=1;                    // increment buffer pointer
-         count    -=1;                    // decrement count of bytes
+         data_ptr +=1;   // increment buffer pointer
+         count    -=1;   // decrement count of bytes
       }
    }
    else {
       while ((count > 0) && (rc == BDM_RC_OK)) {
 #if 0
          uint8_t status;
-         BDM08_CMD_WRITEB_WS(addr,*data_ptr++,&status); // write data & receive status
-         if (status&(HC08_BDCSCR_WSF|HC08_BDCSCR_DVF)) {
+         int retry = 20;
+         // Write data & receive status
+         BDM08_CMD_WRITEB_WS(addr, *data_ptr++, &status);
+         while(((status&HC08_BDCSCR_DVF) != 0) && (retry-->0)) {
             // Status read may fail because of clock change!
-            (void)bdm_physicalConnect();
+            physicalConnect();
+            // Re-read status
             BDM08_CMD_READSTATUS(&status);
          }
-         if (status&(HC08_BDCSCR_WSF|HC08_BDCSCR_DVF)) {
+         if ((status&HC08_BDCSCR_DVF) != 0) {
+            return BDM_RC_HCS_ACCESS_ERROR;
+         }
+         if ((status&HC08_BDCSCR_WSF) != 0) {
             // The only 'expected' error that should occur is because the device has entered stop or wait mode
             // Don't try to recover as this requires changing the machine state.
-            rc = BDM_RC_HCS_ACCESS_ERROR;
+            return BDM_RC_TARGET_BUSY;
          }
 #else
-         rc = BDM08_CMD_WRITEB(addr,*data_ptr); // write byte
-         data_ptr +=1;                    // increment buffer pointer
+         // Write byte
+         rc = BDM08_CMD_WRITEB(addr, *data_ptr++);
 #endif
-         addr     +=1;                    // increment memory address
-         count    -=1;                    // decrement count of bytes
+         // Increment memory address
+         addr  +=1;
+         // Decrement count of bytes remaining
+         count -=1;
       }
    }
    return rc;
@@ -859,22 +866,29 @@ USBDM_ErrorCode f_CMD_READ_MEM(void) {
 #if 0
          uint8_t buffer[2];
          uint8_t retry = 10;
-         BDM08_CMD_READB_WS(addr,(uint16_t*)buffer); // read status & data byte
-         while ((retry-->0) && (buffer[0]&(HC08_BDCSCR_DVF))) {
-            BDM08_CMD_READ_LAST((uint16_t*)buffer);
+         // Read status & data byte
+         BDM08_CMD_READB_WS(addr, buffer);
+         while ((retry-->0) && ((buffer[0]&HC08_BDCSCR_DVF) != 0)) {
+            BDM08_CMD_READ_LAST(buffer);
          }
-         *data_ptr++ = buffer[1];               // save data
-         if (buffer[0]&(HC08_BDCSCR_DVF|HC08_BDCSCR_WSF)) {
-            // The only 'expected' error that should occur is because the device is in stop or wait mode
+         if ((buffer[0]&HC08_BDCSCR_DVF) != 0) {
+            return BDM_RC_HCS_ACCESS_ERROR;
+         }
+         if ((buffer[0]&HC08_BDCSCR_WSF) != 0) {
+            // The only 'expected' error that should occur is because the device has entered stop or wait mode
             // Don't try to recover as this requires changing the machine state.
-            rc = BDM_RC_HCS_ACCESS_ERROR;
+            return BDM_RC_TARGET_BUSY;
          }
+         // Save data
+         *data_ptr++ = buffer[1];
 #else
-         rc = BDM08_CMD_READB(addr,data_ptr);    // fetch a byte
-         data_ptr +=1;                           // increment buffer pointer
+         // Read byte
+         rc = BDM08_CMD_READB(addr, data_ptr++);
 #endif
-         addr     +=1;                           // increment memory address
-         count    -=1;                           // decrement count of bytes
+         // Increment memory address
+         addr     +=1;
+         // Decrement count of bytes
+         count    -=1;
       }
    }
    return rc;
@@ -939,14 +953,14 @@ USBDM_ErrorCode f_CMD_READ_REG(void) {
 
    switch (commandBuffer[3]) {
       case HCS08_RegPC : // RS08_RegCCR_PC :
-         rc = BDM08_CMD_READ_PC((uint16_t*)(commandBuffer+3));
+         rc = BDM08_CMD_READ_PC(commandBuffer+3);
          break;
       case HCS08_RegHX  :
          if (cable_status.target_type == T_HCS08)
-            rc = BDM08_CMD_READ_HX((uint16_t*)(commandBuffer+3));
+            rc = BDM08_CMD_READ_HX(commandBuffer+3);
          break;
       case HCS08_RegSP : // RS08_RegSPC
-         rc = BDM08_CMD_READ_SP((uint16_t*)(commandBuffer+3));
+         rc = BDM08_CMD_READ_SP(commandBuffer+3);
          break;
       case HCS08_RegA  : // RS08_RegA
          commandBuffer[3] = 0;
@@ -997,7 +1011,7 @@ USBDM_ErrorCode f_CMD_WRITE_BKPT(void) {
 USBDM_ErrorCode f_CMD_READ_BKPT(void) {
    commandBuffer[1] = 0;
    commandBuffer[2] = 0;
-   BDM08_CMD_READ_BKPT((uint16_t*)(commandBuffer+3));
+   BDM08_CMD_READ_BKPT(commandBuffer+3);
    returnSize = 5;
    return BDM_RC_OK;
 }
