@@ -17,7 +17,7 @@ extern USBDM_ErrorCode  compatibleCommandExec(void);
 extern USBDM_ErrorCode  optionalReconnect(uint8_t when);
 
 //! Target status
-typedef struct {
+struct CableStatus_t {
    TargetType_t        target_type:8;  //!< Target type TargetType_t
    AcknMode_t          ackn:8;         //!< Target supports ACKN see AcknMode_t
    ResetMode_t         reset:8;        //!< Target has been reset, see ResetMode_T
@@ -28,10 +28,10 @@ typedef struct {
    uint16_t            wait150_cnt;    //!< Time for 150 BDM cycles in bus cycles of the MCU divided by N
    uint16_t            wait64_cnt;     //!< Time for 64 BDM cycles in bus cycles of the MCU divided by N
    uint8_t             bdmpprValue;    //!< BDMPPR value for HCS12
-} CableStatus_t;
+} ;
 
 //! Target interface options
-typedef struct {
+struct BDM_Option_t {
    uint8_t  cycleVddOnReset:1;      //!< Cycle target Power  when resetting
    uint8_t  cycleVddOnConnect:1;    //!< Cycle target Power if connection problems (when resetting?)
    uint8_t  leaveTargetPowered:1;   //!< Leave target power on exit
@@ -42,7 +42,7 @@ typedef struct {
    uint8_t  autoReconnect;          //!< Automatically re-connect method (for speed change)
    uint16_t SBDFRaddress;           //!< Address of HCS08_SBDFR register
    uint8_t  reserved[3];
-} BDM_Option_t;
+} ;
 
 extern CableStatus_t cable_status;  // Status of the BDM interface
 extern BDM_Option_t  bdm_option;    // Options for cable operation

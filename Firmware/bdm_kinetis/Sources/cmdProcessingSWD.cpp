@@ -53,7 +53,7 @@ namespace Swd {
  */
 USBDM_ErrorCode f_CMD_CONNECT(void) {
 
-   USBDM_ErrorCode rc = bdm_checkTargetVdd();
+   USBDM_ErrorCode rc = checkTargetVdd();
    if (rc != BDM_RC_OK) {
       return rc;
    }
@@ -198,7 +198,7 @@ USBDM_ErrorCode f_CMD_READ_CREG(void) {
  *  @return BDM_RC_OK => success, error otherwise
  */
 USBDM_ErrorCode f_CMD_WRITE_MEM(void) {
-   return Swd::writeMemory(commandBuffer[2], commandBuffer[3], Swd::pack32BE(commandBuffer+4), commandBuffer+8);
+   return Swd::writeMemory(commandBuffer[2], commandBuffer[3], pack32BE(commandBuffer+4), commandBuffer+8);
 }
 
 /**  Read ARM-SWD Memory
@@ -217,7 +217,7 @@ USBDM_ErrorCode f_CMD_WRITE_MEM(void) {
  */
 USBDM_ErrorCode f_CMD_READ_MEM(void) {
    uint32_t size = commandBuffer[3];
-   USBDM_ErrorCode rc = Swd::readMemory(commandBuffer[2], commandBuffer[3], Swd::pack32BE(commandBuffer+4), commandBuffer+1);
+   USBDM_ErrorCode rc = Swd::readMemory(commandBuffer[2], commandBuffer[3], pack32BE(commandBuffer+4), commandBuffer+1);
    if (rc == BDM_RC_OK) {
       // Return size including status byte
       returnSize = size+1;

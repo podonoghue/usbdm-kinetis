@@ -46,11 +46,12 @@
 */
 
 #include <string.h>
-#include <swd.h>
 #include "Configure.h"
 #include "Commands.h"
 #include "bdmCommon.h"
 #include "cmdProcessing.h"
+#include "swd.h"
+#include "bdm.h"
 
 //=============================================================================================================================================
 #define SOFT_RESETus       1280U //!< us - longest time needed for soft reset of the BDM interface (512 BDM cycles @ 400kHz = 1280us)
@@ -100,7 +101,7 @@ void bdm_targetVddSense(void) {
 //      VDD_OFF();   // Turn off Vdd in case it's an overload
 //      }
 //   // Update power status
-//   (void)bdm_checkTargetVdd();
+//   (void)checkTargetVdd();
 //#endif // CAP_VDDSENSE
 }
 
@@ -138,16 +139,6 @@ void FTM0_IRQHandler(void) {
 #endif
 }
 
-//! Analogue comparator handling
-//!
-//! Target Vdd sensing on CF_JMxxCLD, JMxxCLD, JMxxCLC
-//!
-//#pragma TRAP_PROC
-//void acmpHandler(void) {
-//	// bdm_targetVddSense() on CF_JMxxCLD, JMxxCLD, JMxxCLC
-//	bdm_targetVddSense();
-//}
-
 //=========================================================================
 // Target power control
 //
@@ -164,19 +155,22 @@ void FTM0_IRQHandler(void) {
  *
  * @return E_NO_ERROR on success
  */
-USBDM_ErrorCode bdm_checkTargetVdd(void) {
+USBDM_ErrorCode checkTargetVdd(void) {
 #if (HW_CAPABILITY&CAP_VDDSENSE)
    if (TargetVdd::vddOK()) {
       PowerLed::on();
-      if (bdm_option.targetVdd == BDM_TARGET_VDD_OFF)
+      if (bdm_option.targetVdd == BDM_TARGET_VDD_OFF) {
          cable_status.power = BDM_TARGET_VDD_EXT;
-      else
+      }
+      else {
          cable_status.power = BDM_TARGET_VDD_INT;
+      }
    }
    else {
       PowerLed::off();
-      if (bdm_option.targetVdd == BDM_TARGET_VDD_OFF)
+      if (bdm_option.targetVdd == BDM_TARGET_VDD_OFF) {
          cable_status.power = BDM_TARGET_VDD_NONE;
+      }
       else {
          cable_status.power = BDM_TARGET_VDD_ERR;
 #if (HW_CAPABILITY&CAP_VDDCONTROL)
@@ -191,8 +185,9 @@ USBDM_ErrorCode bdm_checkTargetVdd(void) {
 #endif // CAP_VDDSENSE
 
    if ((cable_status.power == BDM_TARGET_VDD_NONE) ||
-       (cable_status.power == BDM_TARGET_VDD_ERR))
+       (cable_status.power == BDM_TARGET_VDD_ERR)) {
       return BDM_RC_VDD_NOT_PRESENT;
+   }
    return BDM_RC_OK;
 }
 
@@ -204,7 +199,7 @@ USBDM_ErrorCode bdm_checkTargetVdd(void) {
 //!   \ref BDM_RC_OK                => Target Vdd confirmed on target \n
 //!   \ref BDM_RC_VDD_NOT_PRESENT   => Target Vdd not present
 //!
-uint8_t bdm_setTargetVdd( void ) {
+uint8_t setTargetVdd( void ) {
 uint8_t rc = BDM_RC_OK;
 
 #if (HW_CAPABILITY&CAP_VDDSENSE)
@@ -216,15 +211,15 @@ uint8_t rc = BDM_RC_OK;
 	   VDD_OFF();
 	   // Check for externally supplied target Vdd (> 2 V)
 	   WAIT_US(VDD_RISE_TIMEus); // Wait for Vdd to rise & stabilise
-	   if (bdm_targetVddMeasure()<VDD_2v)
+	   if (targetVddMeasure()<VDD_2v)
 		   rc = BDM_RC_VDD_NOT_PRESENT;
 	   break;
    case BDM_TARGET_VDD_3V3 :
 	   VDD3_ON();
 	   // Wait for Vdd to rise to 90% of 3V
-	   WAIT_WITH_TIMEOUT_MS( 100 /* ms */, (bdm_targetVddMeasure()>VDD_3v3));
+	   WAIT_WITH_TIMEOUT_MS( 100 /* ms */, (targetVddMeasure()>VDD_3v3));
 	   WAIT_US(VDD_RISE_TIMEus); // Wait for Vdd to rise & stabilise
-	   if (bdm_targetVddMeasure()<VDD_3v3) {
+	   if (targetVddMeasure()<VDD_3v3) {
 		   VDD_OFF(); // In case of Vdd overload
 		   rc = BDM_RC_VDD_NOT_PRESENT;
 	   }
@@ -232,9 +227,9 @@ uint8_t rc = BDM_RC_OK;
    case BDM_TARGET_VDD_5V  :
 	   VDD5_ON();
 	   // Wait for Vdd to rise to 90% of 5V
-	   WAIT_WITH_TIMEOUT_MS( 100 /* ms */, (bdm_targetVddMeasure()>VDD_5v));
+	   WAIT_WITH_TIMEOUT_MS( 100 /* ms */, (targetVddMeasure()>VDD_5v));
 	   WAIT_US(VDD_RISE_TIMEus); // Wait for Vdd to rise & stabilise
-	   if (bdm_targetVddMeasure()<VDD_5v) {
+	   if (targetVddMeasure()<VDD_5v) {
 		   VDD_OFF(); // In case of Vdd overload
 		   rc = BDM_RC_VDD_NOT_PRESENT;
 	   }
@@ -245,7 +240,7 @@ uint8_t rc = BDM_RC_OK;
    ENABLE_VDD_SENSE_INT();
 #endif
 
-   (void)bdm_checkTargetVdd(); // Update Target Vdd LED & status
+   (void)checkTargetVdd(); // Update Target Vdd LED & status
    return (rc);
 }
 
@@ -384,7 +379,7 @@ cleanUp:
 //   EnableInterrupts;
 #endif // CAP_VDDCONTROL
 
-   (void)bdm_checkTargetVdd(); // Update Target Vdd LED & power status
+   (void)checkTargetVdd(); // Update Target Vdd LED & power status
 
    return(rc);
 }
@@ -396,12 +391,12 @@ cleanUp:
 //!   \ref BDM_RC_VDD_WRONG_MODE    => Target Vdd not controlled by BDM interface \n
 //!   \ref BDM_RC_VDD_NOT_REMOVED   => Target Vdd failed to fall \n
 //!
-USBDM_ErrorCode bdm_cycleTargetVddOff(void) {
+USBDM_ErrorCode cycleTargetVddOff(void) {
    USBDM_ErrorCode rc = BDM_RC_OK;
 
 #if (HW_CAPABILITY&CAP_VDDCONTROL)
 
-   (void)bdm_checkTargetVdd();
+   (void)checkTargetVdd();
 
    if (bdm_option.targetVdd == BDM_TARGET_VDD_OFF)
       return BDM_RC_VDD_WRONG_MODE;
@@ -423,14 +418,14 @@ USBDM_ErrorCode bdm_cycleTargetVddOff(void) {
 
    // Power off & wait for Vdd to fall to ~5%
    VDD_OFF();
-   WAIT_WITH_TIMEOUT_S( 5 /* s */, (bdm_targetVddMeasure()<10) );
+   WAIT_WITH_TIMEOUT_S( 5 /* s */, (targetVddMeasure()<10) );
 
 #if (DEBUG&CYCLE_DEBUG)
    DEBUG_PIN   = 1;
    DEBUG_PIN   = 0;
 #endif
 
-   if (bdm_targetVddMeasure()>=15) // Vdd didn't turn off!
+   if (targetVddMeasure()>=15) // Vdd didn't turn off!
       rc = BDM_RC_VDD_NOT_REMOVED;
 
 #if (DEBUG&CYCLE_DEBUG)
@@ -438,7 +433,7 @@ USBDM_ErrorCode bdm_cycleTargetVddOff(void) {
    DEBUG_PIN     = 1;
 #endif
 
-   (void)bdm_checkTargetVdd(); // Update Target Vdd LED
+   (void)checkTargetVdd(); // Update Target Vdd LED
 
    // Wait a while with power off
    WAIT_US(RESET_SETTLEms);
@@ -447,36 +442,37 @@ USBDM_ErrorCode bdm_cycleTargetVddOff(void) {
 #if (HW_CAPABILITY&CAP_VDDSENSE)
    CLEAR_VDD_SENSE_FLAG();  // Clear Vdd monitoring flag
 #endif
-   (void)bdm_checkTargetVdd();    // Update Target Vdd LED
+   (void)checkTargetVdd();    // Update Target Vdd LED
 
 #endif // CAP_VDDCONTROL
 
    return(rc);
 }
 
-//!  Cycle power to target
-//!
-//! @param mode
-//!    - \ref RESET_SPECIAL => Power on in special mode,
-//!    - \ref RESET_NORMAL  => Power on in normal mode
-//!
-//!  BKGD/BKPT is held low when power is re-applied to start
-//!  target with BDM active if RESET_SPECIAL
-//!
-//!  @return
-//!   \ref BDM_RC_OK                 => No error \n
-//!   \ref BDM_RC_VDD_WRONG_MODE     => Target Vdd not controlled by BDM interface \n
-//!   \ref BDM_RC_VDD_NOT_REMOVED    => Target Vdd failed to fall \n
-//!   \ref BDM_RC_VDD_NOT_PRESENT    => Target Vdd failed to rise \n
-//!   \ref BDM_RC_RESET_TIMEOUT_RISE => RESET signal failed to rise \n
-//!
-USBDM_ErrorCode bdm_cycleTargetVdd(uint8_t mode) {
+/**
+ *  Cycle power to target
+ *
+ *  @param mode
+ *     - \ref RESET_SPECIAL => Power on in special mode,
+ *     - \ref RESET_NORMAL  => Power on in normal mode
+ *
+ *   BKGD/BKPT is held low when power is re-applied to start
+ *   target with BDM active if RESET_SPECIAL
+ *
+ *   @return
+ *    \ref BDM_RC_OK                 => No error \n
+ *    \ref BDM_RC_VDD_WRONG_MODE     => Target Vdd not controlled by BDM interface \n
+ *    \ref BDM_RC_VDD_NOT_REMOVED    => Target Vdd failed to fall \n
+ *    \ref BDM_RC_VDD_NOT_PRESENT    => Target Vdd failed to rise \n
+ *    \ref BDM_RC_RESET_TIMEOUT_RISE => RESET signal failed to rise \n
+ */
+USBDM_ErrorCode cycleTargetVdd(uint8_t mode) {
    USBDM_ErrorCode rc;
 
-   // This may take a while
-   setBDMBusy();
+   // TODO This may take a while
+   //setBDMBusy();
 
-   rc = bdm_cycleTargetVddOff();
+   rc = cycleTargetVddOff();
    if (rc != BDM_RC_OK) {
       return rc;
    }
@@ -489,7 +485,7 @@ USBDM_ErrorCode bdm_cycleTargetVdd(uint8_t mode) {
 //!
 //!  @return 8-bit value representing the Target Vdd, N ~ (N/255) * 5V \n
 //!
-uint16_t bdm_targetVddMeasure(void) {
+uint16_t targetVddMeasure(void) {
 #if ((HW_CAPABILITY&CAP_VDDSENSE) == 0)
    // No Target Vdd measurement - Assume external Vdd supplied
    return 255;
@@ -504,89 +500,66 @@ uint16_t bdm_targetVddMeasure(void) {
 //
 //=========================================================================
 
-//! Once off initialisation
-//!
-void bdm_init(void) {
-
-   // Turn off important things
-#if (HW_CAPABILITY&CAP_FLASH)
-   (void)bdmSetVpp(BDM_TARGET_VPP_OFF);
-#endif   
-   
-//   VDD_OFF();
-   (void)bdm_clearStatus();
-
-   // Update power status
-   (void)bdm_checkTargetVdd();
-}
-
 //!  Sets the BDM interface to a suspended state
 //!
 //!  - All signals idle \n
 //!  - All voltages off.
 //!
-void bdm_suspend(void){
+void suspend(void){
 #if (HW_CAPABILITY&CAP_FLASH)
    (void)bdmSetVpp(BDM_TARGET_VPP_OFF);
 #endif
 #if (HW_CAPABILITY&CAP_CFVx_HW)
    bdmCF_suspend();
 #endif
-#if (HW_CAPABILITY&CAP_BDM)    	  
-   bdmHCS_suspend();
+#if (HW_CAPABILITY&CAP_BDM)
+   Bdm::disable();
 #endif   
-}
-
-//!  Turns off the BDM interface
-//!
-void bdm_interfaceOff( void ) {
+#if (HW_CAPABILITY&CAP_SWD_HW)
+   Swd::disable();
+#endif
 }
 
 //!  Turns off the BDM interface
 //!
 //!  Depending upon settings, may leave target power on.
 //!
-void bdm_off( void ) {
-   bdm_interfaceOff();
+void interfaceOff( void ) {
+   Swd::disable();
+   Bdm::disable();
+
    if (!bdm_option.leaveTargetPowered) {
+      // TODO
 //      VDD_OFF();
    }
 }
 
-//! Clear Cable status
-USBDM_ErrorCode bdm_clearStatus(void) {
-   (void)memset(&cable_status, 0, sizeof(cable_status));
+/**
+ * Clear Cable status
+ */
+USBDM_ErrorCode clearStatus(void) {
+   memset(&cable_status, 0, sizeof(cable_status));
    cable_status.target_type = T_OFF;
-
    return BDM_RC_OK;
 }
 
-/*  Initialises BDM module for the given target type
+/**
+ * Initialises BDM module for the given target type
  *
- *   @param target = Target processor (see \ref TargetType_t)
+ * @param target = Target processor (see \ref TargetType_t)
  *
- *   @return E_NO_ERROR on success
+ * @return E_NO_ERROR on success
  */
-USBDM_ErrorCode bdm_setTarget(uint8_t target) {
+USBDM_ErrorCode setTarget(TargetType_t target) {
    USBDM_ErrorCode rc = BDM_RC_OK;
 
-#ifdef RESET_IN_PER
-   RESET_IN_PER    = 1;     // Needed for input level translation to 5V
-#endif
-#ifdef RESET_OUT_PER
-   RESET_OUT_PER   = 1;     // Holds RESET_OUT inactive when unused
-#endif
-
    if (target == T_OFF) {
-	   bdm_off();             // Turn off the interface
+      interfaceOff();
    }   
-   bdm_interfaceOff();
+   clearStatus();
 
-   rc = bdm_clearStatus();
-   if (rc != BDM_RC_OK) {
-      return rc;
-   }
-   cable_status.target_type = (TargetType_t)target; // Assume mode is valid
+   // Initially assume mode is valid
+   cable_status.target_type = target;
 
    switch (target) {
 #if TARGET_CAPABILITY & CAP_S12Z
@@ -608,7 +581,7 @@ USBDM_ErrorCode bdm_setTarget(uint8_t target) {
       case T_CFV1:
 #endif    	  
 #if (TARGET_CAPABILITY & (CAP_RS08|CAP_HCS08|CAP_CFV1))
-         bdmHCS_init();
+         Bdm::initialise();
          break;
 #endif    	  
 #if (TARGET_CAPABILITY&CAP_CFVx)
@@ -643,8 +616,8 @@ USBDM_ErrorCode bdm_setTarget(uint8_t target) {
     	  break;
     	  
       default:
-         bdm_off();          // Turn off the interface
-         (void)bdm_clearStatus();  // Safe mode!
+         // Turn off the interface
+         interfaceOff();
          return BDM_RC_UNKNOWN_TARGET;
    }
    return rc;

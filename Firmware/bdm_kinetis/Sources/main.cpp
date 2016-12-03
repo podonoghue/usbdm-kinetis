@@ -16,9 +16,11 @@
 #include "hardware.h"
 #include "delay.h"
 #include "commands.h"
-#include "cmdProcessingSWD.h"
 #include "usb.h"
+#include "bdmCommon.h"
 #include "bdm.h"
+#include "cmdProcessingSWD.h"
+#include "cmdProcessingHCS.h"
 
 /** Check error code from USBDM API function
  *
@@ -44,6 +46,90 @@ void check(USBDM_ErrorCode rc , const char *file = NULL, unsigned lineNum = 0 ) 
  * Convenience macro to add line number information to check()
  */
 #define CHECK(x) check((x), __FILE__, __LINE__)
+
+uint8_t buffer[20] = {
+      0x1,0x2,0x3,0x4,0x5,0x6,0x7,0x8,0x9,0x10,0x11,0x12,0x13,0x14,0x15,0x16,0x17,0x18,0x19,0x20
+};
+
+using namespace Hcs;
+using namespace Hcs08;
+
+/**
+ *  Sets up dummy command for testing f_CMD_WRITE_MEM()
+ */
+USBDM_ErrorCode memWrite(uint32_t address, uint8_t opSize, uint8_t size, const uint8_t data[]) {
+   //                          SIZE     #BYTES   Address
+   uint8_t operation[] = {0,0, opSize,   size,   (uint8_t)(address>>24), (uint8_t)(address>>16), (uint8_t)(address>>8), (uint8_t)address};
+
+   memcpy(commandBuffer,                   operation, sizeof(operation));
+   memcpy(commandBuffer+sizeof(operation), data,      size);
+
+   return f_CMD_WRITE_MEM();
+}
+
+/**
+ *  Sets up dummy command for testing f_CMD_READ_MEM()
+ */
+USBDM_ErrorCode memRead(uint32_t address, uint8_t opSize, uint8_t size, uint8_t data[]) {
+   //                          SIZE     #BYTES   Address
+   uint8_t operation[] = {0,0, opSize,   size,   (uint8_t)(address>>24), (uint8_t)(address>>16), (uint8_t)(address>>8), (uint8_t)address};
+
+   memcpy(commandBuffer, operation, sizeof(operation));
+   USBDM_ErrorCode rc = f_CMD_READ_MEM();
+   if (rc == BDM_RC_OK) {
+      memcpy(data, commandBuffer+1, size);
+   }
+   return rc;
+}
+
+/**
+ *
+ * Examples
+ *   SWD : testmem(0x20000000, 0x10000);
+ *
+ */
+USBDM_ErrorCode testmem(uint32_t addressStart, uint32_t addrRange) {
+
+//   PRINTF("Connection speed = %ld Hz\n", getSpeed());
+
+   CHECK(f_CMD_CONNECT());
+//   CHECK(Swd::powerUp());
+   PRINTF("Connected\n");
+
+   uint8_t randomData[sizeof(commandBuffer)];
+   for (unsigned i=0; i<sizeof(randomData);i++) {
+      randomData[i] = rand();
+   }
+   for(;;) {
+      static const uint8_t sizes[] = {1,2,4};
+      int sizeIndex    = rand()%3;
+      uint8_t  opSize  = sizes[sizeIndex];
+      uint8_t  size    = rand()%(sizeof(commandBuffer)-20)+1;
+      uint32_t address = addressStart+rand()%(addrRange-size);
+
+      uint32_t mask = ~((1<<sizeIndex)-1);
+      address = address & mask;
+      size    = size & mask;
+
+      //                          SIZE     #BYTES   Address
+      uint8_t operation[] = {0,0, opSize,   size,   (uint8_t)(address>>24), (uint8_t)(address>>16), (uint8_t)(address>>8), (uint8_t)address};
+
+      PRINTF("Testing [%08lX..%08lX]:%c\n", address, address+size-1, "-BW-L"[opSize]);
+
+      memcpy(commandBuffer, operation, sizeof(operation));
+      memcpy(commandBuffer+sizeof(operation), randomData, size);
+      CHECK(f_CMD_WRITE_MEM());
+
+      memset(commandBuffer, 0, sizeof(commandBuffer));
+      memcpy(commandBuffer, operation, sizeof(operation));
+      CHECK(f_CMD_READ_MEM());
+
+      if (memcmp(commandBuffer+1, randomData, size) != 0) {
+         return BDM_RC_CF_DATA_INVALID;
+      }
+   }
+   return BDM_RC_OK;
+}
 
 #if 0
 USBDM_ErrorCode recover() {
@@ -92,38 +178,6 @@ void testMassErase() {
    else {
       PRINTF("OK massErase()\n");
    }
-}
-
-uint8_t buffer[20] = {
-      0x1,0x2,0x3,0x4,0x5,0x6,0x7,0x8,0x9,0x10,0x11,0x12,0x13,0x14,0x15,0x16,0x17,0x18,0x19,0x20
-};
-
-/**
- *  Sets up dummy command for testing f_CMD_WRITE_MEM()
- */
-USBDM_ErrorCode memWrite(uint32_t address, uint8_t opSize, uint8_t size, const uint8_t data[]) {
-   //                          SIZE     #BYTES   Address
-   uint8_t operation[] = {0,0, opSize,   size,   (uint8_t)(address>>24), (uint8_t)(address>>16), (uint8_t)(address>>8), (uint8_t)address};
-
-   memcpy(commandBuffer,                   operation, sizeof(operation));
-   memcpy(commandBuffer+sizeof(operation), data,      size);
-
-   return Swd::f_CMD_WRITE_MEM();
-}
-
-/**
- *  Sets up dummy command for testing f_CMD_READ_MEM()
- */
-USBDM_ErrorCode memWrite(uint32_t address, uint8_t opSize, uint8_t size, uint8_t data[]) {
-   //                          SIZE     #BYTES   Address
-   uint8_t operation[] = {0,0, opSize,   size,   (uint8_t)(address>>24), (uint8_t)(address>>16), (uint8_t)(address>>8), (uint8_t)address};
-
-   memcpy(commandBuffer, operation, sizeof(operation));
-   USBDM_ErrorCode rc = Swd::f_CMD_READ_MEM();
-   if (rc == BDM_RC_OK) {
-      memcpy(data, commandBuffer+1, size);
-   }
-   return rc;
 }
 
 /**
@@ -225,47 +279,39 @@ void initialise() {
 #if (HW_CAPABILITY&CAP_VDDCONTROL)
    (void)Vdd::initialise();
 #endif
+
+   // Turn off important things
+#if (HW_CAPABILITY&CAP_FLASH)
+   (void)bdmSetVpp(BDM_TARGET_VPP_OFF);
+#endif
+
+   // Update power status
+   checkTargetVdd();
 }
 
-void testing () {
+void hcs08Testing () {
    // Need to initialise for debug UART0
-   initialise();
+   ::initialise();
 
    PRINTF("SystemBusClock  = %ld\n", SystemBusClock);
    PRINTF("SystemCoreClock = %ld\n", SystemCoreClock);
 
    PRINTF("Target Vdd = %f\n", TargetVdd::readVoltage());
 
-   Bdm::initialise();
-
-   //   uint16_t syncLength = 0;
-   //   USBDM_ErrorCode rc;
-   //   do {
-   //      rc = Bdm::sync(syncLength);
-   //      if (rc == BDM_RC_OK) {
-   //         PRINTF("Sync = %d\n", syncLength);
-   //         Bdm::setSyncLength(syncLength);
-   //      }
-   //      else {
-   //         PRINTF("Sync failed\n");
-   //      }
-   //   } while (rc != BDM_RC_OK);
-
-   Bdm::setSyncLength(660);
+   USBDM_ErrorCode rc;
+   do {
+      rc = setTarget(T_HCS08);
+      if (rc != BDM_RC_OK) {
+         continue;
+      }
+      rc = f_CMD_CONNECT();
+      if (rc != BDM_RC_OK) {
+         continue;
+      }
+      testmem(0x80,1024);
+   } while (rc != BDM_RC_OK);
 
    for(;;) {
-      //      USBDM_ErrorCode rc = BDM_RC_OK;
-      ////      rc = Bdm::sync(syncLength);
-      //      if (rc != BDM_RC_OK) {
-      //         PRINTF("Sync Failed\n");
-      //      }
-      //      else {
-      ////         PRINTF("Sync = %d\n", syncLength);
-      //         Bdm::tx(0xA5);
-      //      }
-      Bdm::cmd_0_0(0x23);
-      //      USBDM::waitMS(100);
-      //      __asm__("nop");
    }
 
 }
@@ -274,8 +320,10 @@ void testing () {
 //char logIndex = 0;
 
 int main() {
+   hcs08Testing();
+
    // Need to initialise for debug UART0
-   initialise();
+   ::initialise();
 
    PRINTF("SystemBusClock  = %ld\n", SystemBusClock);
    PRINTF("SystemCoreClock = %ld\n", SystemCoreClock);
@@ -292,6 +340,6 @@ int main() {
       // Process commands
       commandLoop();
       // Re-initialise
-      initialise();
+      ::initialise();
    }
 }

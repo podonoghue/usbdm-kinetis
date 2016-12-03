@@ -464,6 +464,15 @@ void initialise() {
 }
 
 /**
+ * Disables interface
+ *
+ * Note: Reset is not affected
+ */
+void disable() {
+   SpiInfo::clearPCRs();
+}
+
+/**
  * Obtain default AHB_AP.csw register default value from target
  *
  * @return BDM_RC_OK ahb_ap_csw_defaultValue already valid or successfully updated, error otherwise

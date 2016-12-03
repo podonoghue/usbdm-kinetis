@@ -6,14 +6,16 @@
  */
 
 #include <string.h>
-#include "cmdProcessingSWD.h"
-#include "cmdProcessing.h"
-#include "targetDefines.h"
-#include "configure.h"
 #include "delay.h"
+#include "configure.h"
+#include "targetDefines.h"
+#include "cmdProcessing.h"
 #include "bdmCommon.h"
-#include "swd.h"
 #include "usb.h"
+#include "swd.h"
+#include "bdm.h"
+#include "cmdProcessingSWD.h"
+#include "cmdProcessingHCS.h"
 
 /** Buffer for USB command in, result out */
 uint8_t commandBuffer[MAX_COMMAND_SIZE+4];
@@ -52,38 +54,38 @@ static USBDM_ErrorCode commandStatus;
  *  @return 16-bit status byte \ref StatusBitMasks_t
  */
 uint16_t makeStatusWord(void) {
-uint16_t status = 0;
+   uint16_t status = 0;
 
    // Target specific checks
    switch (cable_status.target_type) {
 #if (HW_CAPABILITY&CAP_CFVx_HW) && (TARGET_CAPABILITY&CAP_PST)
-   case T_CFVx :
-     if (ALLPST_IS_HIGH) {
-         status |= S_HALT;  // Target is halted
-     }
-      break;
+      case T_CFVx :
+         if (ALLPST_IS_HIGH) {
+            status |= S_HALT;  // Target is halted
+         }
+         break;
 #endif
 #if HW_CAPABILITY&CAP_BDM
-   case T_HC12:
+      case T_HC12:
 #if TARGET_CAPABILITY & CAP_S12Z
-   case T_HCS12Z  :
+      case T_HCS12Z  :
 #endif
-   case T_HCS08:
-   case T_RS08:
-   case T_CFV1:
-     if (cable_status.ackn==ACKN) {  // Target supports ACKN and the feature is enabled ?
-       status |= S_ACKN;
-     }
-      switch (cable_status.speed) {
-//      case SPEED_NO_INFO       : status |= S_NOT_CONNECTED;  break;
-        case SPEED_USER_SUPPLIED : status |= S_USER_DONE;      break;
-        case SPEED_SYNC          : status |= S_SYNC_DONE;      break;
-        case SPEED_GUESSED       : status |= S_GUESS_DONE;     break;
-      }
-     break;
+      case T_HCS08:
+      case T_RS08:
+      case T_CFV1:
+         if (cable_status.ackn==ACKN) {  // Target supports ACKN and the feature is enabled ?
+            status |= S_ACKN;
+         }
+         switch (cable_status.speed) {
+            case SPEED_NO_INFO       : status |= S_NOT_CONNECTED;  break;
+            case SPEED_USER_SUPPLIED : status |= S_USER_DONE;      break;
+            case SPEED_SYNC          : status |= S_SYNC_DONE;      break;
+            case SPEED_GUESSED       : status |= S_GUESS_DONE;     break;
+         }
+         break;
 #endif
-      default:
-        break;
+            default:
+               break;
    }
 #if (HW_CAPABILITY&CAP_RST_IN)
    if (Reset::read()) {
@@ -109,7 +111,7 @@ uint16_t status = 0;
 #endif
 #if (HW_CAPABILITY&CAP_FLASH)
    switch (cable_status.flashState) {
-//    case BDM_TARGET_VPP_OFF     : status |= S_VPP_OFF;      break;
+      //    case BDM_TARGET_VPP_OFF     : status |= S_VPP_OFF;      break;
       case BDM_TARGET_VPP_STANDBY : status |= S_VPP_STANDBY;  break;
       case BDM_TARGET_VPP_ON      : status |= S_VPP_ON;       break;
       case BDM_TARGET_VPP_ERROR   : status |= S_VPP_ERR;      break;
@@ -135,14 +137,16 @@ USBDM_ErrorCode rc = BDM_RC_OK;
 #if HW_CAPABILITY&CAP_BDM
    switch (cable_status.target_type) {
    case T_HC12:
-     if (cable_status.speed == SPEED_USER_SUPPLIED) //   User has specified speed
+     if (cable_status.speed == SPEED_USER_SUPPLIED) {
+        //   User has specified speed
          break;
-     // Fall through
+     }
+     // No break
    case T_RS08:
    case T_HCS08:
    case T_CFV1:
       if (bdm_option.autoReconnect == when) // If auto re-connect enabled at this time then ...
-        rc = bdm_physicalConnect();        //    ...make sure of connection
+        rc = Bdm::physicalConnect();        //    ...make sure of connection
       break;
    default: ;
    }
@@ -240,14 +244,13 @@ DebugSubCommands subCommand = (DebugSubCommands)commandBuffer[2];
    switch ((uint8_t)subCommand) {
 #if (HW_CAPABILITY&CAP_BDM)
       case BDM_DBG_ACKN: // try the ACKN feature
-         bdm_acknInit();
+         Bdm::enableACKNMode();
          commandBuffer[1] = (uint8_t) makeStatusWord(); // return the status byte
          returnSize = 2;
          return BDM_RC_OK;
 
       case BDM_DBG_SYNC: { // try the sync feature
-         uint8_t rc;
-         rc = bdm_syncMeasure();
+         USBDM_ErrorCode rc = Bdm::sync();
          if (rc != BDM_RC_OK) {
             return rc;
          }
@@ -257,9 +260,9 @@ DebugSubCommands subCommand = (DebugSubCommands)commandBuffer[2];
          }
          return BDM_RC_OK;
 
-      case BDM_DBG_TESTPORT: // Check port I/O timing - hangs USB interface
-         bdm_checkTiming();
-         return BDM_RC_OK;
+//      case BDM_DBG_TESTPORT: // Check port I/O timing - hangs USB interface
+//         bdm_checkTiming();
+//         return BDM_RC_OK;
 #endif
 #if (HW_CAPABILITY & CAP_FLASH)
       case BDM_DBG_VPP_OFF: // Programming voltage off
@@ -294,7 +297,7 @@ DebugSubCommands subCommand = (DebugSubCommands)commandBuffer[2];
 #if (HW_CAPABILITY & CAP_VDDSENSE)
       case BDM_DBG_MEASURE_VDD: // Measure Target Vdd
       {
-        uint16_t voltage = bdm_targetVddMeasure(); // return the value
+        uint16_t voltage = targetVddMeasure(); // return the value
         commandBuffer[1] = (uint8_t)(voltage>>8);
         commandBuffer[2] = (uint8_t)voltage;
       }
@@ -331,7 +334,7 @@ DebugSubCommands subCommand = (DebugSubCommands)commandBuffer[2];
 #endif // (DEBUG&STACK_DEBUG)
 #if (HW_CAPABILITY&CAP_BDM)
       case BDM_DBG_TESTBDMTX: // Test BDM Tx routine
-         return bdm_testTx(commandBuffer[3]);
+         return BDM_RC_ILLEGAL_COMMAND;//bdm_testTx(commandBuffer[3]);
 #endif
 #if TARGET_CAPABILITY & CAP_ARM_SWD
       case   BDM_DBG_SWD_ERASE_LOOP:  //!< - Mass erase on reset capture
@@ -419,7 +422,7 @@ USBDM_ErrorCode f_CMD_GET_BDM_STATUS(void) {
 uint16_t word;
 
    // Update power status
-   (void)bdm_checkTargetVdd();
+   checkTargetVdd();
 
    word = makeStatusWord();
 
@@ -458,7 +461,7 @@ uint16_t status = 0;
  */
 USBDM_ErrorCode f_CMD_CONTROL_PINS(void) {
 
-   uint16_t control = (commandBuffer[2]<<8)|commandBuffer[3];
+   PinLevelMasks_t control = (PinLevelMasks_t)((commandBuffer[2]<<8)|commandBuffer[3]);
 
    // Set up for OK return
    commandBuffer[1] = 0;
@@ -469,7 +472,7 @@ USBDM_ErrorCode f_CMD_CONTROL_PINS(void) {
       getPinStatus();
       return BDM_RC_OK;
    }
-   if (control == (uint16_t)PIN_RELEASE) {
+   if (control == PIN_RELEASE) {
       switch (cable_status.target_type) {
 #if HW_CAPABILITY&CAP_BDM
       case T_HC12 :
@@ -479,7 +482,7 @@ USBDM_ErrorCode f_CMD_CONTROL_PINS(void) {
       case T_HCS08 :
       case T_RS08 :
       case T_CFV1 :
-         bdmHCS_interfaceIdle();
+         Bdm::initialise();
          break;
 #endif
 #if (HW_CAPABILITY&CAP_CFVx_HW)
@@ -516,7 +519,7 @@ USBDM_ErrorCode f_CMD_CONTROL_PINS(void) {
    case T_HCS08 :
    case T_RS08 :
    case T_CFV1 :
-      if (control & ~(PIN_BKGD|PIN_RESET))
+      if (control & ~(PIN_BKGD_MASK|PIN_RESET_MASK))
          return BDM_RC_ILLEGAL_PARAMS;
       break;
 #endif
@@ -539,7 +542,7 @@ USBDM_ErrorCode f_CMD_CONTROL_PINS(void) {
 #endif
 #if (HW_CAPABILITY&CAP_SWD_HW)
       case T_ARM_SWD :
-         if (control & ~(PIN_SWD|PIN_SWCLK|PIN_RESET))
+         if (control & ~(PIN_SWD_MASK|PIN_SWCLK_MASK|PIN_RESET_MASK))
             return BDM_RC_ILLEGAL_PARAMS;
          break;
 #endif
@@ -549,21 +552,11 @@ USBDM_ErrorCode f_CMD_CONTROL_PINS(void) {
    }
 
 #if (HW_CAPABILITY & CAP_BDM)
-   switch (control & PIN_BKGD) {
-   case PIN_BKGD_3STATE :
-      BDM_3STATE();    // Disable BKGD buffer, BKGD = X
-       break;
-   case PIN_BKGD_LOW :
-      BDM_LOW();       // Enable BKGD buffer,  BKGD = 0
-       break;
-   case PIN_BKGD_HIGH :
-      BDM_HIGH();      // Enable BKGD buffer,  BKGD = 1
-       break;
-   }
+   Bdm::setBkgd(control);
 #endif
 
 #if (HW_CAPABILITY & CAP_RST_OUT)
-   switch (control & PIN_RESET) {
+   switch (control & PIN_RESET_MASK) {
    case PIN_RESET_3STATE :
       Reset::highZ();
 #if (HW_CAPABILITY & CAP_RST_IN)
@@ -652,7 +645,7 @@ USBDM_ErrorCode f_CMD_SET_VDD(void) {
    bdm_option.targetVdd = commandBuffer[3];
    rc = bdm_setTargetVdd();
 #else
-   rc = bdm_checkTargetVdd();
+   rc = checkTargetVdd();
 #endif
    // It's OK if there is no external power at the moment
    if ((commandBuffer[3] == BDM_TARGET_VDD_OFF) &&
@@ -679,6 +672,7 @@ extern USBDM_ErrorCode f_CMD_SET_TARGET(void);
 
 /** Command functions shared by all targets */
 static const FunctionPtr commonFunctionPtrs[] = {
+
    // Common to all targets
    f_CMD_GET_COMMAND_STATUS         ,//= 0,  CMD_USBDM_GET_COMMAND_STATUS
    f_CMD_SET_TARGET                 ,//= 1,  CMD_USBDM_SET_TARGET
@@ -770,46 +764,48 @@ static const FunctionPtrs S12ZFunctionPointers = {CMD_USBDM_CONNECT,
 
 #if (TARGET_CAPABILITY&(CAP_HCS08|CAP_RS08))
 static const FunctionPtr HCS08functionPtrs[] = {
-   // Target specific versions
-   f_CMD_CONNECT                    ,//= 15, CMD_USBDM_CONNECT
-   f_CMD_SET_SPEED                  ,//= 16, CMD_USBDM_SET_SPEED
-   f_CMD_GET_SPEED                  ,//= 17, CMD_USBDM_GET_SPEED
+      /**
+       * HCS08 Target specific versions
+       */
+      Hcs::f_CMD_CONNECT            ,//= 15, CMD_USBDM_CONNECT
+      Hcs::f_CMD_SET_SPEED          ,//= 16, CMD_USBDM_SET_SPEED
+      Hcs::f_CMD_GET_SPEED          ,//= 17, CMD_USBDM_GET_SPEED
 
-   f_CMD_ILLEGAL                    ,//= 18, CMD_CUSTOM_COMMAND
-   f_CMD_ILLEGAL                    ,//= 19, RESERVED
+      f_CMD_ILLEGAL                 ,//= 18, CMD_CUSTOM_COMMAND
+      f_CMD_ILLEGAL                 ,//= 19, RESERVED
 
-   f_CMD_READ_STATUS_REG            ,//= 20, CMD_USBDM_READ_STATUS_REG
-   f_CMD_WRITE_CONTROL_REG          ,//= 21, CMD_USBDM_WRITE_CONTROL_REG
+      Hcs::f_CMD_READ_STATUS_REG    ,//= 20, CMD_USBDM_READ_STATUS_REG
+      Hcs::f_CMD_WRITE_CONTROL_REG  ,//= 21, CMD_USBDM_WRITE_CONTROL_REG
 
-   f_CMD_RESET                      ,//= 22, CMD_USBDM_TARGET_RESET
-   f_CMD_STEP                       ,//= 23, CMD_USBDM_TARGET_STEP
-   f_CMD_GO                         ,//= 24, CMD_USBDM_TARGET_GO
-   f_CMD_HALT                       ,//= 25, CMD_USBDM_TARGET_HALT
+      Hcs::f_CMD_RESET              ,//= 22, CMD_USBDM_TARGET_RESET
+      Hcs::f_CMD_STEP               ,//= 23, CMD_USBDM_TARGET_STEP
+      Hcs::f_CMD_GO                 ,//= 24, CMD_USBDM_TARGET_GO
+      Hcs::f_CMD_HALT               ,//= 25, CMD_USBDM_TARGET_HALT
 
-   f_CMD_HCS08_WRITE_REG            ,//= 26, CMD_USBDM_WRITE_REG
-   f_CMD_HCS08_READ_REG             ,//= 27, CMD_USBDM_READ_REG
+      Hcs08::f_CMD_WRITE_REG        ,//= 26, CMD_USBDM_WRITE_REG
+      Hcs08::f_CMD_READ_REG         ,//= 27, CMD_USBDM_READ_REG
 
-   f_CMD_ILLEGAL                    ,//= 28, CMD_USBDM_WRITE_CREG
-   f_CMD_ILLEGAL                    ,//= 29, CMD_USBDM_READ_CREG
+      f_CMD_ILLEGAL                 ,//= 28, CMD_USBDM_WRITE_CREG
+      f_CMD_ILLEGAL                 ,//= 29, CMD_USBDM_READ_CREG
 
-   f_CMD_WRITE_BKPT                 ,//= 30, CMD_USBDM_WRITE_DREG
-   f_CMD_READ_BKPT                  ,//= 31, CMD_USBDM_READ_DREG
+      Hcs08::f_CMD_WRITE_BKPT       ,//= 30, CMD_USBDM_WRITE_DREG
+      Hcs08::f_CMD_READ_BKPT        ,//= 31, CMD_USBDM_READ_DREG
 
-   f_CMD_HCS08_WRITE_MEM            ,//= 32, CMD_USBDM_WRITE_MEM
-   f_CMD_HCS08_READ_MEM             ,//= 33, CMD_USBDM_READ_MEM
+      Hcs08::f_CMD_WRITE_MEM        ,//= 32, CMD_USBDM_WRITE_MEM
+      Hcs08::f_CMD_READ_MEM         ,//= 33, CMD_USBDM_READ_MEM
 
 #if (TARGET_CAPABILITY & CAP_RS08)
-   f_CMD_ILLEGAL                    ,//= 34, CMD_USBDM_TRIM_CLOCK - obsolete
-   f_CMD_ILLEGAL                    ,//= 35, CMD_USBDM_RS08_FLASH_ENABLE - obsolete
-   f_CMD_ILLEGAL                    ,//= 36, CMD_USBDM_RS08_FLASH_STATUS - obsolete
-   f_CMD_ILLEGAL                    ,//= 37, CMD_USBDM_RS08_FLASH_DISABLE - obsolete
-   f_CMD_ILLEGAL                    ,//= 38, CMD_USBDM_JTAG_GOTORESET
-   f_CMD_ILLEGAL                    ,//= 39, CMD_USBDM_JTAG_GOTOSHIFT
-   f_CMD_ILLEGAL                    ,//= 40, CMD_USBDM_JTAG_WRITE
-   f_CMD_ILLEGAL                    ,//= 41, CMD_USBDM_JTAG_READ
-   f_CMD_SET_VPP                    ,//= 42, CMD_USBDM_SET_VPP
+      f_CMD_ILLEGAL                    ,//= 34, CMD_USBDM_TRIM_CLOCK - obsolete
+      f_CMD_ILLEGAL                    ,//= 35, CMD_USBDM_RS08_FLASH_ENABLE - obsolete
+      f_CMD_ILLEGAL                    ,//= 36, CMD_USBDM_RS08_FLASH_STATUS - obsolete
+      f_CMD_ILLEGAL                    ,//= 37, CMD_USBDM_RS08_FLASH_DISABLE - obsolete
+      f_CMD_ILLEGAL                    ,//= 38, CMD_USBDM_JTAG_GOTORESET
+      f_CMD_ILLEGAL                    ,//= 39, CMD_USBDM_JTAG_GOTOSHIFT
+      f_CMD_ILLEGAL                    ,//= 40, CMD_USBDM_JTAG_WRITE
+      f_CMD_ILLEGAL                    ,//= 41, CMD_USBDM_JTAG_READ
+      f_CMD_SET_VPP                    ,//= 42, CMD_USBDM_SET_VPP
 #endif
-   };
+};
 static const FunctionPtrs HCS08FunctionPointers = {CMD_USBDM_CONNECT,
                                                    sizeof(HCS08functionPtrs)/sizeof(FunctionPtr),
                                                    HCS08functionPtrs};
@@ -979,7 +975,9 @@ static const FunctionPtrs JTAGFunctionPointers   = {CMD_USBDM_CONNECT,
 #if (TARGET_CAPABILITY&CAP_ARM_SWD)
 /** Command functions for ARM-SWD targets */
 static const FunctionPtr SWDfunctionPtrs[] = {
-   // Target specific versions
+   /**
+    * SWD Target specific versions
+    */
    Swd::f_CMD_CONNECT                ,//= 15, CMD_USBDM_CONNECT
    Swd::f_CMD_SET_SPEED              ,//= 16, CMD_USBDM_SET_SPEED
    Swd::f_CMD_GET_SPEED              ,//= 17, CMD_USBDM_GET_SPEED
@@ -1074,7 +1072,7 @@ static const FunctionPtrs *const functionsPtrs[] = {
  *    commandBuffer[2] = target type
  */
 USBDM_ErrorCode f_CMD_SET_TARGET(void) {
-   uint8_t target = commandBuffer[2];
+   TargetType_t target = (TargetType_t) commandBuffer[2];
 
    if (target >= (sizeof(functionsPtrs)/sizeof(functionsPtrs[0]))) {
       currentFunctions = NULL;
@@ -1085,7 +1083,7 @@ USBDM_ErrorCode f_CMD_SET_TARGET(void) {
    if ((target != T_OFF) && (currentFunctions == NULL)) {
       target = T_ILLEGAL;
    }
-   return bdm_setTarget(target);
+   return setTarget(target);
 }
 
 /*

@@ -91,6 +91,10 @@ enum Ftm_ChannelMode {
    ftm_dualEdgeCaptureOneShotFallingEdge     = FTM_CnSC_MS(0)|FTM_CnSC_ELS(2),
    //! Dual edge input capture continuous - CHn configuration
    ftm_dualEdgeCaptureContinuousFallingEdge  = FTM_CnSC_MS(1)|FTM_CnSC_ELS(2),
+   //! Combine mode - CHn configuration
+   ftm_CombinePositivePulse                  = FTM_CnSC_MS(0)|FTM_CnSC_ELS(2),
+   //! Combine mode - CHn configuration
+   ftm_CombineNegativePulse                  = FTM_CnSC_MS(0)|FTM_CnSC_ELS(1),
 };
 
 /**

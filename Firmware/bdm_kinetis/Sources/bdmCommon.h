@@ -28,19 +28,16 @@
 #define RESET_SETTLEms        3U // ms - time to wait for signals to settle in us, this should be longer than the soft reset time
 #define RESET_RECOVERYms     10U // ms - how long to wait after reset before new commands are allowed
 
-//! Initialises the timers, input captures and interrupts
-//!
-void              bdm_init(void);
-void              bdm_off(void);
-USBDM_ErrorCode   bdm_setTarget(uint8_t target);
-USBDM_ErrorCode   bdm_checkTargetVdd(void);
-void              bdm_suspend(void);
-USBDM_ErrorCode   bdm_cycleTargetVddOn(uint8_t mode);
-USBDM_ErrorCode   bdm_cycleTargetVdd(uint8_t mode);
-uint16_t          bdm_targetVddMeasure(void);
-USBDM_ErrorCode   bdm_setTargetVdd( void );  // Low-level - bdm_cycleTargetVddOn() preferred
-void              bdm_interfaceOff( void );
-
-USBDM_ErrorCode   bdm_clearStatus(void);
+/*
+ * Initialises the timers, input captures and interrupts
+ */
+USBDM_ErrorCode   setTarget(TargetType_t target);
+USBDM_ErrorCode   checkTargetVdd(void);
+void              suspend(void);
+USBDM_ErrorCode   cycleTargetVddOn(uint8_t mode);
+USBDM_ErrorCode   cycleTargetVdd(uint8_t mode);
+uint16_t          targetVddMeasure(void);
+USBDM_ErrorCode   setTargetVdd( void );  // Low-level - bdm_cycleTargetVddOn() preferred
+USBDM_ErrorCode   clearStatus(void);
 
 #endif // _BDMCOMMON_H_

@@ -33,56 +33,30 @@
 
    \verbatim
    Change History
-   +========================================================================================
-   | 27 Dec 2012 | Improved waiting for reset rise (prevent USB timeouts)              - pgo V4.10.4
-   | 26 Oct 2012 | Added HCS08 & HCS12 fast read/write                                 - pgo V4.10.4
-   | 27 Jan 2012 | Added setBdmprr() & associated changes (HCS12 - Global access)      - pgo V4.9
-   |  1 Oct 2011 | Improved error checking on HCS08 reads & writes                     - pgo V4.7
-   | 24 Feb 2011 | Extended auto-connect options                                       - pgo V4.6
-   | 10 Feb 2011 | Changed f_CMD_RESET() to do reset only, re-connect now done in DLLs - pgo V4.5 
-   | 10 May 2010 | Changed to accommodate changes to Vpp interface                     - pgo 
-   | 14 Apr 2010 | f_CMD_RESET() - fixed case overlap (multiple resets occuring)       - pgo
-   | 14 Apr 2010 | f_CMD_CONNECT() - made status re-write safer for CFV1               - pgo
-   | 14 Apr 2010 | f_CMD_CONNECT() - fixed status re-write so only done if needed      - pgo
-   |  4 Feb 2010 | f_CMD_RESET() now supports extended modes & re-connects more often  - pgo
-   | 15 Sep 2009 | Changed to use of bdm_physicalConnect() in f_CMD_READ_STATUS_REG()  - pgo
-   |    Sep 2009 | Major changes for V2                                                - pgo
-   -========================================================================================
-   |  4 Feb 2010 | Changes to CMD_SET_SPEED() to reduce speed checks                   - pgo
-   |  1 Apr 2009 | Changes to CMD_CONNECT to improve Alt CLK                           - pgo
-   | 27 Dec 2008 | Added option BDM_OPT_SET_INTERFACELEVEL                             - pgo
-   | 10 Dec 2008 | Added MC51AC256 Hack                                                - pgo
-   | 23 Jul 2008 | Added ICP code                                                      - pgo
-   | 13 Jul 2008 | Moved commandBuffer from Z_PAGE to make larger                      - pgo
-   | 10 Jul 2008 | Changed re-connect strategy                                         - pgo
-   | 20 Jun 2008 | Fixed RS08 CMD_WRITE_8 when doing Flash prog.                       - pgo
-   | 20 Jun 2008 | Changed autoconnect condition                                       - pgo
-   | 13 Jun 2008 | Changed mem_write/read [coldfire]                                   - pgo
-   |  8 Jun 2008 | Added CFv1 code                                                     - pgo
-   | 11 Apr 2008 | Added reconnect code [SYNC on READ_STATUS]                          - pgo
-   | 11 Apr 2008 | Added option code                                                   - pgo
-   | 23 Mar 2008 | Changed return code to use BDM_RC_... codes                         - pgo
-   |  3 Mar 2008 | Started changes for JM60 - lots                                     - pgo
-   +========================================================================================
+   +============================================================================================
+   | 3  Dec 2016 | Ported to Kinetis                                                - V4.121.160
+   +============================================================================================
    \endverbatim
-*/
+ */
 #include <string.h>
-#include "Configure.h"
-#include "Commands.h"
-#include "BDM.h"
-#include "BDMMacros.h"
-#include "BDMCommon.h"
-#include "CmdProcessing.h"
-#include "CmdProcessingHCS.h"
-#include "TargetDefines.h"
+#include "utilities.h"
+#include "configure.h"
+#include "commands.h"
+#include "bdm.h"
+#include "bdmCommon.h"
+#include "bdmMacros.h"
+#include "cmdProcessing.h"
+#include "cmdProcessingHCS.h"
+#include "targetDefines.h"
 
 //======================================================================
 //======================================================================
 //======================================================================
 
-#pragma MESSAGE DISABLE C4000 // Disable warnings about always true
+namespace Hcs {
 
-namespace Hcs08 {
+using namespace Bdm;
+
 /**
  * Write an arbitrary command using BDM protocol
  * 
@@ -90,58 +64,59 @@ namespace Hcs08 {
  *     == \ref BDM_RC_OK => success        \n
  *     != \ref BDM_RC_OK => error
  */
-uint8_t f_CMD_CUSTOM_COMMAND(void) {
-   BDM_CMD_0_0_NOACK(_BDMZ12_ERASE_FLASH);
-   bdm_wait64();
-   BDM_CMD_0_0_NOACK(_BDMZ12_ERASE_FLASH);
-   bdm_wait64();
+USBDM_ErrorCode f_CMD_CUSTOM_COMMAND(void) {
+   cmd_0_0_NOACK(_BDMZ12_ERASE_FLASH);
+   acknowledgeOrWait64();
+   cmd_0_0_NOACK(_BDMZ12_ERASE_FLASH);
+   acknowledgeOrWait64();
    return BDM_RC_OK;
 }
 
-};
-//! HCS12/HCS08/RS08/CFV1 - Try to connect to the target
-//!
-//! @return
-//!    == \ref BDM_RC_OK => success        \n
-//!    != \ref BDM_RC_OK => error
-//!
-uint8_t f_CMD_CONNECT(void) {
-uint8_t rc;
+/**
+ *  HCS12/HCS08/RS08/CFV1 - Try to connect to the target
+ *
+ *  @return
+ *     == \ref BDM_RC_OK => success        \n
+ *     != \ref BDM_RC_OK => error
+ */
+USBDM_ErrorCode f_CMD_CONNECT(void) {
+   USBDM_ErrorCode rc;
 
-   rc = bdm_connect();
+   rc = connect();
    if ((rc == BDM_RC_OK) && (bdm_option.useAltBDMClock != CS_DEFAULT)) {
       uint8_t bdm_sts;
 
       // Re-write Status/control reg. since Force BDM clock is active
-      rc = bdm_readBDMStatus(&bdm_sts);
+      rc = readBDMStatus(&bdm_sts);
       if (rc != BDM_RC_OK) {
          return rc;
       }
       if (cable_status.target_type == T_CFV1) {
          bdm_sts &= ~(CFV1_XCSR_SEC); // Make sure we don't accidently erase the chip!
       }
-      rc = bdm_writeBDMControl(bdm_sts);
+      rc = writeBDMControl(bdm_sts);
       if (rc != BDM_RC_OK) {
          return rc;
       }
-      rc = bdm_connect(); // Re-connect in case speed changed from above
+      rc = connect(); // Re-connect in case speed changed from above
    }
    return rc;
 }
 
-//! HCS12/HCS08/RS08/CFV1 -  Set comm speed to user supplied value
-//!
-//! @note
-//!  commandBuffer                                 \n
-//!  - [1..2] = 16-bit Sync value in 60MHz ticks
-//!
-//! @return
-//!    == \ref BDM_RC_OK => success        \n
-//!    != \ref BDM_RC_OK => error
-//!
-uint8_t f_CMD_SET_SPEED(void) {
-uint16_t syncValue = *(uint16_t*)(commandBuffer+2); // Save the new speed
-uint8_t rc;
+/**
+ *  HCS12/HCS08/RS08/CFV1 -  Set communication speed to user supplied value
+ *
+ *  @note
+ *   commandBuffer                                 \n
+ *   - [2..3] = 16-bit Sync value in 60MHz ticks
+ *
+ *  @return
+ *     == \ref BDM_RC_OK => success        \n
+ *     != \ref BDM_RC_OK => error
+ */
+USBDM_ErrorCode f_CMD_SET_SPEED(void) {
+   // Get speed
+   uint16_t syncValue = pack16BE(commandBuffer+2);
 
    if (syncValue == 0) {
       cable_status.speed = SPEED_NO_INFO; // Set to unknown (re-enable auto detection etc.)
@@ -149,73 +124,57 @@ uint8_t rc;
       return f_CMD_CONNECT();
    }
    cable_status.sync_length = syncValue;
-
-   rc = bdm_RxTxSelect(); // Drivers available for this frequency?
-   if (rc != BDM_RC_OK) {
-      cable_status.sync_length  = 1;
-      cable_status.speed        = SPEED_NO_INFO; // Connection cannot be established at this speed
-      cable_status.ackn         = WAIT;          // Clear indication of ACKN feature
-      return rc;
-   }
+   setSyncLength(syncValue);
+   //   USBDM_ErrorCode rc;
+   //   if (rc != BDM_RC_OK) {
+   //      cable_status.sync_length  = 1;
+   //      cable_status.speed        = SPEED_NO_INFO; // Connection cannot be established at this speed
+   //      cable_status.ackn         = WAIT;          // Clear indication of ACKN feature
+   //      return rc;
+   //   }
    cable_status.speed       = SPEED_USER_SUPPLIED; // User told us (even if it doesn't work!)
 
-//   if (cable_status.target_type == T_HC12) {
-//      rc = bdmHC12_confirmSpeed(sync_length); // Confirm operation at that speed
-//      if (rc != BDM_RC_OK) // Failed
-//         return rc;
-//   }
+   //   if (cable_status.target_type == T_HC12) {
+   //      rc = bdmHC12_confirmSpeed(sync_length); // Confirm operation at that speed
+   //      if (rc != BDM_RC_OK) // Failed
+   //         return rc;
+   //   }
 
-   bdm_acknInit();               // Try ACKN feature
-   return bdm_enableBDM();       // Try to enable BDM
+   enableACKNMode();         // Try ACKN feature
+   return enableBDM();       // Try to enable BDM
 }
 
-//! HCS12,HCS08,RS08 & CFV1 -  Read current speed
-//!
-//! @return
-//!    == \ref BDM_RC_OK => success                \n
-//!    != \ref BDM_RC_OK => error                  \n
-//!                                                \n
-//!  commandBuffer                                 \n
-//!   - [1..2] => 16-bit Sync value in 60MHz ticks
-//!
-uint8_t f_CMD_GET_SPEED(void) {
-   *(uint16_t*)(commandBuffer+1) = cable_status.sync_length;
+/**
+ *  HCS12,HCS08,RS08 & CFV1 -  Read current speed
+ *
+ *  @return
+ *     == \ref BDM_RC_OK => success                \n
+ *     != \ref BDM_RC_OK => error                  \n
+ *                                                 \n
+ *   commandBuffer                                 \n
+ *    - [1..2] => 16-bit Sync value in 60MHz ticks
+ */
+USBDM_ErrorCode f_CMD_GET_SPEED(void) {
+   unpack16BE(cable_status.sync_length, commandBuffer+1);
    returnSize = 3;
    return BDM_RC_OK;
 }
 
-////! Directly manipulate BDM interface
-////!
-////! @note
-////!  commandBuffer                                                \n
-////!  - [2]    => 8-bit time interval in 10us ticks [ignored]      \n
-////!  - [3..4] => interface level [see \ref InterfaceLevelMasks_t]
-////!
-////! @return
-////!   BDM_RC_OK => success
-////!
-//uint8_t f_CMD_CONTROL_INTERFACE(void) {
-//uint16_t  value  = *(uint16_t*)(commandBuffer+3);
-//
-//   *(uint16_t*)(commandBuffer+1) = bdm_setInterfaceLevel((uint8_t)value);
-//   returnSize = 3;
-//   return BDM_RC_OK;
-//}
-
-//! CFV1 -  Used to reset the CFV1 target interface from overrun condition
-//!
-//! @return
-//!    == \ref BDM_RC_OK   => success       \n
-//!    != \ref BDM_RC_FAIL => error         \n
-//!
-static uint8_t resetCFV1Interface(void) {
-uint8_t status;
-uint8_t attempt;
-uint8_t rc;
+/**
+ *  CFV1 -  Used to reset the CFV1 target interface from overrun condition
+ *
+ *  @return
+ *     == \ref BDM_RC_OK   => success       \n
+ *     != \ref BDM_RC_FAIL => error         \n
+ */
+static USBDM_ErrorCode resetCFV1Interface(void) {
+   uint8_t status;
+   uint8_t attempt;
+   USBDM_ErrorCode rc;
 
    for (attempt=0; attempt < 3; attempt++) {
       // Try CFV1 recovery process
-      rc = bdm_connect();         // Reset BDM interface & reconnect
+      rc = connect();         // Reset BDM interface & reconnect
       if (rc != BDM_RC_OK)
          return rc;
       switch(attempt) {
@@ -225,13 +184,13 @@ uint8_t rc;
             BDMCF_CMD_BACKGROUND();
             break;
          case 2: // Reset target and try again
-            bdm_softwareReset(RESET_SPECIAL);
+            softwareReset(RESET_SPECIAL);
             break;
       }
       rc = BDMCF_CMD_NOP();               // Issue NOP
       if (rc != BDM_RC_OK)
          continue;
-      rc = bdm_readBDMStatus(&status);    // Re-read status
+      rc = readBDMStatus(&status);    // Re-read status
       if (rc != BDM_RC_OK)
          continue;
 
@@ -242,115 +201,116 @@ uint8_t rc;
    return rc;
 }
 
-//! HCS12/HCS08/RS08/CFV1 -  Read Target BDM Status Register
-//!
-//! @return
-//!    == \ref BDM_RC_OK => success       \n
-//!    != \ref BDM_RC_OK => error         \n
-//!                                       \n
-//!  commandBuffer                        \n
-//!  - [1..4] => 8-bit Status register [MSBs are zero]
-//!
-uint8_t f_CMD_READ_STATUS_REG(void) {
-uint8_t rc;
+/**
+ *  HCS12/HCS08/RS08/CFV1 -  Read Target BDM Status Register
+ *
+ *  @return
+ *     == \ref BDM_RC_OK => success       \n
+ *     != \ref BDM_RC_OK => error         \n
+ *                                        \n
+ *   commandBuffer                        \n
+ *   - [1..4] => 8-bit Status register [MSBs are zero]
+ */
+USBDM_ErrorCode f_CMD_READ_STATUS_REG(void) {
+   USBDM_ErrorCode rc;
    returnSize = 5;
    commandBuffer[1] = 0;
    commandBuffer[2] = 0;
    commandBuffer[3] = 0;
-   
+
    rc = optionalReconnect(AUTOCONNECT_STATUS);
    if (rc != BDM_RC_OK) {
       return rc;
    }
-   rc = bdm_readBDMStatus(commandBuffer+4);
+   rc = readBDMStatus(commandBuffer+4);
    if (rc != BDM_RC_OK) {
       return rc;
    }
    if ((cable_status.target_type == T_CFV1) &&
-       ((commandBuffer[4] & CFV1_XCSR_CSTAT) == CFV1_XCSR_CSTAT_OVERRUN)) {
-         // Try CFV1 recovery process
-         rc = resetCFV1Interface();
-         if (rc != BDM_RC_OK)
-            return rc;
-         rc = bdm_readBDMStatus(commandBuffer+4);
+         ((commandBuffer[4] & CFV1_XCSR_CSTAT) == CFV1_XCSR_CSTAT_OVERRUN)) {
+      // Try CFV1 recovery process
+      rc = resetCFV1Interface();
+      if (rc != BDM_RC_OK)
+         return rc;
+      rc = readBDMStatus(commandBuffer+4);
    }
    return rc;
 }
 
-//! HCS12/HCS08/RS08/CFV1 -  Write Target BDM Control Register
-//!
-//! @note
-//!  commandBuffer                                          \n
-//!   - [2..5] => 8-bit control register value [MSBs ignored]
-//!
-//! @return
-//!    == \ref BDM_RC_OK => success       \n
-//!    != \ref BDM_RC_OK => error         \n
-//!
-uint8_t f_CMD_WRITE_CONTROL_REG(void) {
-   return bdm_writeBDMControl(commandBuffer[5]);
+/**
+ *  HCS12/HCS08/RS08/CFV1 -  Write Target BDM Control Register
+ *
+ *  @note
+ *   commandBuffer                                          \n
+ *    - [2..5] => 8-bit control register value [MSBs ignored]
+ *
+ *  @return
+ *     == \ref BDM_RC_OK => success       \n
+ *     != \ref BDM_RC_OK => error         \n
+ */
+USBDM_ErrorCode f_CMD_WRITE_CONTROL_REG(void) {
+   return writeBDMControl(commandBuffer[5]);
 }
 
-//! HCS12/HCS08/RS08/CFV1 -  Reset Target
-//!
-//! @note
-//!  commandBuffer                                          \n
-//!   - [2] => 8-bit reset control [see \ref TargetMode_t]
-//!
-//! @return
-//!    == \ref BDM_RC_OK => success       \n
-//!    != \ref BDM_RC_OK => error         \n
-//!
-uint8_t f_CMD_RESET(void) {
-register uint8_t mode = commandBuffer[2]&RESET_MODE_MASK;
-uint8_t rc = BDM_RC_OK;
+/**
+ *  HCS12/HCS08/RS08/CFV1 -  Reset Target
+ *
+ *  @note
+ *   commandBuffer                                          \n
+ *    - [2] => 8-bit reset control [see \ref TargetMode_t]
+ *
+ *  @return
+ *     == \ref BDM_RC_OK => success       \n
+ *     != \ref BDM_RC_OK => error         \n
+ */
+USBDM_ErrorCode f_CMD_RESET(void) {
+   register uint8_t mode = commandBuffer[2]&RESET_MODE_MASK;
+   USBDM_ErrorCode rc = BDM_RC_OK;
 
-   // This may take a while
-   setBDMBusy();
-   
+   // TODO This may take a while
+   //setBDMBusy();
+
    rc = optionalReconnect(AUTOCONNECT_STATUS);
    if (rc != BDM_RC_OK) {
       return rc;
    }
    cable_status.bdmpprValue = 0x00;
-   
+
    // ToDo - check more
-   switch (commandBuffer[2] & RESET_TYPE_MASK) {
+   switch (commandBuffer[2] & RESET_METHOD_MASK) {
 #if (HW_CAPABILITY&CAP_RST_IO)   
       case RESET_HARDWARE :
-         rc = bdm_hardwareReset(mode);
+         rc = hardwareReset(mode);
          break;
 #endif         
       case RESET_SOFTWARE :
-         rc = bdm_softwareReset(mode);
+         rc = softwareReset(mode);
          break;
 #if (HW_CAPABILITY&CAP_VDDCONTROL)   
       case RESET_POWER :
-         rc =  bdm_cycleTargetVdd(mode);
+         rc =  cycleTargetVdd(mode);
          break;
 #endif         
       case RESET_ALL :
       default:
-         rc = bdm_targetReset(mode);
+         rc = targetReset(mode);
    }
    if (cable_status.speed != SPEED_USER_SUPPLIED) {
-	   // Assume we have lost connection after reset attempt
+      // Assume we have lost connection after reset attempt
       cable_status.speed  = SPEED_NO_INFO;
-      bdm_rx_ptr          = bdm_rxEmpty;       // Clear the Tx/Rx pointers
-      bdm_tx_ptr          = bdm_txEmpty;       //    i.e. no routines found
    }
    cable_status.reset  = NO_RESET_ACTIVITY; // BDM resetting the target doesn't count as a reset!
    cable_status.ackn   = WAIT;              // ACKN feature is disabled after reset
 
 #if 0
    if (rc != BDM_RC_OK) {
-     return rc;
+      return rc;
    }
    if (cable_status.speed == SPEED_USER_SUPPLIED) {          // User specified speed?
       (void)bdmHC12_confirmSpeed(cable_status.sync_length);  // Confirm we can still operate at that speed
       // ToDo - check what should be done with rc
       (void)bdm_enableBDM();                                 //  & enable BDM mode
-      }
+   }
    else if ((bdm_option.autoReconnect) || (cable_status.speed == SPEED_SYNC))
       // Re-connect if Auto re-connect enabled or it's quick to do (ACKN was found previously)
       (void)bdm_connect();             //    Done even if no SYNC feature - may be slow!
@@ -362,76 +322,81 @@ uint8_t rc = BDM_RC_OK;
    return rc;
 }
 
-// HCS12/HCS08/RS08/CFV1 -  Step over 1 instruction
-//
-//! @return
-//!    == \ref BDM_RC_OK => success       \n
-//!    != \ref BDM_RC_OK => error         \n
-//!
-uint8_t f_CMD_STEP(void) {
-   (void)bdm_step();
-   return BDM_RC_OK; //! Todo check rc?
+/**
+ *  HCS12/HCS08/RS08/CFV1 -  Step over 1 instruction
+ *
+ *  @return
+ *     == \ref BDM_RC_OK => success       \n
+ *     != \ref BDM_RC_OK => error         \n
+ */
+USBDM_ErrorCode f_CMD_STEP(void) {
+   return step();
 }
 
-// HCS12/HCS08/RS08/CFV1 -  Start code execution
-//
-//! @return
-//!    == \ref BDM_RC_OK => success       \n
-//!    != \ref BDM_RC_OK => error         \n
-//!
-uint8_t f_CMD_GO(void) {
-   (void)bdm_go();
-   return BDM_RC_OK; //! Todo check rc?
+/**
+ *  HCS12/HCS08/RS08/CFV1 -  Start code execution
+ *
+ *  @return
+ *     == \ref BDM_RC_OK => success       \n
+ *     != \ref BDM_RC_OK => error         \n
+ */
+USBDM_ErrorCode f_CMD_GO(void) {
+   return go();
 }
 
-// HCS12/HCS08/RS08/CFV1 -  Stop the target
-//
-//! @return
-//!    == \ref BDM_RC_OK => success       \n
-//!    != \ref BDM_RC_OK => error         \n
-//!
-uint8_t f_CMD_HALT(void) {
-   return bdm_halt();
+/**
+ *  HCS12/HCS08/RS08/CFV1 -  Stop the target
+ *
+ *  @return
+ *     == \ref BDM_RC_OK => success       \n
+ *     != \ref BDM_RC_OK => error         \n
+ */
+USBDM_ErrorCode f_CMD_HALT(void) {
+   return halt();
 }
 
-//===================================================
-//
+/*
+ * ===================================================
+ */
 
-//! HCS12 Write debug register/memory map
-//!
-//! @note
-//!  commandBuffer                                       \n
-//!  - [2..3] => 16-bit register number [MSB ignored]    \n
-//!  - [4..7] => 32-bit register value  [MSBs ignored]
-//!
-//! @return
-//!    == \ref BDM_RC_OK => success       \n
-//!    != \ref BDM_RC_OK => error
-//!
-uint8_t f_CMD_WRITE_BD(void) {
-   uint16_t addr = *(uint16_t*)(commandBuffer+2);
+/**
+ *  HCS12 Write debug register/memory map
+ *
+ *  @note
+ *   commandBuffer                                       \n
+ *   - [2..3] => 16-bit register number [MSB ignored]    \n
+ *   - [4..7] => 32-bit register value  [MSBs ignored]
+ *
+ *  @return
+ *     == \ref BDM_RC_OK => success       \n
+ *     != \ref BDM_RC_OK => error
+ */
+USBDM_ErrorCode f_CMD_WRITE_BD(void) {
+   uint16_t addr = pack16BE(commandBuffer+2);
    if (addr == HC12_BDMSTS) {
-	   // Access to BDMSTS is mapped to write control
-      return bdm_writeBDMControl(commandBuffer[7]);
+      // Access to BDMSTS is mapped to write control
+      return writeBDMControl(commandBuffer[7]);
    }
    return BDM12_CMD_BDWRITEB(addr,commandBuffer[7]);
 }
 
-//! HCS12 Read debug register/memory map
-//!
-//! @note
-//!  commandBuffer                                    \n
-//!  - [2..3] => 16-bit register number [MSB ignored]
-//!
-//! @return
-//!    == \ref BDM_RC_OK => success                   \n
-//!    != \ref BDM_RC_OK => error                     \n
-//!                                                   \n
-//!  commandBuffer                                    \n
-//!  - [1..4] => 32-bit register value  [MSBs zeroed]
-//!
-uint8_t f_CMD_READ_BD(void) {
-   uint16_t addr = *(uint16_t*)(commandBuffer+2);
+/**
+ *  HCS12 Read debug register/memory map
+ *
+ *  @note
+ *   commandBuffer                                    \n
+ *   - [2..3] => 16-bit register number [MSB ignored]
+ *
+ *  @return
+ *     == \ref BDM_RC_OK => success                   \n
+ *     != \ref BDM_RC_OK => error                     \n
+ *                                                    \n
+ *   commandBuffer                                    \n
+ *   - [1..4] => 32-bit register value  [MSBs zeroed]
+ */
+USBDM_ErrorCode f_CMD_READ_BD(void) {
+   uint16_t addr = pack16BE(commandBuffer+2);
+
    // If reading HCS12 status use f_CMD_READ_STATUS_REG()
    if (addr == HC12_BDMSTS)
       return f_CMD_READ_STATUS_REG();
@@ -443,56 +408,19 @@ uint8_t f_CMD_READ_BD(void) {
    return BDM12_CMD_BDREADB(addr,commandBuffer+4);
 }
 
-//! HCS08/RS08 Write to Breakpoint reg
-//!
-//! @note
-//!  commandBuffer                                    \n
-//!  - [2..3] => 16-bit register number [ignored]     \n
-//!  - [4..7] => 32-bit register value  [MSBs ignored]
-//!
-//! @return
-//!    == \ref BDM_RC_OK => success        \n
-//!    != \ref BDM_RC_OK => error
-//!
-uint8_t f_CMD_WRITE_BKPT(void) {
-   BDM08_CMD_WRITE_BKPT(*(uint16_t *)(commandBuffer+6));
-   return BDM_RC_OK; 
-}
-
-//! HCS08/RS08 Read from Breakpoint reg
-//!
-//! @note
-//!  commandBuffer                                    \n
-//!  - [2..3] => 16-bit register number [ignored]     \n
-//!  - [1..4] => 32-bit register value  [MSBs zeroed]
-//!
-//! @return
-//!    == \ref BDM_RC_OK => success                         \n
-//!    != \ref BDM_RC_OK => error                           \n
-//!                                                         \n
-//!  commandBuffer                                          \n
-//!  - [1..4] => 32-bit register value  [some MSBs ignored]
-//!
-uint8_t f_CMD_READ_BKPT(void) {
-   commandBuffer[1] = 0;
-   commandBuffer[2] = 0;
-   BDM08_CMD_READ_BKPT((uint16_t*)(commandBuffer+3));
-   returnSize = 5;
-   return BDM_RC_OK;
-}
-
 #if 0
 #pragma MESSAGE DISABLE C4001 // Disable warnings about condition always true
-//! HCS12/RS08/HCS08  Read all registers
-//!
-//! @return
-//!    == \ref BDM_RC_OK => success       \n
-//!    != \ref BDM_RC_OK => error         \n
-//!                                       \n
-//!  commandBuffer                        \n
-//!  - [1..] => ?-bit value
-//!
-uint8_t f_CMD_READ_REGS(void) {
+/**
+ *  HCS12/RS08/HCS08  Read all registers
+ *
+ *  @return
+ *     == \ref BDM_RC_OK => success       \n
+ *     != \ref BDM_RC_OK => error         \n
+ *                                        \n
+ *   commandBuffer                        \n
+ *   - [1..] => ?-bit value
+ */
+USBDM_ErrorCode f_CMD_READ_REGS(void) {
    switch (cable_status.target_type) {
       case T_HC12:
          BDM12_CMD_READ_PC(commandBuffer+1);
@@ -520,7 +448,7 @@ uint8_t f_CMD_READ_REGS(void) {
          commandBuffer[8] = 0;                  // RS08 doesn't have Read CCR
          returnSize = 9;
          return BDM_RC_OK;
-      }
+   }
    return BDM_RC_ILLEGAL_COMMAND;
 }
 #pragma MESSAGE DEFAULT C4001 // Restore warnings about condition always true
@@ -530,22 +458,23 @@ uint8_t f_CMD_READ_REGS(void) {
 //======================================================================
 //======================================================================
 
-//! HCS12 -  set BDMPPR register
-//!
-//! @param memorySpace - used to determine if using Global address
-//! @param addr23To16  - Global Page number address[23:16]
-//! 
-//! @return
-//!    == \ref BDM_RC_OK => success        \n
-//!    != \ref BDM_RC_OK => error          \n
-//!
-uint8_t setBdmppr(uint8_t memorySpace, uint8_t addr23To16) {
-uint8_t rc = BDM_RC_OK;
+/**
+ *  HCS12 -  set BDMPPR register
+ *
+ *  @param memorySpace - used to determine if using Global address
+ *  @param addr23To16  - Global Page number address[23:16]
+ *
+ *  @return
+ *     == \ref BDM_RC_OK => success        \n
+ *     != \ref BDM_RC_OK => error          \n
+ */
+USBDM_ErrorCode setBdmppr(uint8_t memorySpace, uint8_t addr23To16) {
+   USBDM_ErrorCode rc = BDM_RC_OK;
 
    if ((memorySpace&MS_SPACE) == MS_Global) {
-       // Using Global address - set BDMPPR
-	  cable_status.bdmpprValue = HC12_BDMPPR_BPAE|addr23To16;
-	  rc = BDM12_CMD_BDWRITEB(HC12_BDMPPR, HC12_BDMPPR_BPAE|addr23To16);
+      // Using Global address - set BDMPPR
+      cable_status.bdmpprValue = HC12_BDMPPR_BPAE|addr23To16;
+      rc = BDM12_CMD_BDWRITEB(HC12_BDMPPR, HC12_BDMPPR_BPAE|addr23To16);
    }
    else {
       // Not using Global address - Clear BDMPPR if set
@@ -557,24 +486,25 @@ uint8_t rc = BDM_RC_OK;
    return rc;
 }
 #if 1
-//! HCS12 -  Write block of bytes to memory
-//!
-//! @note
-//!  commandBuffer                                   \n
-//!  - [2]    = element size [ignored]/memory space  \n
-//!  - [3]    = # of bytes                           \n
-//!  - [4..7] = address [MSB ignored]                \n
-//!  - [8..N] = data to write
-//!
-//! @return
-//!    == \ref BDM_RC_OK => success       \n
-//!    != \ref BDM_RC_OK => error         \n
-//!
-uint8_t f_CMD_HCS12_WRITE_MEM(void) {
+/**
+ *  HCS12 -  Write block of bytes to memory
+ *
+ *  @note
+ *   commandBuffer                                   \n
+ *   - [2]    = element size [ignored]/memory space  \n
+ *   - [3]    = # of bytes                           \n
+ *   - [4..7] = address [MSB ignored]                \n
+ *   - [8..N] = data to write
+ *
+ *  @return
+ *     == \ref BDM_RC_OK => success       \n
+ *     != \ref BDM_RC_OK => error         \n
+ */
+USBDM_ErrorCode f_CMD_HCS12_WRITE_MEM(void) {
    uint8_t  count       = commandBuffer[3];
-   uint16_t addr        = *(uint16_t*)(commandBuffer+6);
+   uint16_t addr        = pack16BE(commandBuffer+6);
    uint8_t  *data_ptr   = commandBuffer+8;
-   uint8_t  rc          = BDM_RC_OK;
+   USBDM_ErrorCode  rc  = BDM_RC_OK;
 
    rc = setBdmppr(commandBuffer[2], commandBuffer[5]); // element size & address[23:16]
    if (rc != BDM_RC_OK) {
@@ -587,7 +517,7 @@ uint8_t f_CMD_HCS12_WRITE_MEM(void) {
       data_ptr +=1;                    // increment buffer pointer
       count    -=1;                    // decrement count of bytes
    }
-   if (commandBuffer[2]&MS_FAST) {
+   if (commandBuffer[2]&MS_Fast) {
       // Fast word writes - corrupts X
       // Write address to X
       rc = BDM12_CMD_WRITE_X(addr-2);
@@ -613,22 +543,23 @@ uint8_t f_CMD_HCS12_WRITE_MEM(void) {
    return rc;
 }
 #else
-//! HCS12 -  Write block of bytes to memory
-//!
-//! @note
-//!  commandBuffer                                   \n
-//!  - [2]    = element size [ignored]/memory space  \n
-//!  - [3]    = # of bytes                           \n
-//!  - [4..7] = address [MSB ignored]                \n
-//!  - [8..N] = data to write
-//!
-//! @return
-//!    == \ref BDM_RC_OK => success       \n
-//!    != \ref BDM_RC_OK => error         \n
-//!
-uint8_t f_CMD_HCS12_WRITE_MEM(void) {
+/**
+ *  HCS12 -  Write block of bytes to memory
+ *
+ *  @note
+ *   commandBuffer                                   \n
+ *   - [2]    = element size [ignored]/memory space  \n
+ *   - [3]    = # of bytes                           \n
+ *   - [4..7] = address [MSB ignored]                \n
+ *   - [8..N] = data to write
+ *
+ *  @return
+ *     == \ref BDM_RC_OK => success       \n
+ *     != \ref BDM_RC_OK => error         \n
+ */
+USBDM_ErrorCode f_CMD_HCS12_WRITE_MEM(void) {
    uint8_t  count       = commandBuffer[3];
-   uint16_t addr        = *(uint16_t*)(commandBuffer+6);
+   uint16_t addr        = pack16BE(commandBuffer+6);
    uint8_t  *data_ptr   = commandBuffer+8;
    uint8_t  rc          = BDM_RC_OK;
 
@@ -657,33 +588,34 @@ uint8_t f_CMD_HCS12_WRITE_MEM(void) {
 #endif
 
 #if 1
-//! HCS12 -  Read block of data from memory
-//!
-//! @note
-//!  commandBuffer                                   \n
-//!  - [2]    = element size [ignored]/memory space  \n
-//!  - [3]    = # of bytes                           \n
-//!  - [4..7] = address [MSB ignored]                \n
-//!
-//! @return
-//!    == \ref BDM_RC_OK => success       \n
-//!    != \ref BDM_RC_OK => error         \n
-//!                                       \n
-//!  commandBuffer                        \n
-//!  - [1..N] = data read
-//!
-uint8_t f_CMD_HCS12_READ_MEM(void) {
-uint8_t  count       = commandBuffer[3];
-uint16_t addr        = *(uint16_t*)(commandBuffer+6);
-uint8_t  *data_ptr   = commandBuffer+1;
-uint8_t  rc          = BDM_RC_OK;
+/**
+ *  HCS12 -  Read block of data from memory
+ *
+ *  @note
+ *   commandBuffer                                   \n
+ *   - [2]    = element size [ignored]/memory space  \n
+ *   - [3]    = # of bytes                           \n
+ *   - [4..7] = address [MSB ignored]                \n
+ *
+ *  @return
+ *     == \ref BDM_RC_OK => success       \n
+ *     != \ref BDM_RC_OK => error         \n
+ *                                        \n
+ *   commandBuffer                        \n
+ *   - [1..N] = data read
+ */
+USBDM_ErrorCode f_CMD_HCS12_READ_MEM(void) {
+   uint8_t  count       = commandBuffer[3];
+   uint16_t addr        = pack16BE(commandBuffer+6);
+   uint8_t  *data_ptr   = commandBuffer+1;
+   USBDM_ErrorCode  rc = BDM_RC_OK;
 
    if (count>MAX_COMMAND_SIZE-1) {
       return BDM_RC_ILLEGAL_PARAMS;  // requested block+status is too long to fit into the buffer
    }
    rc = setBdmppr(commandBuffer[2], commandBuffer[5]); // element size & address[23:16]
    if (rc != BDM_RC_OK) {
-	   return rc;
+      return rc;
    }
    returnSize = count+1;
    if (addr&0x0001) {
@@ -693,7 +625,7 @@ uint8_t  rc          = BDM_RC_OK;
       data_ptr +=1;                    // increment buffer pointer
       count    -=1;                    // decrement count of bytes
    }
-   if (commandBuffer[2]&MS_FAST) {
+   if (commandBuffer[2]&MS_Fast) {
       // Fast word reads - corrupts X
       // Write address to X
       rc = BDM12_CMD_WRITE_X(addr-2);
@@ -719,33 +651,34 @@ uint8_t  rc          = BDM_RC_OK;
    return rc;
 }
 #else
-//! HCS12 -  Read block of data from memory
-//!
-//! @note
-//!  commandBuffer                                   \n
-//!  - [2]    = element size [ignored]/memory space  \n
-//!  - [3]    = # of bytes                           \n
-//!  - [4..7] = address [MSB ignored]                \n
-//!
-//! @return
-//!    == \ref BDM_RC_OK => success       \n
-//!    != \ref BDM_RC_OK => error         \n
-//!                                       \n
-//!  commandBuffer                        \n
-//!  - [1..N] = data read
-//!
-uint8_t f_CMD_HCS12_READ_MEM(void) {
-uint8_t  count       = commandBuffer[3];
-uint16_t addr        = *(uint16_t*)(commandBuffer+6);
-uint8_t  *data_ptr   = commandBuffer+1;
-uint8_t  rc          = BDM_RC_OK;
+/**
+ *  HCS12 -  Read block of data from memory
+ *
+ *  @note
+ *   commandBuffer                                   \n
+ *   - [2]    = element size [ignored]/memory space  \n
+ *   - [3]    = # of bytes                           \n
+ *   - [4..7] = address [MSB ignored]                \n
+ *
+ *  @return
+ *     == \ref BDM_RC_OK => success       \n
+ *     != \ref BDM_RC_OK => error         \n
+ *                                        \n
+ *   commandBuffer                        \n
+ *   - [1..N] = data read
+ */
+USBDM_ErrorCode f_CMD_HCS12_READ_MEM(void) {
+   uint8_t  count       = commandBuffer[3];
+   uint16_t addr        = pack16BE(commandBuffer+6);
+   uint8_t  *data_ptr   = commandBuffer+1;
+   uint8_t  rc          = BDM_RC_OK;
 
    if (count>MAX_COMMAND_SIZE-1) {
       return BDM_RC_ILLEGAL_PARAMS;  // requested block+status is too long to fit into the buffer
    }
    rc = setBdmppr(commandBuffer[2], commandBuffer[5]); // element size & address[23:16]
    if (rc != BDM_RC_OK) {
-	   return rc;
+      return rc;
    }
    returnSize = count+1;
    while ((count > 0) && (rc == BDM_RC_OK)) {
@@ -768,52 +701,110 @@ uint8_t  rc          = BDM_RC_OK;
 }
 #endif
 
-//! HCS08/RS08 -  Write block of bytes to memory
-//!
-//! @note
-//!  commandBuffer                           \n
-//!  - [2]    = element size/mode            \n
-//!  - [3]    = # of bytes                   \n
-//!  - [4..7] = address [MSB ignored]        \n
-//!  - [8..N] = data to write
-//!
-//! @return
-//!    == \ref BDM_RC_OK => success       \n
-//!    != \ref BDM_RC_OK => error         \n
-//!
-uint8_t f_CMD_HCS08_WRITE_MEM(void) {
-   uint8_t  count      = commandBuffer[3];
-   uint16_t addr       = *(uint16_t*)(commandBuffer+6);
-   uint8_t *data_ptr   = commandBuffer+8;
-   uint8_t  rc         = BDM_RC_OK;
+
+//======================================================================
+//======================================================================
+//======================================================================
+
+
+/**
+ *  HCS12 Write core register
+ *
+ *  @note
+ *   commandBuffer                                          \n
+ *   - [2..3] => 16-bit register number [MSB ignored]      \n
+ *   - [4..7] => 32-bit register value  [some MSBs ignored]
+ *
+ *  @return
+ *     == \ref BDM_RC_OK => success       \n
+ *     != \ref BDM_RC_OK => error         \n
+ */
+USBDM_ErrorCode f_CMD_HCS12_WRITE_REG(void) {
+   uint16_t value = pack16BE(commandBuffer+6);
+   if ((commandBuffer[3]<HCS12_RegPC) || (commandBuffer[3]>HCS12_RegSP)) {
+      return BDM_RC_ILLEGAL_PARAMS;
+   }
+   return BDM12_CMD_WRITE_REG(commandBuffer[3], value);
+}
+
+/**
+ *  HCS12 Read core register
+ *
+ *  @note
+ *   commandBuffer                                       \n
+ *   - [2..3] => 16-bit register number [MSB ignored]    \n
+ *
+ *  @return
+ *     == \ref BDM_RC_OK => success                         \n
+ *     != \ref BDM_RC_OK => error                           \n
+ *                                                          \n
+ *   commandBuffer                                          \n
+ *   - [1..4] => 32-bit register value  [some MSBs ignored]
+ */
+USBDM_ErrorCode f_CMD_HCS12_READ_REG(void) {
+   commandBuffer[1] = 0;
+   commandBuffer[2] = 0;
+   returnSize = 5;
+
+   if ((commandBuffer[3]<HCS12_RegPC) || (commandBuffer[3]>HCS12_RegSP)) {
+      return BDM_RC_ILLEGAL_PARAMS;
+   }
+   return BDM12_CMD_READ_REG(commandBuffer[3],(uint16_t*)(commandBuffer+3));
+}
+
+}; // end namespace HCS
+
+namespace Hcs08 {
+
+using namespace Hcs;
+
+/**
+ *  HCS08/RS08 -  Write block of bytes to memory
+ *
+ *  @note
+ *   commandBuffer                           \n
+ *   - [2]    = element size/mode            \n
+ *   - [3]    = # of bytes                   \n
+ *   - [4..7] = address [MSB ignored]        \n
+ *   - [8..N] = data to write
+ *
+ *  @return
+ *     == \ref BDM_RC_OK => success       \n
+ *     != \ref BDM_RC_OK => error         \n
+ */
+USBDM_ErrorCode f_CMD_WRITE_MEM(void) {
+   uint8_t         count    = commandBuffer[3];
+   uint16_t        addr     = pack16BE(commandBuffer+6);
+   uint8_t        *data_ptr = commandBuffer+8;
+   USBDM_ErrorCode rc       = BDM_RC_OK;
 
    if (cable_status.speed == SPEED_NO_INFO) {
       return BDM_RC_NO_CONNECTION;
    }
-   if (commandBuffer[2]&MS_FAST) {
-	   // Fast write - corrupts H:X
-	   // Write address to H:X
-       rc = BDM08_CMD_WRITE_HX(addr-1);
-       while ((count > 0) && (rc == BDM_RC_OK)) {
-          rc = BDM08_CMD_WRITE_NEXT(*data_ptr);
-          data_ptr +=1;                    // increment buffer pointer
-          count    -=1;                    // decrement count of bytes
-       }
+   if (commandBuffer[2]&MS_Fast) {
+      // Fast write - corrupts H:X
+      // Write address to H:X
+      rc = BDM08_CMD_WRITE_HX(addr-1);
+      while ((count > 0) && (rc == BDM_RC_OK)) {
+         rc = BDM08_CMD_WRITE_NEXT(*data_ptr);
+         data_ptr +=1;                    // increment buffer pointer
+         count    -=1;                    // decrement count of bytes
+      }
    }
    else {
       while ((count > 0) && (rc == BDM_RC_OK)) {
 #if 0
-    	 uint8_t status;
+         uint8_t status;
          BDM08_CMD_WRITEB_WS(addr,*data_ptr++,&status); // write data & receive status
          if (status&(HC08_BDCSCR_WSF|HC08_BDCSCR_DVF)) {
-        	 // Status read may fail because of clock change! 
-        	 (void)bdm_physicalConnect();
-             BDM08_CMD_READSTATUS(&status);
+            // Status read may fail because of clock change!
+            (void)bdm_physicalConnect();
+            BDM08_CMD_READSTATUS(&status);
          }
          if (status&(HC08_BDCSCR_WSF|HC08_BDCSCR_DVF)) {
-             // The only 'expected' error that should occur is because the device has entered stop or wait mode
-             // Don't try to recover as this requires changing the machine state.
-      	    rc = BDM_RC_HCS_ACCESS_ERROR;
+            // The only 'expected' error that should occur is because the device has entered stop or wait mode
+            // Don't try to recover as this requires changing the machine state.
+            rc = BDM_RC_HCS_ACCESS_ERROR;
          }
 #else
          rc = BDM08_CMD_WRITEB(addr,*data_ptr); // write byte
@@ -825,27 +816,27 @@ uint8_t f_CMD_HCS08_WRITE_MEM(void) {
    }
    return rc;
 }
-
-//! HCS08/RS08 -  Read block of data from memory
-//!
-//! @note
-//!  commandBuffer                       \n
-//!  - [2]    = element size/mode        \n
-//!  - [3]    = # of bytes               \n
-//!  - [4..7] = address [MSB ignored]
-//!
-//! @return
-//!    == \ref BDM_RC_OK => success      \n
-//!    != \ref BDM_RC_OK => error        \n
-//!                                      \n
-//!  commandBuffer                       \n
-//!  - [1..N]  = data read
-//!
-uint8_t f_CMD_HCS08_READ_MEM(void) {
-uint8_t  count      = commandBuffer[3];
-uint16_t addr       = *(uint16_t*)(commandBuffer+6);
-uint8_t  *data_ptr  = commandBuffer+1;
-uint8_t  rc         = BDM_RC_OK;
+/**
+ *  HCS08/RS08 -  Read block of data from memory
+ *
+ *  @note
+ *   commandBuffer                       \n
+ *   - [2]    = element size/mode        \n
+ *   - [3]    = # of bytes               \n
+ *   - [4..7] = address [MSB ignored]
+ *
+ *  @return
+ *     == \ref BDM_RC_OK => success      \n
+ *     != \ref BDM_RC_OK => error        \n
+ *                                       \n
+ *   commandBuffer                       \n
+ *   - [1..N]  = data read
+ */
+USBDM_ErrorCode f_CMD_READ_MEM(void) {
+   uint8_t  count      = commandBuffer[3];
+   uint16_t addr       = pack16BE(commandBuffer+6);
+   uint8_t  *data_ptr  = commandBuffer+1;
+   USBDM_ErrorCode  rc         = BDM_RC_OK;
 
    if (cable_status.speed == SPEED_NO_INFO) {
       return BDM_RC_NO_CONNECTION;
@@ -854,8 +845,8 @@ uint8_t  rc         = BDM_RC_OK;
       return BDM_RC_ILLEGAL_PARAMS;  // requested block+status is too long to fit into the buffer
    }
    returnSize = count+1;
-   if (commandBuffer[2]&MS_FAST) {
-	  // Write address to H:X
+   if (commandBuffer[2]&MS_Fast) {
+      // Write address to H:X
       rc = BDM08_CMD_WRITE_HX(addr-1);
       while ((count > 0) && (rc == BDM_RC_OK)) {
          rc = BDM08_CMD_READ_NEXT(data_ptr);
@@ -866,18 +857,18 @@ uint8_t  rc         = BDM_RC_OK;
    else {
       while ((count > 0) && (rc == BDM_RC_OK)) {
 #if 0
-    	  uint8_t buffer[2];
-    	  uint8_t retry = 10;
-          BDM08_CMD_READB_WS(addr,(uint16_t*)buffer); // read status & data byte
-          while ((retry-->0) && (buffer[0]&(HC08_BDCSCR_DVF))) {
-        	  BDM08_CMD_READ_LAST((uint16_t*)buffer);
-          }
-          *data_ptr++ = buffer[1];               // save data
-          if (buffer[0]&(HC08_BDCSCR_DVF|HC08_BDCSCR_WSF)) {
-             // The only 'expected' error that should occur is because the device is in stop or wait mode
-             // Don't try to recover as this requires changing the machine state.
-         	 rc = BDM_RC_HCS_ACCESS_ERROR;
-          }
+         uint8_t buffer[2];
+         uint8_t retry = 10;
+         BDM08_CMD_READB_WS(addr,(uint16_t*)buffer); // read status & data byte
+         while ((retry-->0) && (buffer[0]&(HC08_BDCSCR_DVF))) {
+            BDM08_CMD_READ_LAST((uint16_t*)buffer);
+         }
+         *data_ptr++ = buffer[1];               // save data
+         if (buffer[0]&(HC08_BDCSCR_DVF|HC08_BDCSCR_WSF)) {
+            // The only 'expected' error that should occur is because the device is in stop or wait mode
+            // Don't try to recover as this requires changing the machine state.
+            rc = BDM_RC_HCS_ACCESS_ERROR;
+         }
 #else
          rc = BDM08_CMD_READB(addr,data_ptr);    // fetch a byte
          data_ptr +=1;                           // increment buffer pointer
@@ -888,68 +879,21 @@ uint8_t  rc         = BDM_RC_OK;
    }
    return rc;
 }
-
-//======================================================================
-//======================================================================
-//======================================================================
-
-
-//! HCS12 Write core register
-//!
-//! @note
-//!  commandBuffer                                          \n
-//!  - [2..3] => 16-bit register number [MSB ignored]      \n
-//!  - [4..7] => 32-bit register value  [some MSBs ignored]
-//!
-//! @return
-//!    == \ref BDM_RC_OK => success       \n
-//!    != \ref BDM_RC_OK => error         \n
-//!
-uint8_t f_CMD_HCS12_WRITE_REG(void) {
-   if ((commandBuffer[3]<HCS12_RegPC) || (commandBuffer[3]>HCS12_RegSP)) {
-      return BDM_RC_ILLEGAL_PARAMS;
-   }
-   return BDM12_CMD_WRITE_REG(commandBuffer[3],*(uint16_t*)(commandBuffer+6));
-}
-
-//! HCS12 Read core register
-//!
-//! @note
-//!  commandBuffer                                       \n
-//!  - [2..3] => 16-bit register number [MSB ignored]    \n
-//!
-//! @return
-//!    == \ref BDM_RC_OK => success                         \n
-//!    != \ref BDM_RC_OK => error                           \n
-//!                                                         \n
-//!  commandBuffer                                          \n
-//!  - [1..4] => 32-bit register value  [some MSBs ignored]
-//!
-uint8_t f_CMD_HCS12_READ_REG(void) {
-   commandBuffer[1] = 0;
-   commandBuffer[2] = 0;
-   returnSize = 5;
-
-   if ((commandBuffer[3]<HCS12_RegPC) || (commandBuffer[3]>HCS12_RegSP)) {
-      return BDM_RC_ILLEGAL_PARAMS;
-   }
-   return BDM12_CMD_READ_REG(commandBuffer[3],(uint16_t*)(commandBuffer+3));
-}
-
-//! RS08/HCS08 Write core register
-//!
-//! @note
-//!  commandBuffer                                         \n
-//!  - [2..3] => 16-bit register number [MSB ignored]      \n
-//!  - [4..7] => 32-bit register value  [some MSBs ignored]
-//!
-//! @return
-//!    == \ref BDM_RC_OK => success       \n
-//!    != \ref BDM_RC_OK => error         \n
-//!
-uint8_t f_CMD_HCS08_WRITE_REG(void) {
-uint16_t value = *(uint16_t*)(commandBuffer+6);
-uint8_t rc = BDM_RC_ILLEGAL_PARAMS;
+/**
+ *  HCS08/RS08 Write core register
+ *
+ *  @note
+ *   commandBuffer                                         \n
+ *   - [2..3] => 16-bit register number [MSB ignored]      \n
+ *   - [4..7] => 32-bit register value  [some MSBs ignored]
+ *
+ *  @return
+ *     == \ref BDM_RC_OK => success       \n
+ *     != \ref BDM_RC_OK => error         \n
+ */
+USBDM_ErrorCode f_CMD_WRITE_REG(void) {
+   uint16_t value = pack16BE(commandBuffer+6);
+   USBDM_ErrorCode rc = BDM_RC_ILLEGAL_PARAMS;
 
    switch (commandBuffer[3]) {
       case HCS08_RegPC :  // RS08_RegCCR_PC :
@@ -973,21 +917,22 @@ uint8_t rc = BDM_RC_ILLEGAL_PARAMS;
    return rc;
 }
 
-//! RS08/HCS08 Read core register
-//!
-//! @note
-//!  commandBuffer                                         \n
-//!  - [2..3] => 16-bit register number [MSB ignored]      \n
-//!
-//! @return
-//!    == \ref BDM_RC_OK => success                         \n
-//!    != \ref BDM_RC_OK => error                           \n
-//!                                                         \n
-//!  commandBuffer                                          \n
-//!  - [1..4] => 32-bit register value  [some MSBs ignored]
-//!
-uint8_t f_CMD_HCS08_READ_REG(void) {
-uint8_t rc = BDM_RC_ILLEGAL_PARAMS;
+/**
+ *  HCS08/RS08 Read core register
+ *
+ *  @note
+ *   commandBuffer                                         \n
+ *   - [2..3] => 16-bit register number [MSB ignored]      \n
+ *
+ *  @return
+ *     == \ref BDM_RC_OK => success                         \n
+ *     != \ref BDM_RC_OK => error                           \n
+ *                                                          \n
+ *   commandBuffer                                          \n
+ *   - [1..4] => 32-bit register value  [some MSBs ignored]
+ */
+USBDM_ErrorCode f_CMD_READ_REG(void) {
+   USBDM_ErrorCode rc = BDM_RC_ILLEGAL_PARAMS;
 
    commandBuffer[1] = 0;
    commandBuffer[2] = 0;
@@ -1017,22 +962,66 @@ uint8_t rc = BDM_RC_ILLEGAL_PARAMS;
    return rc;
 }
 
+/**
+ *  HCS08/RS08 Write to Breakpoint reg
+ *
+ *  @note
+ *   commandBuffer                                    \n
+ *   - [2..3] => 16-bit register number [ignored]     \n
+ *   - [4..7] => 32-bit register value  [MSBs ignored]
+ *
+ *  @return
+ *     == \ref BDM_RC_OK => success        \n
+ *     != \ref BDM_RC_OK => error
+ */
+USBDM_ErrorCode f_CMD_WRITE_BKPT(void) {
+   BDM08_CMD_WRITE_BKPT(*(uint16_t *)(commandBuffer+6));
+   return BDM_RC_OK;
+}
+
+/**
+ *  HCS08/RS08 Read from Breakpoint reg
+ *
+ *  @note
+ *   commandBuffer                                    \n
+ *   - [2..3] => 16-bit register number [ignored]     \n
+ *   - [1..4] => 32-bit register value  [MSBs zeroed]
+ *
+ *  @return
+ *     == \ref BDM_RC_OK => success                         \n
+ *     != \ref BDM_RC_OK => error                           \n
+ *                                                          \n
+ *   commandBuffer                                          \n
+ *   - [1..4] => 32-bit register value  [some MSBs ignored]
+ */
+USBDM_ErrorCode f_CMD_READ_BKPT(void) {
+   commandBuffer[1] = 0;
+   commandBuffer[2] = 0;
+   BDM08_CMD_READ_BKPT((uint16_t*)(commandBuffer+3));
+   returnSize = 5;
+   return BDM_RC_OK;
+}
+
+}; // namespace Hcs08
+
 //=============================================================
 //==   RS08 Code                                             ==
 //=============================================================
 #if (HW_CAPABILITY & CAP_FLASH)
 
-//! Control target VPP level
-//!
-//! @note
-//!  commandBuffer                 \n
-//!  - [2] =>       (FlashState_t) control value for VPP \n
-//!
-//! @return
-//!     BDM_RC_OK   => success \n
-//!     else        => Error
-//!
-uint8_t f_CMD_SET_VPP(void) {
+/**
+ *  Control target VPP level
+ *
+ *  @note
+ *   commandBuffer                 \n
+ *   - [2] =>       (FlashState_t) control value for VPP \n
+ *
+ *  @return
+ *      BDM_RC_OK   => success \n
+ *      else        => Error
+ */
+USBDM_ErrorCode f_CMD_SET_VPP(void) {
    return bdmSetVpp(commandBuffer[2]);
 }
+
 #endif // (HW_CAPABILITY & CAP_FLASH)
