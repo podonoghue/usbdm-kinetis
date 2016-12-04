@@ -49,123 +49,15 @@
 #include "cmdProcessingHCS.h"
 #include "targetDefines.h"
 
-//======================================================================
-//======================================================================
-//======================================================================
-
-namespace Hcs {
+namespace Cfv1 {
 
 using namespace Bdm;
 
 /**
- * Write an arbitrary command using BDM protocol
- * 
- * @return 
- *     == \ref BDM_RC_OK => success        \n
- *     != \ref BDM_RC_OK => error
- */
-USBDM_ErrorCode f_CMD_CUSTOM_COMMAND(void) {
-   cmd_0_0_NOACK(_BDMZ12_ERASE_FLASH);
-   acknowledgeOrWait64();
-   cmd_0_0_NOACK(_BDMZ12_ERASE_FLASH);
-   acknowledgeOrWait64();
-   return BDM_RC_OK;
-}
-
-/**
- *  HCS12/HCS08/RS08/CFV1 - Try to connect to the target
- *
- *  @return
- *     == \ref BDM_RC_OK => success        \n
- *     != \ref BDM_RC_OK => error
- */
-USBDM_ErrorCode f_CMD_CONNECT(void) {
-   USBDM_ErrorCode rc;
-
-   rc = connect();
-   if ((rc == BDM_RC_OK) && (bdm_option.useAltBDMClock != CS_DEFAULT)) {
-      uint8_t bdm_sts;
-
-      // Re-write Status/control reg. since Force BDM clock is active
-      rc = readBDMStatus(&bdm_sts);
-      if (rc != BDM_RC_OK) {
-         return rc;
-      }
-      if (cable_status.target_type == T_CFV1) {
-         bdm_sts &= ~(CFV1_XCSR_SEC); // Make sure we don't accidently erase the chip!
-      }
-      rc = writeBDMControl(bdm_sts);
-      if (rc != BDM_RC_OK) {
-         return rc;
-      }
-      rc = connect(); // Re-connect in case speed changed from above
-   }
-   return rc;
-}
-
-/**
- *  HCS12/HCS08/RS08/CFV1 -  Set communication speed to user supplied value
- *
- *  @note
- *   commandBuffer                                 \n
- *   - [2..3] = 16-bit Sync value in 60MHz ticks
- *
- *  @return
- *     == \ref BDM_RC_OK => success        \n
- *     != \ref BDM_RC_OK => error
- */
-USBDM_ErrorCode f_CMD_SET_SPEED(void) {
-   // Get speed
-   uint16_t syncValue = pack16BE(commandBuffer+2);
-
-   if (syncValue == 0) {
-      cable_status.speed = SPEED_NO_INFO; // Set to unknown (re-enable auto detection etc.)
-      // Try to connect
-      return f_CMD_CONNECT();
-   }
-   cable_status.sync_length = syncValue;
-   setSyncLength(syncValue);
-   //   USBDM_ErrorCode rc;
-   //   if (rc != BDM_RC_OK) {
-   //      cable_status.sync_length  = 1;
-   //      cable_status.speed        = SPEED_NO_INFO; // Connection cannot be established at this speed
-   //      cable_status.ackn         = WAIT;          // Clear indication of ACKN feature
-   //      return rc;
-   //   }
-   cable_status.speed       = SPEED_USER_SUPPLIED; // User told us (even if it doesn't work!)
-
-   //   if (cable_status.target_type == T_HC12) {
-   //      rc = bdmHC12_confirmSpeed(sync_length); // Confirm operation at that speed
-   //      if (rc != BDM_RC_OK) // Failed
-   //         return rc;
-   //   }
-
-   enableACKNMode();         // Try ACKN feature
-   return enableBDM();       // Try to enable BDM
-}
-
-/**
- *  HCS12,HCS08,RS08 & CFV1 -  Read current speed
- *
- *  @return
- *     == \ref BDM_RC_OK => success                \n
- *     != \ref BDM_RC_OK => error                  \n
- *                                                 \n
- *   commandBuffer                                 \n
- *    - [1..2] => 16-bit Sync value in 60MHz ticks
- */
-USBDM_ErrorCode f_CMD_GET_SPEED(void) {
-   unpack16BE(cable_status.sync_length, commandBuffer+1);
-   returnSize = 3;
-   return BDM_RC_OK;
-}
-
-/**
  *  CFV1 -  Used to reset the CFV1 target interface from overrun condition
  *
- *  @return
- *     == \ref BDM_RC_OK   => success       \n
- *     != \ref BDM_RC_FAIL => error         \n
+ *  @return == BDM_RC_OK => success
+ *  @return != BDM_RC_OK => error
  */
 static USBDM_ErrorCode resetCFV1Interface(void) {
    uint8_t status;
@@ -173,8 +65,11 @@ static USBDM_ErrorCode resetCFV1Interface(void) {
    USBDM_ErrorCode rc;
 
    for (attempt=0; attempt < 3; attempt++) {
-      // Try CFV1 recovery process
-      rc = connect();         // Reset BDM interface & reconnect
+      /*
+       * Try CFV1 recovery process
+       */
+      // Reset BDM interface & reconnect
+      rc = connect();
       if (rc != BDM_RC_OK)
          return rc;
       switch(attempt) {
@@ -187,29 +82,124 @@ static USBDM_ErrorCode resetCFV1Interface(void) {
             softwareReset(RESET_SPECIAL);
             break;
       }
-      rc = BDMCF_CMD_NOP();               // Issue NOP
-      if (rc != BDM_RC_OK)
+      // Issue NOP
+      rc = BDMCF_CMD_NOP();
+      if (rc != BDM_RC_OK) {
          continue;
-      rc = readBDMStatus(&status);    // Re-read status
-      if (rc != BDM_RC_OK)
+      }
+      // Re-read status
+      rc = readBDMStatus(&status);
+      if (rc != BDM_RC_OK) {
          continue;
-
+      }
       // Interface should now be IDLE
       if ((status & CFV1_XCSR_CSTAT) == CFV1_XCSR_CSTAT_OK)
          return BDM_RC_OK;
    }
    return rc;
 }
+}; // End namespace Cfv1
+
+namespace Hcs {
+
+using namespace Bdm;
+
+/**
+ *  HCS12/HCS08/RS08/CFV1 - Try to connect to the target
+ *
+ *  @return == BDM_RC_OK => success
+ *  @return != BDM_RC_OK => error
+ */
+USBDM_ErrorCode f_CMD_CONNECT(void) {
+   USBDM_ErrorCode rc;
+
+   rc = connect();
+   if ((rc == BDM_RC_OK) && (bdm_option.useAltBDMClock != CS_DEFAULT)) {
+      uint8_t bdm_sts;
+
+      // Re-write Status/control register since Force BDM clock is active
+      rc = readBDMStatus(&bdm_sts);
+      if (rc != BDM_RC_OK) {
+         return rc;
+      }
+      if (cable_status.target_type == T_CFV1) {
+         // Make sure we don't accidently erase the chip!
+         bdm_sts &= ~(CFV1_XCSR_SEC);
+      }
+      rc = writeBDMControl(bdm_sts);
+      if (rc != BDM_RC_OK) {
+         return rc;
+      }
+      // Re-connect in case speed changed from above
+      rc = connect();
+   }
+   return rc;
+}
+
+/**
+ *  HCS12/HCS08/RS08/CFV1 -  Set communication speed to user supplied value
+ *
+ *  @note
+ *   commandBuffer                                 \n
+ *   - [2..3] = 16-bit Sync value in 60MHz ticks
+ *
+ *  @return == BDM_RC_OK => success
+ *  @return != BDM_RC_OK => error
+ */
+USBDM_ErrorCode f_CMD_SET_SPEED(void) {
+   // Get speed
+   uint16_t syncValue = (pack16BE(commandBuffer+2)*4)/5;
+
+   if (syncValue == 0) {
+      // Set to unknown (re-enable auto detection etc.)
+      cable_status.speed = SPEED_NO_INFO;
+      // Try to connect
+      return f_CMD_CONNECT();
+   }
+   cable_status.sync_length = syncValue;
+   setSyncLength(syncValue);
+   // User told us (even if it doesn't work!)
+   cable_status.speed = SPEED_USER_SUPPLIED;
+
+   if (cable_status.target_type == T_HC12) {
+      // Confirm operation at that speed
+      USBDM_ErrorCode rc = Hcs::hc12confirmSpeed(syncValue);
+      if (rc != BDM_RC_OK) {
+         // Failed
+         return rc;
+      }
+   }
+   // Try ACKN feature
+   enableACKNMode();
+
+   // Try to enable BDM
+   return enableBDM();
+}
+
+/**
+ *  HCS12,HCS08,RS08 & CFV1 -  Read current speed
+ *
+ *  @note commandBuffer                             \n
+ *    - [1..2] => 16-bit Sync value in 60MHz ticks
+ *
+ *  @return == BDM_RC_OK => success
+ *  @return != BDM_RC_OK => error
+ */
+USBDM_ErrorCode f_CMD_GET_SPEED(void) {
+   // Have to scale Timer ticks to "60MHz" standard 48MHz => 60MHz
+   unpack16BE((5*cable_status.sync_length)/4, commandBuffer+1);
+   returnSize = 3;
+   return BDM_RC_OK;
+}
 
 /**
  *  HCS12/HCS08/RS08/CFV1 -  Read Target BDM Status Register
  *
- *  @return
- *     == \ref BDM_RC_OK => success       \n
- *     != \ref BDM_RC_OK => error         \n
- *                                        \n
- *   commandBuffer                        \n
+ *  @note commandBuffer \n
  *   - [1..4] => 8-bit Status register [MSBs are zero]
+ *
+ *  @return == BDM_RC_OK => success
+ *  @return != BDM_RC_OK => error
  */
 USBDM_ErrorCode f_CMD_READ_STATUS_REG(void) {
    USBDM_ErrorCode rc;
@@ -229,7 +219,7 @@ USBDM_ErrorCode f_CMD_READ_STATUS_REG(void) {
    if ((cable_status.target_type == T_CFV1) &&
          ((commandBuffer[4] & CFV1_XCSR_CSTAT) == CFV1_XCSR_CSTAT_OVERRUN)) {
       // Try CFV1 recovery process
-      rc = resetCFV1Interface();
+      rc = Cfv1::resetCFV1Interface();
       if (rc != BDM_RC_OK)
          return rc;
       rc = readBDMStatus(commandBuffer+4);
@@ -244,9 +234,8 @@ USBDM_ErrorCode f_CMD_READ_STATUS_REG(void) {
  *   commandBuffer                                          \n
  *    - [2..5] => 8-bit control register value [MSBs ignored]
  *
- *  @return
- *     == \ref BDM_RC_OK => success       \n
- *     != \ref BDM_RC_OK => error         \n
+ *  @return == BDM_RC_OK => success
+ *  @return != BDM_RC_OK => error
  */
 USBDM_ErrorCode f_CMD_WRITE_CONTROL_REG(void) {
    return writeBDMControl(commandBuffer[5]);
@@ -259,9 +248,8 @@ USBDM_ErrorCode f_CMD_WRITE_CONTROL_REG(void) {
  *   commandBuffer                                          \n
  *    - [2] => 8-bit reset control [see \ref TargetMode_t]
  *
- *  @return
- *     == \ref BDM_RC_OK => success       \n
- *     != \ref BDM_RC_OK => error         \n
+ *  @return == BDM_RC_OK => success
+ *  @return != BDM_RC_OK => error
  */
 USBDM_ErrorCode f_CMD_RESET(void) {
    register uint8_t mode = commandBuffer[2]&RESET_MODE_MASK;
@@ -277,19 +265,19 @@ USBDM_ErrorCode f_CMD_RESET(void) {
    cable_status.bdmpprValue = 0x00;
 
    switch (commandBuffer[2] & RESET_METHOD_MASK) {
-#if (HW_CAPABILITY&CAP_RST_IO)   
+#if (HW_CAPABILITY&CAP_RST_IO)
       case RESET_HARDWARE :
          rc = hardwareReset(mode);
          break;
-#endif         
+#endif
       case RESET_SOFTWARE :
          rc = softwareReset(mode);
          break;
-#if (HW_CAPABILITY&CAP_VDDCONTROL)   
+#if (HW_CAPABILITY&CAP_VDDCONTROL)
       case RESET_POWER :
          rc =  cycleTargetVdd(mode);
          break;
-#endif         
+#endif
       case RESET_ALL :
       default:
          rc = targetReset(mode);
@@ -298,23 +286,29 @@ USBDM_ErrorCode f_CMD_RESET(void) {
       // Assume we have lost connection after reset attempt
       cable_status.speed  = SPEED_NO_INFO;
    }
-   cable_status.reset  = NO_RESET_ACTIVITY; // BDM resetting the target doesn't count as a reset!
-   cable_status.ackn   = WAIT;              // ACKN feature is disabled after reset
+   // BDM resetting the target doesn't count as a reset!
+   cable_status.reset  = NO_RESET_ACTIVITY;
+   // ACKN feature is disabled after reset
+   cable_status.ackn   = WAIT;
 
 #if 0
    if (rc != BDM_RC_OK) {
       return rc;
    }
-   if (cable_status.speed == SPEED_USER_SUPPLIED) {          // User specified speed?
-      (void)bdmHC12_confirmSpeed(cable_status.sync_length);  // Confirm we can still operate at that speed
+   // User specified speed?
+   if (cable_status.speed == SPEED_USER_SUPPLIED) {
+      // Confirm we can still operate at that speed
+      (void)bdmHC12_confirmSpeed(cable_status.sync_length);
       // ToDo - check what should be done with rc
-      (void)bdm_enableBDM();                                 //  & enable BDM mode
+      (void)bdm_enableBDM(); //  & enable BDM mode
    }
    else if ((bdm_option.autoReconnect) || (cable_status.speed == SPEED_SYNC))
       // Re-connect if Auto re-connect enabled or it's quick to do (ACKN was found previously)
-      (void)bdm_connect();             //    Done even if no SYNC feature - may be slow!
-   else  {
-      cable_status.speed  = SPEED_NO_INFO;   // Indicate we no longer have a connection
+      // Done even if no SYNC feature - may be slow!
+      (void)bdm_connect();
+   else {
+      // Indicate we no longer have a connection
+      cable_status.speed  = SPEED_NO_INFO;
    }
 #endif
 
@@ -324,9 +318,8 @@ USBDM_ErrorCode f_CMD_RESET(void) {
 /**
  *  HCS12/HCS08/RS08/CFV1 -  Step over 1 instruction
  *
- *  @return
- *     == \ref BDM_RC_OK => success       \n
- *     != \ref BDM_RC_OK => error         \n
+ *  @return == BDM_RC_OK => success
+ *  @return != BDM_RC_OK => error
  */
 USBDM_ErrorCode f_CMD_STEP(void) {
    return step();
@@ -335,9 +328,8 @@ USBDM_ErrorCode f_CMD_STEP(void) {
 /**
  *  HCS12/HCS08/RS08/CFV1 -  Start code execution
  *
- *  @return
- *     == \ref BDM_RC_OK => success       \n
- *     != \ref BDM_RC_OK => error         \n
+ *  @return == BDM_RC_OK => success
+ *  @return != BDM_RC_OK => error
  */
 USBDM_ErrorCode f_CMD_GO(void) {
    return go();
@@ -346,17 +338,17 @@ USBDM_ErrorCode f_CMD_GO(void) {
 /**
  *  HCS12/HCS08/RS08/CFV1 -  Stop the target
  *
- *  @return
- *     == \ref BDM_RC_OK => success       \n
- *     != \ref BDM_RC_OK => error         \n
+ *  @return == BDM_RC_OK => success
+ *  @return != BDM_RC_OK => error
  */
 USBDM_ErrorCode f_CMD_HALT(void) {
    return halt();
 }
+}; // end namespace HCS
 
-/*
- * ===================================================
- */
+namespace Hcs12 {
+
+using namespace Hcs;
 
 /**
  *  HCS12 Write debug register/memory map
@@ -366,9 +358,8 @@ USBDM_ErrorCode f_CMD_HALT(void) {
  *   - [2..3] => 16-bit register number [MSB ignored]    \n
  *   - [4..7] => 32-bit register value  [MSBs ignored]
  *
- *  @return
- *     == \ref BDM_RC_OK => success       \n
- *     != \ref BDM_RC_OK => error
+ *  @return == BDM_RC_OK => success
+ *  @return != BDM_RC_OK => error
  */
 USBDM_ErrorCode f_CMD_WRITE_BD(void) {
    uint16_t addr = pack16BE(commandBuffer+2);
@@ -384,22 +375,21 @@ USBDM_ErrorCode f_CMD_WRITE_BD(void) {
  *
  *  @note
  *   commandBuffer                                    \n
- *   - [2..3] => 16-bit register number [MSB ignored]
- *
- *  @return
- *     == \ref BDM_RC_OK => success                   \n
- *     != \ref BDM_RC_OK => error                     \n
+ *   - [2..3] => 16-bit register number [MSB ignored] \n
  *                                                    \n
  *   commandBuffer                                    \n
  *   - [1..4] => 32-bit register value  [MSBs zeroed]
+ *
+ *  @return == BDM_RC_OK => success
+ *  @return != BDM_RC_OK => error
  */
 USBDM_ErrorCode f_CMD_READ_BD(void) {
    uint16_t addr = pack16BE(commandBuffer+2);
 
    // If reading HCS12 status use f_CMD_READ_STATUS_REG()
-   if (addr == HC12_BDMSTS)
+   if (addr == HC12_BDMSTS) {
       return f_CMD_READ_STATUS_REG();
-
+   }
    commandBuffer[1] = 0;
    commandBuffer[2] = 0;
    commandBuffer[3] = 0;
@@ -412,12 +402,11 @@ USBDM_ErrorCode f_CMD_READ_BD(void) {
 /**
  *  HCS12/RS08/HCS08  Read all registers
  *
- *  @return
- *     == \ref BDM_RC_OK => success       \n
- *     != \ref BDM_RC_OK => error         \n
- *                                        \n
- *   commandBuffer                        \n
+ *  @note commandBuffer        \n
  *   - [1..] => ?-bit value
+ *
+ *  @return == BDM_RC_OK => success
+ *  @return != BDM_RC_OK => error
  */
 USBDM_ErrorCode f_CMD_READ_REGS(void) {
    switch (cable_status.target_type) {
@@ -440,7 +429,7 @@ USBDM_ErrorCode f_CMD_READ_REGS(void) {
          return BDM_RC_OK;
       case T_RS08:
          BDM08_CMD_READ_PC(commandBuffer+1);    // RS08 Read CCR+PC
-         BDM08_CMD_READ_SP(commandBuffer+3);	   // RS08 Read Shadow PC
+         BDM08_CMD_READ_SP(commandBuffer+3);    // RS08 Read Shadow PC
          commandBuffer[5] = 0;                  // RS08 doesn't have Read HX
          commandBuffer[6] = 0;
          BDM08_CMD_READ_A(commandBuffer+7);     // RS08 Read A
@@ -463,9 +452,8 @@ USBDM_ErrorCode f_CMD_READ_REGS(void) {
  *  @param memorySpace - used to determine if using Global address
  *  @param addr23To16  - Global Page number address[23:16]
  *
- *  @return
- *     == \ref BDM_RC_OK => success        \n
- *     != \ref BDM_RC_OK => error          \n
+ *  @return == BDM_RC_OK => success
+ *  @return != BDM_RC_OK => error
  */
 USBDM_ErrorCode setBdmppr(uint8_t memorySpace, uint8_t addr23To16) {
    USBDM_ErrorCode rc = BDM_RC_OK;
@@ -484,6 +472,7 @@ USBDM_ErrorCode setBdmppr(uint8_t memorySpace, uint8_t addr23To16) {
    }
    return rc;
 }
+
 #if 1
 /**
  *  HCS12 -  Write block of bytes to memory
@@ -495,26 +484,26 @@ USBDM_ErrorCode setBdmppr(uint8_t memorySpace, uint8_t addr23To16) {
  *   - [4..7] = address [MSB ignored]                \n
  *   - [8..N] = data to write
  *
- *  @return
- *     == \ref BDM_RC_OK => success       \n
- *     != \ref BDM_RC_OK => error         \n
+ *  @return == BDM_RC_OK => success
+ *  @return != BDM_RC_OK => error
  */
-USBDM_ErrorCode f_CMD_HCS12_WRITE_MEM(void) {
+USBDM_ErrorCode f_CMD_WRITE_MEM(void) {
    uint8_t  count       = commandBuffer[3];
    uint16_t addr        = pack16BE(commandBuffer+6);
    uint8_t  *data_ptr   = commandBuffer+8;
    USBDM_ErrorCode  rc  = BDM_RC_OK;
 
-   rc = setBdmppr(commandBuffer[2], commandBuffer[5]); // element size & address[23:16]
+   // Element size & address[23:16]
+   rc = setBdmppr(commandBuffer[2], commandBuffer[5]);
    if (rc != BDM_RC_OK) {
       return rc;
    }
    if (addr&0x0001) {
       // Address is odd
       rc = BDM12_CMD_WRITEB(addr,*data_ptr); // write byte
-      addr     +=1;                    // increment memory address
-      data_ptr +=1;                    // increment buffer pointer
-      count    -=1;                    // decrement count of bytes
+      addr     +=1;  // increment memory address
+      data_ptr +=1;  // increment buffer pointer
+      count    -=1;  // decrement count of bytes
    }
    if (commandBuffer[2]&MS_Fast) {
       // Fast word writes - corrupts X
@@ -523,17 +512,17 @@ USBDM_ErrorCode f_CMD_HCS12_WRITE_MEM(void) {
       // Exclude 0xFF00-0xFFFF as BDM code in Memory map
       while ((count > 1) && (rc == BDM_RC_OK) && ((addr&0xFF00) != 0xFF00)) {
          rc = BDM12_CMD_WRITE_NEXT(*((uint16_t *)data_ptr)); // write word
-         addr     +=2;                    // increment memory address
-         data_ptr +=2;                    // increment buffer pointer
-         count    -=2;                    // decrement count of bytes
+         addr     +=2; // increment memory address
+         data_ptr +=2; // increment buffer pointer
+         count    -=2; // decrement count of bytes
       }
    }
    while ((count > 1) && (rc == BDM_RC_OK)) {
       // Slow Word writes
       rc = BDM12_CMD_WRITEW(addr,*((uint16_t *)data_ptr));  // write a word
-      addr     +=2;                          // increment memory address
-      data_ptr +=2;                          // increment buffer pointer
-      count    -=2;                          // decrement count of bytes
+      addr     +=2; // increment memory address
+      data_ptr +=2; // increment buffer pointer
+      count    -=2; // decrement count of bytes
    }
    if (count > 0) {
       // Odd last byte
@@ -552,11 +541,10 @@ USBDM_ErrorCode f_CMD_HCS12_WRITE_MEM(void) {
  *   - [4..7] = address [MSB ignored]                \n
  *   - [8..N] = data to write
  *
- *  @return
- *     == \ref BDM_RC_OK => success       \n
- *     != \ref BDM_RC_OK => error         \n
+ *  @return == BDM_RC_OK => success
+ *  @return != BDM_RC_OK => error
  */
-USBDM_ErrorCode f_CMD_HCS12_WRITE_MEM(void) {
+USBDM_ErrorCode f_CMD_WRITE_MEM(void) {
    uint8_t  count       = commandBuffer[3];
    uint16_t addr        = pack16BE(commandBuffer+6);
    uint8_t  *data_ptr   = commandBuffer+8;
@@ -595,15 +583,14 @@ USBDM_ErrorCode f_CMD_HCS12_WRITE_MEM(void) {
  *   - [2]    = element size [ignored]/memory space  \n
  *   - [3]    = # of bytes                           \n
  *   - [4..7] = address [MSB ignored]                \n
- *
- *  @return
- *     == \ref BDM_RC_OK => success       \n
- *     != \ref BDM_RC_OK => error         \n
- *                                        \n
- *   commandBuffer                        \n
+ *                                                   \n
+ *   commandBuffer                                   \n
  *   - [1..N] = data read
+ *
+ *  @return == BDM_RC_OK => success
+ *  @return != BDM_RC_OK => error
  */
-USBDM_ErrorCode f_CMD_HCS12_READ_MEM(void) {
+USBDM_ErrorCode f_CMD_READ_MEM(void) {
    uint8_t  count       = commandBuffer[3];
    uint16_t addr        = pack16BE(commandBuffer+6);
    uint8_t  *data_ptr   = commandBuffer+1;
@@ -620,9 +607,9 @@ USBDM_ErrorCode f_CMD_HCS12_READ_MEM(void) {
    if (addr&0x0001) {
       // Odd first byte
       rc = BDM12_CMD_READB((uint16_t)addr,data_ptr);  // fetch a byte
-      addr     +=1;                    // increment memory address
-      data_ptr +=1;                    // increment buffer pointer
-      count    -=1;                    // decrement count of bytes
+      addr     +=1; // increment memory address
+      data_ptr +=1; // increment buffer pointer
+      count    -=1; // decrement count of bytes
    }
    if (commandBuffer[2]&MS_Fast) {
       // Fast word reads - corrupts X
@@ -631,17 +618,17 @@ USBDM_ErrorCode f_CMD_HCS12_READ_MEM(void) {
       // Exclude 0xFF00-0xFFFF as BDM code in Memory map
       while ((count > 1) && (rc == BDM_RC_OK) && ((addr&0xFF00) != 0xFF00)) {
          rc = BDM12_CMD_READ_NEXT(data_ptr);
-         addr     +=2;                    // increment memory address
-         data_ptr +=2;                    // increment buffer pointer
-         count    -=2;                    // decrement count of bytes
+         addr     +=2; // increment memory address
+         data_ptr +=2; // increment buffer pointer
+         count    -=2; // decrement count of bytes
       }
    }
    while ((count > 1) && (rc == BDM_RC_OK)) {
       // Slow Word reads
       rc = BDM12_CMD_READW(addr,data_ptr);  // fetch a word
-      addr     +=2;                          // increment memory address
-      data_ptr +=2;                          // increment buffer pointer
-      count    -=2;                          // decrement count of bytes
+      addr     +=2; // increment memory address
+      data_ptr +=2; // increment buffer pointer
+      count    -=2; // decrement count of bytes
    }
    if (count > 0) {
       // Odd last byte
@@ -658,24 +645,25 @@ USBDM_ErrorCode f_CMD_HCS12_READ_MEM(void) {
  *   - [2]    = element size [ignored]/memory space  \n
  *   - [3]    = # of bytes                           \n
  *   - [4..7] = address [MSB ignored]                \n
- *
- *  @return
- *     == \ref BDM_RC_OK => success       \n
- *     != \ref BDM_RC_OK => error         \n
- *                                        \n
- *   commandBuffer                        \n
+ *                                                   \n
+ *   commandBuffer                                   \n
  *   - [1..N] = data read
+ *
+ *  @return == BDM_RC_OK => success
+ *  @return != BDM_RC_OK => error
  */
-USBDM_ErrorCode f_CMD_HCS12_READ_MEM(void) {
+USBDM_ErrorCode f_CMD_READ_MEM(void) {
    uint8_t  count       = commandBuffer[3];
    uint16_t addr        = pack16BE(commandBuffer+6);
    uint8_t  *data_ptr   = commandBuffer+1;
    uint8_t  rc          = BDM_RC_OK;
 
    if (count>MAX_COMMAND_SIZE-1) {
-      return BDM_RC_ILLEGAL_PARAMS;  // requested block+status is too long to fit into the buffer
+      // requested block+status is too long to fit into the buffer
+      return BDM_RC_ILLEGAL_PARAMS;
    }
-   rc = setBdmppr(commandBuffer[2], commandBuffer[5]); // element size & address[23:16]
+   // Element size & address[23:16]
+   rc = setBdmppr(commandBuffer[2], commandBuffer[5]);
    if (rc != BDM_RC_OK) {
       return rc;
    }
@@ -683,42 +671,41 @@ USBDM_ErrorCode f_CMD_HCS12_READ_MEM(void) {
    while ((count > 0) && (rc == BDM_RC_OK)) {
       if ((addr&0x0001) || (count == 1)) {
          // Address is odd or only 1 byte remaining
-         rc = BDM12_CMD_READB((uint16_t)addr,data_ptr);  // fetch a byte
-         addr     +=1;                    // increment memory address
-         data_ptr +=1;                    // increment buffer pointer
-         count    -=1;                    // decrement count of bytes
+         // fetch a byte
+         rc = BDM12_CMD_READB((uint16_t)addr,data_ptr);
+         addr     +=1; // increment memory address
+         data_ptr +=1; // increment buffer pointer
+         count    -=1; // decrement count of bytes
       }
       else {
          // Even address && >=2 bytes remaining
-         rc = BDM12_CMD_READW((uint16_t)addr,(uint16_t*)data_ptr);  // fetch a word
-         addr     +=2;                          // increment memory address
-         data_ptr +=2;                          // increment buffer pointer
-         count    -=2;                          // decrement count of bytes
+         // fetch a word
+         rc = BDM12_CMD_READW((uint16_t)addr,(uint16_t*)data_ptr);
+         addr     +=2; // increment memory address
+         data_ptr +=2; // increment buffer pointer
+         count    -=2; // decrement count of bytes
       }
    }
    return rc;
 }
 #endif
 
-
 //======================================================================
 //======================================================================
 //======================================================================
-
 
 /**
  *  HCS12 Write core register
  *
  *  @note
  *   commandBuffer                                          \n
- *   - [2..3] => 16-bit register number [MSB ignored]      \n
+ *   - [2..3] => 16-bit register number [MSB ignored]       \n
  *   - [4..7] => 32-bit register value  [some MSBs ignored]
  *
- *  @return
- *     == \ref BDM_RC_OK => success       \n
- *     != \ref BDM_RC_OK => error         \n
+ *  @return == BDM_RC_OK => success
+ *  @return != BDM_RC_OK => error
  */
-USBDM_ErrorCode f_CMD_HCS12_WRITE_REG(void) {
+USBDM_ErrorCode f_CMD_WRITE_REG(void) {
    uint16_t value = pack16BE(commandBuffer+6);
    if ((commandBuffer[3]<HCS12_RegPC) || (commandBuffer[3]>HCS12_RegSP)) {
       return BDM_RC_ILLEGAL_PARAMS;
@@ -730,17 +717,16 @@ USBDM_ErrorCode f_CMD_HCS12_WRITE_REG(void) {
  *  HCS12 Read core register
  *
  *  @note
- *   commandBuffer                                       \n
- *   - [2..3] => 16-bit register number [MSB ignored]    \n
- *
- *  @return
- *     == \ref BDM_RC_OK => success                         \n
- *     != \ref BDM_RC_OK => error                           \n
+ *   commandBuffer                                          \n
+ *   - [2..3] => 16-bit register number [MSB ignored]       \n
  *                                                          \n
  *   commandBuffer                                          \n
  *   - [1..4] => 32-bit register value  [some MSBs ignored]
+ *
+ *  @return == BDM_RC_OK => success
+ *  @return != BDM_RC_OK => error
  */
-USBDM_ErrorCode f_CMD_HCS12_READ_REG(void) {
+USBDM_ErrorCode f_CMD_READ_REG(void) {
    commandBuffer[1] = 0;
    commandBuffer[2] = 0;
    returnSize = 5;
@@ -750,8 +736,7 @@ USBDM_ErrorCode f_CMD_HCS12_READ_REG(void) {
    }
    return BDM12_CMD_READ_REG(commandBuffer[3],commandBuffer+3);
 }
-
-}; // end namespace HCS
+}; // end namespace Hcs12
 
 namespace Hcs08 {
 
@@ -767,9 +752,8 @@ using namespace Hcs;
  *   - [4..7] = address [MSB ignored]        \n
  *   - [8..N] = data to write
  *
- *  @return
- *     == \ref BDM_RC_OK => success       \n
- *     != \ref BDM_RC_OK => error         \n
+ *  @return == BDM_RC_OK => success
+ *  @return != BDM_RC_OK => error
  */
 USBDM_ErrorCode f_CMD_WRITE_MEM(void) {
    uint8_t         count    = commandBuffer[3];
@@ -830,14 +814,13 @@ USBDM_ErrorCode f_CMD_WRITE_MEM(void) {
  *   commandBuffer                       \n
  *   - [2]    = element size/mode        \n
  *   - [3]    = # of bytes               \n
- *   - [4..7] = address [MSB ignored]
- *
- *  @return
- *     == \ref BDM_RC_OK => success      \n
- *     != \ref BDM_RC_OK => error        \n
+ *   - [4..7] = address [MSB ignored]    \n
  *                                       \n
  *   commandBuffer                       \n
  *   - [1..N]  = data read
+ *
+ *  @return == BDM_RC_OK => success
+ *  @return != BDM_RC_OK => error
  */
 USBDM_ErrorCode f_CMD_READ_MEM(void) {
    uint8_t  count      = commandBuffer[3];
@@ -849,7 +832,8 @@ USBDM_ErrorCode f_CMD_READ_MEM(void) {
       return BDM_RC_NO_CONNECTION;
    }
    if (count>MAX_COMMAND_SIZE-1) {
-      return BDM_RC_ILLEGAL_PARAMS;  // requested block+status is too long to fit into the buffer
+      // Requested block+status is too long to fit into the buffer
+      return BDM_RC_ILLEGAL_PARAMS;
    }
    returnSize = count+1;
    if (commandBuffer[2]&MS_Fast) {
@@ -857,8 +841,10 @@ USBDM_ErrorCode f_CMD_READ_MEM(void) {
       rc = BDM08_CMD_WRITE_HX(addr-1);
       while ((count > 0) && (rc == BDM_RC_OK)) {
          rc = BDM08_CMD_READ_NEXT(data_ptr);
-         data_ptr +=1;                    // increment buffer pointer
-         count    -=1;                    // decrement count of bytes
+         // Increment buffer pointer
+         data_ptr +=1;
+         // Decrement count of bytes
+         count    -=1;
       }
    }
    else {
@@ -893,6 +879,7 @@ USBDM_ErrorCode f_CMD_READ_MEM(void) {
    }
    return rc;
 }
+
 /**
  *  HCS08/RS08 Write core register
  *
@@ -901,26 +888,25 @@ USBDM_ErrorCode f_CMD_READ_MEM(void) {
  *   - [2..3] => 16-bit register number [MSB ignored]      \n
  *   - [4..7] => 32-bit register value  [some MSBs ignored]
  *
- *  @return
- *     == \ref BDM_RC_OK => success       \n
- *     != \ref BDM_RC_OK => error         \n
+ *  @return == BDM_RC_OK => success
+ *  @return != BDM_RC_OK => error
  */
 USBDM_ErrorCode f_CMD_WRITE_REG(void) {
    uint16_t value = pack16BE(commandBuffer+6);
    USBDM_ErrorCode rc = BDM_RC_ILLEGAL_PARAMS;
 
    switch (commandBuffer[3]) {
-      case HCS08_RegPC :  // RS08_RegCCR_PC :
+      case HCS08_RegPC :  // or RS08_RegCCR_PC :
          rc = BDM08_CMD_WRITE_PC(value);
          break;
       case HCS08_RegHX  :
          if (cable_status.target_type == T_HCS08)
             rc = BDM08_CMD_WRITE_HX(value);
          break;
-      case HCS08_RegSP : // RS08_RegSPC
+      case HCS08_RegSP : // or RS08_RegSPC
          rc = BDM08_CMD_WRITE_SP(value);
          break;
-      case HCS08_RegA  :  // RS08_RegA
+      case HCS08_RegA  :  // or RS08_RegA
          rc = BDM08_CMD_WRITE_A((uint8_t)value);
          break;
       case HCS08_RegCCR  :
@@ -935,15 +921,14 @@ USBDM_ErrorCode f_CMD_WRITE_REG(void) {
  *  HCS08/RS08 Read core register
  *
  *  @note
- *   commandBuffer                                         \n
- *   - [2..3] => 16-bit register number [MSB ignored]      \n
- *
- *  @return
- *     == \ref BDM_RC_OK => success                         \n
- *     != \ref BDM_RC_OK => error                           \n
+ *   commandBuffer                                          \n
+ *   - [2..3] => 16-bit register number [MSB ignored]       \n
  *                                                          \n
  *   commandBuffer                                          \n
  *   - [1..4] => 32-bit register value  [some MSBs ignored]
+ *
+ *  @return == BDM_RC_OK => success
+ *  @return != BDM_RC_OK => error
  */
 USBDM_ErrorCode f_CMD_READ_REG(void) {
    USBDM_ErrorCode rc = BDM_RC_ILLEGAL_PARAMS;
@@ -952,17 +937,17 @@ USBDM_ErrorCode f_CMD_READ_REG(void) {
    commandBuffer[2] = 0;
 
    switch (commandBuffer[3]) {
-      case HCS08_RegPC : // RS08_RegCCR_PC :
+      case HCS08_RegPC : // or RS08_RegCCR_PC :
          rc = BDM08_CMD_READ_PC(commandBuffer+3);
          break;
       case HCS08_RegHX  :
          if (cable_status.target_type == T_HCS08)
             rc = BDM08_CMD_READ_HX(commandBuffer+3);
          break;
-      case HCS08_RegSP : // RS08_RegSPC
+      case HCS08_RegSP : // or RS08_RegSPC
          rc = BDM08_CMD_READ_SP(commandBuffer+3);
          break;
-      case HCS08_RegA  : // RS08_RegA
+      case HCS08_RegA  : // or RS08_RegA
          commandBuffer[3] = 0;
          rc = BDM08_CMD_READ_A(commandBuffer+4);
          break;
@@ -984,9 +969,8 @@ USBDM_ErrorCode f_CMD_READ_REG(void) {
  *   - [2..3] => 16-bit register number [ignored]     \n
  *   - [4..7] => 32-bit register value  [MSBs ignored]
  *
- *  @return
- *     == \ref BDM_RC_OK => success        \n
- *     != \ref BDM_RC_OK => error
+ *  @return == BDM_RC_OK => success
+ *  @return != BDM_RC_OK => error
  */
 USBDM_ErrorCode f_CMD_WRITE_BKPT(void) {
    BDM08_CMD_WRITE_BKPT(*(uint16_t *)(commandBuffer+6));
@@ -997,16 +981,15 @@ USBDM_ErrorCode f_CMD_WRITE_BKPT(void) {
  *  HCS08/RS08 Read from Breakpoint reg
  *
  *  @note
- *   commandBuffer                                    \n
- *   - [2..3] => 16-bit register number [ignored]     \n
- *   - [1..4] => 32-bit register value  [MSBs zeroed]
- *
- *  @return
- *     == \ref BDM_RC_OK => success                         \n
- *     != \ref BDM_RC_OK => error                           \n
+ *   commandBuffer                                          \n
+ *   - [2..3] => 16-bit register number [ignored]           \n
+ *   - [1..4] => 32-bit register value  [MSBs zeroed]       \n
  *                                                          \n
  *   commandBuffer                                          \n
  *   - [1..4] => 32-bit register value  [some MSBs ignored]
+ *
+ *  @return == BDM_RC_OK => success
+ *  @return != BDM_RC_OK => error
  */
 USBDM_ErrorCode f_CMD_READ_BKPT(void) {
    commandBuffer[1] = 0;
@@ -1018,24 +1001,44 @@ USBDM_ErrorCode f_CMD_READ_BKPT(void) {
 
 }; // namespace Hcs08
 
-//=============================================================
-//==   RS08 Code                                             ==
-//=============================================================
+namespace S12z {
+
+using namespace Bdm;
+
+/**
+ * Write an arbitrary command using BDM protocol
+ *
+ * @return == BDM_RC_OK => success
+ * @return != BDM_RC_OK => error
+ */
+USBDM_ErrorCode f_CMD_CUSTOM_COMMAND(void) {
+   cmd_0_0_NOACK(_BDMZ12_ERASE_FLASH);
+   acknowledgeOrWait64();
+   cmd_0_0_NOACK(_BDMZ12_ERASE_FLASH);
+   acknowledgeOrWait64();
+   return BDM_RC_OK;
+}
+
+}; // End namespace S12z
+
 #if (HW_CAPABILITY & CAP_FLASH)
+
+namespace Rs08 {
 
 /**
  *  Control target VPP level
  *
  *  @note
- *   commandBuffer                 \n
- *   - [2] =>       (FlashState_t) control value for VPP \n
+ *   commandBuffer                                  \n
+ *   - [2] =>  (FlashState_t) control value for VPP \n
  *
- *  @return
- *      BDM_RC_OK   => success \n
- *      else        => Error
+ *  @return == BDM_RC_OK => success
+ *  @return != BDM_RC_OK => error
  */
 USBDM_ErrorCode f_CMD_SET_VPP(void) {
    return bdmSetVpp(commandBuffer[2]);
 }
+
+}; // End namespace Rs08
 
 #endif // (HW_CAPABILITY & CAP_FLASH)

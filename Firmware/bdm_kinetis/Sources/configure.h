@@ -86,7 +86,7 @@ extern void dputs(char *msg);
 #define CAP_JTAG        (1<<7)		// Supports JTAG targets
 #define CAP_DSC         (1<<8)		// Supports DSC targets
 #define CAP_ARM_JTAG    (1<<9)      // Supports ARM targets via JTAG
-#define CAP_RST         (1<<10)     // Control & sensing of RESET
+#define CAP_RST         (1<<10)     // Control of RESET
 #define CAP_PST         (1<<11)     // Supports PST signal sensing
 #define CAP_CDC         (1<<12)     // Supports CDC Serial over USB interface
 #define CAP_ARM_SWD     (1<<13)     // Supports ARM targets via SWD

@@ -38,6 +38,7 @@
  */
 
 #include <stdint.h>
+#include "configure.h"
 #include "system.h"
 #include "derivative.h"
 #include "hardware.h"
@@ -50,19 +51,21 @@
 
 namespace Bdm {
 
+static USBDM_ErrorCode hc12_alt_speed_detect(void);
+
 //constexpr unsigned SOFT_RESETus         =  10000U; //!< us - longest time needed for soft reset of the BDM interface (512 BDM cycles @ 400kHz = 1280us)
 //constexpr unsigned RESET_LENGTHms       =    100U; //!< ms - time of RESET assertion
 //constexpr unsigned RESET_INITIAL_WAITms =     10U; //!< ms - max time to wait for the RESET pin to come high after release
 //static constexpr int VDD_RISE_TIME_us   = 2000; // Minimum time to allow for controlled target Vdd rise
 
-/** Time to hold BKGD pin low after reset pin rise for special modes (allowance made for slow Reset rise) */
-static constexpr unsigned BKGD_WAIT_us       = 2000;
+/** Time to hold BKGD pin low after reset pin rise for special modes */
+static constexpr unsigned BKGD_WAIT_us = 10;
 
-/** Time to wait for signals to settle in us, this should be longer than the soft reset time */
-static constexpr unsigned RESET_SETTLE_ms    =    3;
+/** Time to wait for RESET out signal to apply. This should be longer than the soft reset time (30 busy cycles) */
+static constexpr unsigned RESET_OUT_TIME_us = 20;
 
 /** How long to wait after reset before new commands are allowed */
-static constexpr unsigned RESET_RECOVERY_ms  =   10;
+static constexpr unsigned RESET_RECOVERY_ms = 30;
 
 /** Max time to wait for the RESET pin to go high after release */
 static constexpr unsigned RESET_RELEASE_WAIT_ms = 300;
@@ -317,11 +320,11 @@ void setSyncLength(uint16_t syncLength) {
 }
 
 /**
- * Determine connection speed using sync pulse
+ *  Determine connection speed using sync pulse
  *
- * @param [out] syncLength Sync length in timer ticks (48MHz)
+ *  @param [out] syncLength Sync length in timer ticks (48MHz)
  *
- * @return Error code, BDM_RC_OK indicates success
+ *  @return Error code, BDM_RC_OK indicates success
  */
 USBDM_ErrorCode sync(uint16_t &syncLength) {
 
@@ -407,7 +410,6 @@ USBDM_ErrorCode sync(uint16_t &syncLength) {
  *  @return BDM_RC_ACK_TIMEOUT No ACKN detected [timeout]
  */
 USBDM_ErrorCode acknowledgeOrWait64(void) {
-   enableInterrupts();
    if (cable_status.ackn==ACKN) {
       // Wait for pin capture or timeout
       static auto fn = [] {
@@ -436,7 +438,6 @@ USBDM_ErrorCode acknowledgeOrWait64(void) {
  *  @return BDM_RC_ACK_TIMEOUT No ACKN detected [timeout]
  */
 USBDM_ErrorCode acknowledgeOrWait150(void) {
-   enableInterrupts();
    if (cable_status.ackn==ACKN) {
       // Wait for pin capture or timeout
       static auto fn = [] {
@@ -568,8 +569,7 @@ USBDM_ErrorCode rx32(uint8_t *data) {
  * Set up for transmission
  */
 inline
-void txInit() {
-   disableFtmCounter();
+void transactionStart() {
    ftm->SYNCONF = FTM_SYNCONF_SYNCMODE(1)|FTM_SYNCONF_SWWRBUF(1);
    disableInterrupts();
    enablePins();
@@ -579,10 +579,10 @@ void txInit() {
  * End transmission phase
  */
 inline
-void txComplete() {
+void transactionComplete() {
    disableFtmCounter();
-   enableInterrupts();
    disablePins();
+   enableInterrupts();
 }
 
 /**
@@ -604,6 +604,9 @@ USBDM_ErrorCode tx(int length, unsigned data) {
          FTM_COMBINE_COMBINE0_MASK<<(bkgdEnChannel*4)|
          FTM_COMBINE_SYNCEN0_MASK<<(bkgdOutChannel*4)|
          FTM_COMBINE_COMBINE0_MASK<<(bkgdOutChannel*4);
+
+   // Disable so immediate effect
+   disableFtmCounter();
 
    // Positive pulse for buffer enable
    ftm->CONTROLS[bkgdEnChannel].CnSC    = USBDM::ftm_CombinePositivePulse;
@@ -642,7 +645,7 @@ USBDM_ErrorCode tx(int length, unsigned data) {
       do {
       } while (ftm->CNT < TMR_SETUP_TIME+minPeriod);
    }
-   // Clear channel flags
+   // Clear channel flags for ACKN pulse
    ftm->STATUS &= ~(
          (1<<bkgdEnChannel) |(1<<(bkgdEnChannel+1))|
          (1<<bkgdOutChannel)|(1<<(bkgdOutChannel+1))|
@@ -714,9 +717,9 @@ USBDM_ErrorCode tx32(uint32_t data) {
  * @note Interrupts are left disabled, no ACK is expected
  */
 void cmd_0_0_T(uint8_t cmd) {
-   txInit();
+   transactionStart();
    tx8(cmd);
-   //   txComplete();
+   //   transactionComplete();
 }
 
 /**
@@ -728,10 +731,10 @@ void cmd_0_0_T(uint8_t cmd) {
  * @note Interrupts are left disabled, no ACK is expected
  */
 void cmd_1B_0_T(uint8_t cmd, uint8_t parameter) {
-   txInit();
+   transactionStart();
    tx8(cmd);
    tx8(parameter);
-   //   txComplete();
+   //   transactionComplete();
 }
 
 /**
@@ -744,11 +747,11 @@ void cmd_1B_0_T(uint8_t cmd, uint8_t parameter) {
  * @note Interrupts are left disabled, no ACK is expected
  */
 void cmd_1W1B_0_T(uint8_t cmd, uint16_t parameter1, uint8_t parameter2) {
-   txInit();
+   transactionStart();
    tx8(cmd);
    tx16(parameter1);
    tx8(parameter2);
-   //   txComplete();
+   //   transactionComplete();
 }
 
 /*
@@ -765,9 +768,9 @@ void cmd_1W1B_0_T(uint8_t cmd, uint16_t parameter1, uint8_t parameter2) {
  *  @note No ACK is expected
  */
 void cmd_0_0_NOACK(uint8_t cmd) {
-   txInit();
+   transactionStart();
    tx8(cmd);
-   txComplete();
+   transactionComplete();
 }
 
 /**
@@ -779,10 +782,10 @@ void cmd_0_0_NOACK(uint8_t cmd) {
  *  @note No ACK is expected
  */
 void cmd_0_1B_NOACK(uint8_t cmd, uint8_t *result) {
-   txInit();
+   transactionStart();
    tx8(cmd);
    rx8(result);
-   txComplete();
+   transactionComplete();
 }
 
 /**
@@ -794,10 +797,10 @@ void cmd_0_1B_NOACK(uint8_t cmd, uint8_t *result) {
  *  @note No ACK is expected
  */
 void cmd_1B_0_NOACK(uint8_t cmd, uint8_t parameter) {
-   txInit();
+   transactionStart();
    tx8(cmd);
    tx8(parameter);
-   txComplete();
+   transactionComplete();
 }
 
 /**
@@ -809,10 +812,10 @@ void cmd_1B_0_NOACK(uint8_t cmd, uint8_t parameter) {
  *  @note No ACK is expected
  */
 void cmd_0_1W_NOACK(uint8_t cmd, uint8_t *result) {
-   txInit();
+   transactionStart();
    tx8(cmd);
    rx16(result);
-   txComplete();
+   transactionComplete();
 }
 
 /**
@@ -824,10 +827,10 @@ void cmd_0_1W_NOACK(uint8_t cmd, uint8_t *result) {
  *  @note No ACK is expected
  */
 void cmd_1W_0_NOACK(uint8_t cmd, uint16_t parameter) {
-   txInit();
+   transactionStart();
    tx8(cmd);
    tx16(parameter);
-   txComplete();
+   transactionComplete();
 }
 
 /**
@@ -840,11 +843,11 @@ void cmd_1W_0_NOACK(uint8_t cmd, uint16_t parameter) {
  *  @note no ACK is expected
  */
 void cmd_1W_1W_NOACK(uint8_t cmd, uint16_t parameter, uint8_t result[2]) {
-   txInit();
+   transactionStart();
    tx8(cmd);
    tx16(parameter);
    rx16(result);
-   txComplete();
+   transactionComplete();
 }
 
 /**
@@ -858,12 +861,12 @@ void cmd_1W_1W_NOACK(uint8_t cmd, uint16_t parameter, uint8_t result[2]) {
  *  @note no ACK is expected
  */
 void cmd_1W1B_1B_NOACK(uint8_t cmd, uint16_t parameter, uint8_t value, uint8_t *status) {
-   txInit();
+   transactionStart();
    tx8(cmd);
    tx16(parameter);
    tx8(value);
    rx8(status);
-   txComplete();
+   transactionComplete();
 }
 
 /*
@@ -882,10 +885,10 @@ void cmd_1W1B_1B_NOACK(uint8_t cmd, uint16_t parameter, uint8_t value, uint8_t *
  *  @note ACK is expected
  */
 USBDM_ErrorCode cmd_0_0(uint8_t cmd) {
-   txInit();
+   transactionStart();
    tx8(cmd);
    USBDM_ErrorCode rc = acknowledgeOrWait64();
-   txComplete();
+   transactionComplete();
    return rc;
 }
 
@@ -900,11 +903,11 @@ USBDM_ErrorCode cmd_0_0(uint8_t cmd) {
  *  @note ACK is expected
  */
 USBDM_ErrorCode cmd_0_1B(uint8_t cmd, uint8_t *result) {
-   txInit();
+   transactionStart();
    tx8(cmd);
    USBDM_ErrorCode rc = acknowledgeOrWait64();
    rx8(result);
-   txComplete();
+   transactionComplete();
    return rc;
 }
 
@@ -919,11 +922,11 @@ USBDM_ErrorCode cmd_0_1B(uint8_t cmd, uint8_t *result) {
  *  @note ACK is expected
  */
 USBDM_ErrorCode cmd_0_1W(uint8_t cmd, uint8_t *result) {
-   txInit();
+   transactionStart();
    tx8(cmd);
    USBDM_ErrorCode rc = acknowledgeOrWait64();
    rx16(result);
-   txComplete();
+   transactionComplete();
    return rc;
 }
 
@@ -938,7 +941,7 @@ USBDM_ErrorCode cmd_0_1W(uint8_t cmd, uint8_t *result) {
  *  @note ACK is expected
  */
 USBDM_ErrorCode cmd_0_1L(uint8_t cmd, uint8_t result[4]) {
-   txInit();
+   transactionStart();
    tx8(cmd);
    USBDM_ErrorCode rc = acknowledgeOrWait64();
    rx32(result);
@@ -956,11 +959,11 @@ USBDM_ErrorCode cmd_0_1L(uint8_t cmd, uint8_t result[4]) {
  *  @note ACK is expected
  */
 USBDM_ErrorCode cmd_1B_0(uint8_t cmd, uint8_t parameter) {
-   txInit();
+   transactionStart();
    tx8(cmd);
    tx8(parameter);
    USBDM_ErrorCode rc = acknowledgeOrWait64();
-   txComplete();
+   transactionComplete();
    return rc;
 }
 
@@ -975,11 +978,11 @@ USBDM_ErrorCode cmd_1B_0(uint8_t cmd, uint8_t parameter) {
  *  @note ACK is expected
  */
 USBDM_ErrorCode cmd_1W_0(uint8_t cmd, uint16_t parameter) {
-   txInit();
+   transactionStart();
    tx8(cmd);
    tx16(parameter);
    USBDM_ErrorCode rc = acknowledgeOrWait64();
-   txComplete();
+   transactionComplete();
    return rc;
 }
 
@@ -994,11 +997,11 @@ USBDM_ErrorCode cmd_1W_0(uint8_t cmd, uint16_t parameter) {
  *  @note ACK is expected
  */
 USBDM_ErrorCode cmd_1L_0(uint8_t cmd, uint32_t parameter) {
-   txInit();
+   transactionStart();
    tx8(cmd);
    tx32(parameter);
    USBDM_ErrorCode rc = acknowledgeOrWait64();
-   txComplete();
+   transactionComplete();
    return rc;
 }
 
@@ -1014,7 +1017,7 @@ USBDM_ErrorCode cmd_1L_0(uint8_t cmd, uint32_t parameter) {
  *  @note ACK is expected
  */
 USBDM_ErrorCode cmd_1W_1WB(uint8_t cmd, uint16_t parameter, uint8_t *result) {
-   txInit();
+   transactionStart();
    tx8(cmd);
    tx16(parameter);
    USBDM_ErrorCode rc = acknowledgeOrWait150();
@@ -1026,7 +1029,7 @@ USBDM_ErrorCode cmd_1W_1WB(uint8_t cmd, uint16_t parameter, uint8_t *result) {
       uint8_t dummy;
       rx8(&dummy);
    }
-   txComplete();
+   transactionComplete();
    return rc;
 }
 
@@ -1042,12 +1045,12 @@ USBDM_ErrorCode cmd_1W_1WB(uint8_t cmd, uint16_t parameter, uint8_t *result) {
  *  @note ACK is expected
  */
 USBDM_ErrorCode cmd_2W_0(uint8_t cmd, uint16_t parameter1, uint16_t parameter2) {
-   txInit();
+   transactionStart();
    tx8(cmd);
    tx16(parameter1);
    tx16(parameter2);
    USBDM_ErrorCode rc = acknowledgeOrWait150();
-   txComplete();
+   transactionComplete();
    return rc;
 }
 
@@ -1063,12 +1066,12 @@ USBDM_ErrorCode cmd_2W_0(uint8_t cmd, uint16_t parameter1, uint16_t parameter2) 
  *  @note ACK is expected
  */
 USBDM_ErrorCode cmd_1W_1W(uint8_t cmd, uint16_t parameter, uint8_t result[2]) {
-   txInit();
+   transactionStart();
    tx8(cmd);
    tx16(parameter);
    USBDM_ErrorCode rc = acknowledgeOrWait150();
    rx16(result);
-   txComplete();
+   transactionComplete();
    return rc;
 }
 
@@ -1085,13 +1088,13 @@ USBDM_ErrorCode cmd_1W_1W(uint8_t cmd, uint16_t parameter, uint8_t result[2]) {
  *  @note ACK is expected
  */
 USBDM_ErrorCode cmd_1W1B_1B(uint8_t cmd, uint16_t parameter, uint8_t value, uint8_t *status) {
-   txInit();
+   transactionStart();
    tx8(cmd);
    tx16(parameter);
    tx8(value);
    USBDM_ErrorCode rc = acknowledgeOrWait64();
    rx8(status);
-   txComplete();
+   transactionComplete();
    return rc;
 }
 /**
@@ -1107,13 +1110,13 @@ USBDM_ErrorCode cmd_1W1B_1B(uint8_t cmd, uint16_t parameter, uint8_t value, uint
  *  @note ACK is expected
  */
 USBDM_ErrorCode cmd_2WB_0(uint8_t cmd, uint16_t parameter1, uint8_t parameter2) {
-   txInit();
+   transactionStart();
    tx8(cmd);
    tx16(parameter1);
    tx8(parameter2);
    tx8(parameter2);
    USBDM_ErrorCode rc = acknowledgeOrWait150();
-   txComplete();
+   transactionComplete();
    return rc;
 }
 
@@ -1129,13 +1132,12 @@ USBDM_ErrorCode cmd_2WB_0(uint8_t cmd, uint16_t parameter1, uint8_t parameter2) 
  *  @note ACK is expected
  */
 USBDM_ErrorCode cmd_1W_1B(uint8_t cmd, uint16_t parameter, uint8_t *result) {
-   USBDM_ErrorCode rc;
-   txInit();
+   transactionStart();
    tx8(cmd);
    tx16(parameter);
-   rc = acknowledgeOrWait64();
+   USBDM_ErrorCode rc = acknowledgeOrWait64();
    rx8(result);
-   txComplete();
+   transactionComplete();
    return rc;
 }
 
@@ -1151,13 +1153,12 @@ USBDM_ErrorCode cmd_1W_1B(uint8_t cmd, uint16_t parameter, uint8_t *result) {
  *  @note ACK is expected
  */
 USBDM_ErrorCode cmd_1W1B_0(uint8_t cmd, uint16_t parameter1, uint8_t parameter2) {
-   USBDM_ErrorCode rc;
-   txInit();
+   transactionStart();
    tx8(cmd);
    tx16(parameter1);
    tx8(parameter2);
-   rc = acknowledgeOrWait150();
-   txComplete();
+   USBDM_ErrorCode rc = acknowledgeOrWait150();
+   transactionComplete();
    return rc;
 }
 
@@ -1173,13 +1174,12 @@ USBDM_ErrorCode cmd_1W1B_0(uint8_t cmd, uint16_t parameter1, uint8_t parameter2)
  *  @note ACK is expected
  */
 USBDM_ErrorCode cmd_1A1B_0(uint8_t cmd, uint32_t addr, uint8_t value) {
-   USBDM_ErrorCode rc;
-   txInit();
+   transactionStart();
    tx8(cmd);
    tx24(addr);
    tx8(value);
-   rc = acknowledgeOrWait150();
-   txComplete();
+   USBDM_ErrorCode rc = acknowledgeOrWait150();
+   transactionComplete();
    return rc;
 }
 
@@ -1195,13 +1195,12 @@ USBDM_ErrorCode cmd_1A1B_0(uint8_t cmd, uint32_t addr, uint8_t value) {
  *  @note ACK is expected
  */
 USBDM_ErrorCode cmd_1A1W_0(uint8_t cmd, uint32_t addr, uint16_t value) {
-   USBDM_ErrorCode rc;
-   txInit();
+   transactionStart();
    tx8(cmd);
    tx24(addr);
    tx16(value);
-   rc = acknowledgeOrWait150();
-   txComplete();
+   USBDM_ErrorCode rc = acknowledgeOrWait150();
+   transactionComplete();
    return rc;
 }
 
@@ -1217,13 +1216,12 @@ USBDM_ErrorCode cmd_1A1W_0(uint8_t cmd, uint32_t addr, uint16_t value) {
  *  @note ACK is expected
  */
 USBDM_ErrorCode cmd_1A1L_0(uint8_t cmd, uint32_t addr, uint32_t value) {
-   USBDM_ErrorCode rc;
-   txInit();
+   transactionStart();
    tx8(cmd);
    tx24(addr);
    tx32(value);
-   rc = acknowledgeOrWait150();
-   txComplete();
+   USBDM_ErrorCode rc = acknowledgeOrWait150();
+   transactionComplete();
    return rc;
 }
 
@@ -1232,20 +1230,61 @@ USBDM_ErrorCode cmd_1A1L_0(uint8_t cmd, uint32_t addr, uint32_t value) {
  *
  *  @param cmd     command byte to write
  *  @param addr    24-bit value to write
- *  @param result  ptr to longword to read
+ *  @param result  ptr to read location
  *
  *  @return Error code, BDM_RC_OK indicates success
  *
  *  @note ACK is expected
  */
 USBDM_ErrorCode cmd_1A_1B(uint8_t cmd, uint32_t addr, uint8_t *result) {
-   USBDM_ErrorCode rc;
-   txInit();
+   transactionStart();
    tx8(cmd);
    tx24(addr);
-   rc = acknowledgeOrWait150();
+   USBDM_ErrorCode rc = acknowledgeOrWait150();
    rx8(result);
-   txComplete();
+   transactionComplete();
+   return rc;
+}
+
+/**
+ *  Write cmd, 24-bit value & read 16-bit value
+ *
+ *  @param cmd     command byte to write
+ *  @param addr    24-bit value to write
+ *  @param result  pointer to read location
+ *
+ *  @return Error code, BDM_RC_OK indicates success
+ *
+ *  @note ACK is expected
+ */
+USBDM_ErrorCode cmd_1A_1W(uint8_t cmd, uint32_t addr, uint8_t *result) {
+   transactionStart();
+   tx8(cmd);
+   tx24(addr);
+   USBDM_ErrorCode rc = acknowledgeOrWait150();
+   rx16(result);
+   transactionComplete();
+   return rc;
+}
+
+/**
+ *  Write cmd, 24-bit value & read 32-bit value
+ *
+ *  @param cmd     command byte to write
+ *  @param addr    24-bit value to write
+ *  @param result  pointer to read location
+ *
+ *  @return Error code, BDM_RC_OK indicates success
+ *
+ *  @note ACK is expected
+ */
+USBDM_ErrorCode cmd_1A_1L(uint8_t cmd, uint32_t addr, uint8_t *result) {
+   transactionStart();
+   tx8(cmd);
+   tx24(addr);
+   USBDM_ErrorCode rc = acknowledgeOrWait150();
+   rx32(result);
+   transactionComplete();
    return rc;
 }
 
@@ -1266,7 +1305,7 @@ USBDM_ErrorCode writeBDMControl(uint8_t value) {
 
    switch (cable_status.target_type) {
 #if TARGET_CAPABILITY & CAP_S12Z
-      case T_HCS12Z  :
+      case T_S12Z  :
          BDMZ12_CMD_WRITE_BDCCSR((value<<8)|0xFF);
          break;
 #endif
@@ -1305,10 +1344,10 @@ USBDM_ErrorCode readBDMStatus(uint8_t *status) {
 
    switch (cable_status.target_type) {
 #if TARGET_CAPABILITY & CAP_S12Z
-      case T_HCS12Z  : {
-         uint16_t temp;
-         BDMZ12_CMD_READ_BDCCSR(&temp);
-         *status = temp>>8;
+      case T_S12Z  : {
+         uint8_t temp[2];
+         Bdm::BDMZ12_CMD_READ_BDCCSR(temp);
+         *status = temp[0];
       }
       break;
 #endif
@@ -1379,7 +1418,7 @@ USBDM_ErrorCode physicalConnect(void) {
    if (bdm_option.useResetSignal) {
       // Wait with timeout until RESET is high
       if (Reset::isLow()) {
-         // TODO May take a while
+         // TODO This may take a while
          //         setBDMBusy();
          if (!USBDM::waitMS(RESET_RELEASE_WAIT_ms, Reset::isHigh)) {
             // RESET timeout
@@ -1403,13 +1442,13 @@ USBDM_ErrorCode physicalConnect(void) {
       // Speed determined by SYNC method
       cable_status.speed = SPEED_SYNC;
    }
-   //TODO hc12_alt_speed_detect()
-   //   else if ((bdm_option.guessSpeed) &&          // Try alternative method if enabled
-   //       (cable_status.target_type == T_HC12)) { // and HC12 target
-   //      rc = hc12_alt_speed_detect();     // Try alternative method (guessing!)
-   //   }
+   else if ((bdm_option.guessSpeed) && (cable_status.target_type == T_HC12)) {
+      // Try alternative method if enabled and HC12 target
+      rc = hc12_alt_speed_detect();
+   }
    if (rc == BDM_RC_OK) {
-      enableACKNMode();  // Try the ACKN feature
+      // Try the ACKN feature
+      enableACKNMode();
    }
    return rc;
 }
@@ -1548,46 +1587,31 @@ USBDM_ErrorCode softwareReset(uint8_t mode) {
    }
    enableInterrupts();
 
-#if (DEBUG&RESET_DEBUG)
-   DEBUG_PIN     = 0;
-   DEBUG_PIN     = 1;
-#endif
+   // Wait for target to start internal reset (and possibly assert reset output)
+   USBDM::waitUS(RESET_OUT_TIME_us);
 
-   USBDM::waitMS(RESET_SETTLE_ms);   // Wait for target to start reset (and possibly assert reset)
-
-#if (HW_CAPABILITY&CAP_RST_IO)
    if (bdm_option.useResetSignal) {
-      // Wait with timeout until RESET is high (may be held low by processor)
-      bdm_WaitForResetRise();
-      // Assume RESET risen - check later after cleanup
+      // Wait with timeout until RESET is high
+      if (!USBDM::waitMS(RESET_RELEASE_WAIT_ms, Reset::isHigh)) {
+         // RESET timeout
+         return(BDM_RC_RESET_TIMEOUT_RISE);
+      }
    }
-#endif // (HW_CAPABILITY&CAP_RST_IO)
-
-#if (DEBUG&RESET_DEBUG)
-   DEBUG_PIN   = 1;
-   DEBUG_PIN   = 0;
-#endif
-
+   else {
+      // Allow time for RESET to rise
+      USBDM::waitMS(RESET_RELEASE_WAIT_ms);
+   }
    if (mode == RESET_SPECIAL) {
+      // Wait for BKGD assertion time after reset rise
+      USBDM::waitUS(BKGD_WAIT_us);
       // Special mode - release BKGD
-      USBDM::waitUS(BKGD_WAIT_us);      // Wait for BKGD assertion time after reset rise
-      disablePins();
+      setBkgd(PIN_BKGD_3STATE);
    }
-
-#if (DEBUG&RESET_DEBUG)
-   DEBUG_PIN   = 0;
-   DEBUG_PIN   = 1;
-#endif
-
    // Wait recovery time before allowing anything else to happen on the BDM
-   USBDM::waitMS(RESET_RECOVERY_ms);   // Wait for Target to start up after reset
+   USBDM::waitMS(RESET_RECOVERY_ms);
 
-   disablePins();      // Place interface in idle state
-
-#if (DEBUG&RESET_DEBUG)
-   DEBUG_PIN   = 1;
-   DEBUG_PIN   = 0;
-#endif
+   // Place interface in idle state
+   disablePins();
 
    //  bdm_halt();  // For RS08?
    return BDM_RC_OK;
@@ -1672,7 +1696,7 @@ USBDM_ErrorCode step(void) {
       return BDMCF_CMD_GO();
    }
 #if TARGET_CAPABILITY & CAP_S12Z
-   else if (cable_status.target_type == T_HCS12Z  ) {
+   else if (cable_status.target_type == T_S12Z  ) {
       return BDMZ12_CMD_TRACE1();
    }
 #endif
@@ -1692,8 +1716,8 @@ static uint16_t partid = 0xFA50;
   *    == \ref BDM_RC_OK  => Success \n
   *    != \ref BDM_RC_OK  => Various errors
   */
-uint8_t hc12confirmSpeed(unsigned syncLength) {
-   uint8_t rc;
+USBDM_ErrorCode hc12confirmSpeed(unsigned syncLength) {
+   USBDM_ErrorCode rc;
    static constexpr uint16_t FDATA_ADDR = 0x10A;
 
    setSyncLength(syncLength);
@@ -1809,7 +1833,16 @@ uint8_t hc12confirmSpeed(unsigned syncLength) {
    cable_status.ackn         = WAIT;    // Clear indication of ACKN feature
    return rc;
 }
-#pragma MESSAGE DEFAULT C4001 // Disable warnings about Condition always true
+/**
+ * Converts a frequency to the expected sync value from a HCS target
+ *
+ * @param frequency
+ *
+ * @return Sync value in microseconds
+ */
+constexpr uint32_t convertFrequencyToSyncValue(uint32_t frequency) {
+   return (125*1000000)/frequency;
+}
 
 /**  Attempt to determine target speed by trial and error
  *
@@ -1821,32 +1854,18 @@ uint8_t hc12confirmSpeed(unsigned syncLength) {
  *  common case of alternating between two frequencies [reset & clock configured] with a minimum \n
  *  number of probes.
  */
-static uint8_t hc12_alt_speed_detect(void) {
-const uint16_t typicalSpeeds[] = { // Table of 'nice' BDM speeds to try
-      convertMicrosecondsToTicks(23),
-   SYNC_MULTIPLE( 4000000UL),  //  4 MHz
-   SYNC_MULTIPLE( 8000000UL),  //  8 MHz
-   SYNC_MULTIPLE(16000000UL),  // 16 MHz
-   SYNC_MULTIPLE(32000000UL),  // 32 MHz
-   SYNC_MULTIPLE(24000000UL),  // 24 MHz
-   SYNC_MULTIPLE(48000000UL),  // 48 MHz
-   SYNC_MULTIPLE(20000000UL),  // 20 MHz
-   SYNC_MULTIPLE( 2000000UL),  //  2 MHz
-   SYNC_MULTIPLE(10000000UL),  // 10 MHz
-   SYNC_MULTIPLE( 1000000UL),  //  1 MHz
-   SYNC_MULTIPLE(  500000UL),  // 500kHz
+static USBDM_ErrorCode hc12_alt_speed_detect(void) {
+static const uint32_t typicalSpeeds[] = {
+      // Table of 'nice' BDM speeds to try
+      convertFrequencyToSyncValue(8000000),
+      convertFrequencyToSyncValue(16000000),
    0
    };
-
-
-#pragma DATA_SEG __SHORT_SEG Z_PAGE
-static uint16_t lastGuess1 = SYNC_MULTIPLE(8000000UL);  // Used to remember last 2 guesses
-static uint16_t lastGuess2 = SYNC_MULTIPLE(16000000UL); // Common situation to change between 2 speeds (reset,running)
-#pragma DATA_SEG DEFAULT
-const TxConfiguration  *txConfigPtr;
+static uint16_t lastGuess1 = convertFrequencyToSyncValue(8000000);  // Used to remember last 2 guesses
+static uint16_t lastGuess2 = convertFrequencyToSyncValue(16000000); // Common situation to change between 2 speeds (reset,running)
 int sub;
 uint16_t currentGuess;
-uint8_t  rc;
+USBDM_ErrorCode  rc;
 
    // Try last used speed #1
    if (hc12confirmSpeed(lastGuess1) == BDM_RC_OK) {
@@ -1857,28 +1876,18 @@ uint8_t  rc;
    currentGuess = lastGuess2;
    rc = hc12confirmSpeed(lastGuess2);
    if (rc != BDM_RC_OK) {
-      // This may take a while
-      setBDMBusy();
+      // TODO This may take a while
+//      setBDMBusy();
    }
    // Try some likely numbers!
    for (sub=0; typicalSpeeds[sub]>0; sub++) {
+      rc = hc12confirmSpeed(lastGuess1);
       if (rc == BDM_RC_OK) {
          break;
       }
       currentGuess = typicalSpeeds[sub];
       rc           = hc12confirmSpeed(currentGuess);
       }
-
-   // Try each Tx driver BDM frequency
-   for (  txConfigPtr  = txConfiguration+(sizeof(txConfiguration)/sizeof(txConfiguration[0])-1);
-        --txConfigPtr >= txConfiguration; ) { // Search the table
-      if (rc == BDM_RC_OK) {
-         break;
-      }
-      currentGuess = (txConfigPtr->syncThreshold+(txConfigPtr+1)->syncThreshold)/2;
-      rc           = hc12confirmSpeed(currentGuess);
-      }
-
    if (rc == BDM_RC_OK) {
       // Update speed cache (LRU)
       lastGuess2       = lastGuess1;

@@ -501,11 +501,47 @@ USBDM_ErrorCode cmd_1A1L_0(uint8_t cmd, uint32_t addr, uint32_t value);
  *
  *  @param cmd     command byte to write
  *  @param addr    24-bit value to write
- *  @param result  ptr to longword to read
+ *  @param result  pointer to read location
  *
  *  @note ACK is expected
  */
 USBDM_ErrorCode cmd_1A_1B(uint8_t cmd, uint32_t addr, uint8_t *result);
+
+/**
+ *  Write cmd, 24-bit value & read 16-bit value
+ *
+ *  @param cmd     command byte to write
+ *  @param addr    24-bit value to write
+ *  @param result  pointer to read location
+ *
+ *  @return Error code, BDM_RC_OK indicates success
+ *
+ *  @note ACK is expected
+ */
+USBDM_ErrorCode cmd_1A_1W(uint8_t cmd, uint32_t addr, uint8_t *result);
+
+/**
+ *  Write cmd, 24-bit value & read 16-bit value
+ *
+ *  @param cmd     command byte to write
+ *  @param addr    24-bit value to write
+ *  @param result  pointer to read location
+ *
+ *  @return Error code, BDM_RC_OK indicates success
+ *
+ *  @note ACK is expected
+ */
+USBDM_ErrorCode cmd_1A_1L(uint8_t cmd, uint32_t addr, uint8_t *result);
+
+/**
+ *  Confirm communication at given Sync value.
+ *  Only works on HC12 (and maybe only 1 of 'em!)
+ *
+ *  @return
+ *    == \ref BDM_RC_OK  => Success \n
+ *    != \ref BDM_RC_OK  => Various errors
+ */
+USBDM_ErrorCode hc12confirmSpeed(unsigned syncLength);
 
 }; // End namespace Bdm
 

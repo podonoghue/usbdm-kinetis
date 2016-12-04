@@ -938,7 +938,4 @@ enum ICPCommandCodes {
                                              //!< @return [0] 16-bit Version number major.minor
                                              //!< @return Error code, see  ICP_ErrorCode_t
 };
-
-void setBDMBusy(void);
-
 #endif

@@ -32,10 +32,10 @@
    \verbatim
    Change History
 +================================================================================================
-| 22 Nov 2011 | More thoroughly disabled interfaces when off                       - pgo, ver 4.8 
-| 27 Oct 2011 | Modified timer code to avoid TSCR1 changes & TCNT resets           - pgo, ver 4.8 
-|  8 Aug 2010 | Re-factored interrupt handling                                     - pgo 
-| 10 Apr 2010 | Changed to accommodate changes to Vpp interface                    - pgo 
+| 22 Nov 2011 | More thoroughly disabled interfaces when off                       - pgo, ver 4.8
+| 27 Oct 2011 | Modified timer code to avoid TSCR1 changes & TCNT resets           - pgo, ver 4.8
+|  8 Aug 2010 | Re-factored interrupt handling                                     - pgo
+| 10 Apr 2010 | Changed to accommodate changes to Vpp interface                    - pgo
 |  5 Feb 2010 | bdm_cycleTargetVdd() now disables Vdd monitoring                   - pgo
 |  4 Feb 2010 | bdm_cycleTargetVdd() parametised for mode                          - pgo
 | 19 Oct 2009 | Modified Timer code - Folder together with JS16 code               - pgo
@@ -188,7 +188,7 @@ uint8_t rc = BDM_RC_OK;
 #if (HW_CAPABILITY&CAP_VDDSENSE)
    DISABLE_VDD_SENSE_INT();
 #endif
-   
+
    switch (bdm_option.targetVdd) {
    case BDM_TARGET_VDD_OFF :
 	   VDD_OFF();
@@ -261,7 +261,7 @@ USBDM_ErrorCode bdm_cycleTargetVddOn(uint8_t mode) {
          BKPT_LOW();
       break;
 #endif
-#if (HW_CAPABILITY&CAP_BDM)     
+#if (HW_CAPABILITY&CAP_BDM)
    case T_HC12:
    case T_HCS08:
    case T_RS08:
@@ -271,13 +271,13 @@ USBDM_ErrorCode bdm_cycleTargetVddOn(uint8_t mode) {
          BDM_LOW();  // BKGD pin=L
       }
       break;
-#endif      
-#if (HW_CAPABILITY&CAP_JTAG_HW)     
+#endif
+#if (HW_CAPABILITY&CAP_JTAG_HW)
    case T_JTAG:
    case T_MC56F80xx:
    case T_ARM_JTAG:
       jtag_interfaceIdle();  // Make sure BDM interface is idle
-#endif      
+#endif
       break;
    default:
       swd_interfaceIdle();
@@ -331,7 +331,7 @@ USBDM_ErrorCode bdm_cycleTargetVddOn(uint8_t mode) {
       bdmcf_interfaceIdle();  // Release BKPT etc
    else
 #endif
-#if (HW_CAPABILITY&CAP_BDM)     
+#if (HW_CAPABILITY&CAP_BDM)
       bdmHCS_interfaceIdle();  // Release BKGD
 #endif
    // Let processor start up
@@ -354,10 +354,10 @@ cleanUp:
       bdmcf_interfaceIdle();  // Release BKPT etc
    else
 #endif
-#if (HW_CAPABILITY&CAP_BDM)     
+#if (HW_CAPABILITY&CAP_BDM)
       bdmHCS_interfaceIdle();  // Release BKGD
 #endif
-   
+
    WAIT_MS( 250 /* ms */);
 
 //   EnableInterrupts;
@@ -390,9 +390,9 @@ USBDM_ErrorCode cycleTargetVddOff(void) {
    if  (cable_status.target_type == T_CFVx)
       bdmcf_interfaceIdle();  // Make sure BDM interface is idle
    else
-#endif 
+#endif
    {
-#if (HW_CAPABILITY&CAP_BDM)    	  
+#if (HW_CAPABILITY&CAP_BDM)
 	  bdmHCS_interfaceIdle();  // Make sure BDM interface is idle
 #endif
    }
@@ -500,7 +500,7 @@ void suspend(void){
 #endif
 #if (HW_CAPABILITY&CAP_BDM)
    Bdm::disable();
-#endif   
+#endif
 #if (HW_CAPABILITY&CAP_SWD_HW)
    Swd::disable();
 #endif
@@ -542,7 +542,7 @@ USBDM_ErrorCode setTarget(TargetType_t target) {
 
    if (target == T_OFF) {
       interfaceOff();
-   }   
+   }
    clearStatus();
 
    // Initially assume mode is valid
@@ -550,27 +550,27 @@ USBDM_ErrorCode setTarget(TargetType_t target) {
 
    switch (target) {
 #if TARGET_CAPABILITY & CAP_S12Z
-      case T_HCS12Z  :
+      case T_S12Z  :
 #endif
-#if (TARGET_CAPABILITY & (CAP_HCS12|CAP_S12Z))   
+#if (TARGET_CAPABILITY & (CAP_HCS12|CAP_S12Z))
       case T_HC12:
          bdm_option.useResetSignal = 1; // Must use RESET signal on HC12
-         bdmHCS_init();
+         Bdm::initialise();
          break;
-#endif         
+#endif
 #if (TARGET_CAPABILITY & CAP_RS08)
       case T_RS08:
 #endif
 #if (TARGET_CAPABILITY & CAP_HCS08)
       case T_HCS08:
-#endif    	  
+#endif
 #if (TARGET_CAPABILITY & CAP_CFV1)
       case T_CFV1:
-#endif    	  
+#endif
 #if (TARGET_CAPABILITY & (CAP_RS08|CAP_HCS08|CAP_CFV1))
          Bdm::initialise();
          break;
-#endif    	  
+#endif
 #if (TARGET_CAPABILITY&CAP_CFVx)
       case T_CFVx:
          bdm_option.useResetSignal = 1; // Must use RESET signal on CFVx
@@ -601,7 +601,7 @@ USBDM_ErrorCode setTarget(TargetType_t target) {
 #endif
       case T_OFF:
     	  break;
-    	  
+
       default:
          // Turn off the interface
          interfaceOff();

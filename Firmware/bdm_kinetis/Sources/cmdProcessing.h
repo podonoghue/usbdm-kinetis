@@ -6,17 +6,39 @@
 #include <stdint.h>
 #include "commands.h"
 
-//! Buffer for USB command in, result out
+/** Buffer for USB command in, result out */
 extern uint8_t   commandBuffer[MAX_COMMAND_SIZE+4];
 
-//! Size of command return result
-extern int       returnSize;
+/** Size of command return result */
+extern int returnSize;
 
-extern void             commandLoop(void);
-extern USBDM_ErrorCode  compatibleCommandExec(void);
-extern USBDM_ErrorCode  optionalReconnect(uint8_t when);
+/**
+ * Process commands from USB device
+ *
+ *   @note : Command                                    \n
+ *       commandBuffer[0]    = Size of command (N)      \n
+ *       commandBuffer[1]    = Command                  \n
+ *       commandBuffer[2..N] = Parameters/data
+ *
+ *   @note : Response                                   \n
+ *       commandBuffer[0]    = Error code               \n
+ *       commandBuffer[1..N] = Response/data
+ */
+extern void commandLoop(void);
 
-//! Target status
+/**
+ *   Optionally re-connects with target
+ *
+ *  @param when Indicates situation in which the routine is being called \n
+ *        AUTOCONNECT_STATUS - being called during status query \n
+ *        AUTOCONNECT_ALWAYS - being called before command execution
+ *
+ *  @return BDM_RC_OK    Success
+ *  @return != BDM_RC_OK Error
+ */
+extern USBDM_ErrorCode optionalReconnect(AutoConnect_t when);
+
+/** Target status */
 struct CableStatus_t {
    TargetType_t        target_type:8;  //!< Target type TargetType_t
    AcknMode_t          ackn:8;         //!< Target supports ACKN see AcknMode_t
@@ -30,21 +52,24 @@ struct CableStatus_t {
    uint8_t             bdmpprValue;    //!< BDMPPR value for HCS12
 } ;
 
-//! Target interface options
+/** Target interface options */
 struct BDM_Option_t {
-   uint8_t  cycleVddOnReset:1;      //!< Cycle target Power  when resetting
-   uint8_t  cycleVddOnConnect:1;    //!< Cycle target Power if connection problems (when resetting?)
-   uint8_t  leaveTargetPowered:1;   //!< Leave target power on exit
-   uint8_t  guessSpeed:1;           //!< Guess speed for target w/o ACKN
-   uint8_t  useResetSignal:1;       //!< Use RESET signal on BDM interface
-   uint8_t  targetVdd;              //!< Target Vdd (off, 3.3V or 5V)
-   uint8_t  useAltBDMClock;         //!< Use alternative BDM clock source in target (HCS08)
-   uint8_t  autoReconnect;          //!< Automatically re-connect method (for speed change)
-   uint16_t SBDFRaddress;           //!< Address of HCS08_SBDFR register
-   uint8_t  reserved[3];
+   bool               cycleVddOnReset:1;      //!< Cycle target Power  when resetting
+   bool               cycleVddOnConnect:1;    //!< Cycle target Power if connection problems (when resetting?)
+   bool               leaveTargetPowered:1;   //!< Leave target power on exit
+   bool               guessSpeed:1;           //!< Guess speed for target w/o ACKN
+   bool               useResetSignal:1;       //!< Use RESET signal on BDM interface
+   TargetVddSelect_t  targetVdd;              //!< Target Vdd (off, 3.3V or 5V)
+   ClkSwValues_t      useAltBDMClock:8;       //!< Use alternative BDM clock source in target (HCS08)
+   AutoConnect_t      autoReconnect:8;        //!< Automatically re-connect method (for speed change)
+   uint16_t           SBDFRaddress;           //!< Address of HCS08_SBDFR register
+   uint8_t            reserved[3];
 } ;
 
-extern CableStatus_t cable_status;  // Status of the BDM interface
-extern BDM_Option_t  bdm_option;    // Options for cable operation
+/** Status of the BDM interface */
+extern CableStatus_t cable_status;
+
+/** Options for cable operation */
+extern BDM_Option_t  bdm_option;
 
 #endif

@@ -22,6 +22,7 @@
 #include "cmdProcessingSWD.h"
 #include "cmdProcessingHCS.h"
 
+#if 0
 /** Check error code from USBDM API function
  *
  * @param rc       Error code to report
@@ -52,7 +53,7 @@ uint8_t buffer[20] = {
 };
 
 using namespace Hcs;
-using namespace Hcs08;
+using namespace Cfv1;
 
 /**
  *  Sets up dummy command for testing f_CMD_WRITE_MEM()
@@ -131,6 +132,7 @@ USBDM_ErrorCode testmem(uint32_t addressStart, uint32_t addrRange) {
    return BDM_RC_OK;
 }
 
+#endif
 #if 0
 USBDM_ErrorCode recover() {
    Swd::initialise();
@@ -265,29 +267,6 @@ void testReset() {
       USBDM::waitMS(100);
    }
 }
-#endif
-
-void initialise() {
-   Reset::initialise();
-   UsbLed::initialise();
-   PowerLed::initialise();
-   TargetVdd::initialise();
-   Swd_enable::setOutput();
-   Swd_enable::high();
-
-   // Turn off important things
-#if (HW_CAPABILITY&CAP_VDDCONTROL)
-   (void)Vdd::initialise();
-#endif
-
-   // Turn off important things
-#if (HW_CAPABILITY&CAP_FLASH)
-   (void)bdmSetVpp(BDM_TARGET_VPP_OFF);
-#endif
-
-   // Update power status
-   checkTargetVdd();
-}
 
 void hcs08Testing () {
    // Need to initialise for debug UART0
@@ -319,12 +298,38 @@ void hcs08Testing () {
    }
 
 }
+#endif
+
+void initialise() {
+   Reset::initialise();
+   UsbLed::initialise();
+   PowerLed::initialise();
+   TargetVdd::initialise();
+   Debug::initialise();
+
+   Swd_enable::setOutput();
+   Swd_enable::high();
+
+   // Turn off important things
+#if (HW_CAPABILITY&CAP_VDDCONTROL)
+   (void)Vdd::initialise();
+#endif
+
+   // Turn off important things
+#if (HW_CAPABILITY&CAP_FLASH)
+   (void)bdmSetVpp(BDM_TARGET_VPP_OFF);
+#endif
+
+   // Update power status
+   checkTargetVdd();
+}
+
 //char debugBuffer[200] = {0};
 //char logBuffer[128] = {0};
 //char logIndex = 0;
 
 int main() {
-   hcs08Testing();
+//   hcs08Testing();
 
    // Need to initialise for debug UART0
    ::initialise();
