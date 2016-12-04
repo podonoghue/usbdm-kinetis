@@ -125,7 +125,7 @@ USBDM_ErrorCode testmem(uint32_t addressStart, uint32_t addrRange) {
       CHECK(f_CMD_READ_MEM());
 
       if (memcmp(commandBuffer+1, randomData, size) != 0) {
-         return BDM_RC_CF_DATA_INVALID;
+         CHECK(BDM_RC_CF_DATA_INVALID);
       }
    }
    return BDM_RC_OK;

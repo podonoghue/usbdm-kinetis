@@ -50,18 +50,22 @@
 
 namespace Bdm {
 
-//constexpr unsigned BDM_SYNC_REQms       =      1U; //!< ms - length of the longest possible SYNC REQUEST pulse (128 BDM cycles @ 400kHz = 320us plus some extra time)
-//constexpr unsigned SYNC_TIMEOUT_us       =    460U; //!< us - longest time for the target to completed a SYNC pulse (16+128+margin cycles @ 400kHz = 375us)
-//constexpr unsigned ACKN_TIMEOUTus       =   2500U; //!< us - longest time after which the target should produce ACKN pulse (150 cycles @ 400kHz = 375us)
 //constexpr unsigned SOFT_RESETus         =  10000U; //!< us - longest time needed for soft reset of the BDM interface (512 BDM cycles @ 400kHz = 1280us)
 //constexpr unsigned RESET_LENGTHms       =    100U; //!< ms - time of RESET assertion
 //constexpr unsigned RESET_INITIAL_WAITms =     10U; //!< ms - max time to wait for the RESET pin to come high after release
-///** Time to set up Timer - This varies with optimisation! */
-//static constexpr unsigned TMR_SETUP_TIME = 40;//15;
+//static constexpr int VDD_RISE_TIME_us   = 2000; // Minimum time to allow for controlled target Vdd rise
 
+/** Time to hold BKGD pin low after reset pin rise for special modes (allowance made for slow Reset rise) */
+static constexpr unsigned BKGD_WAIT_us       = 2000;
+
+/** Time to wait for signals to settle in us, this should be longer than the soft reset time */
+static constexpr unsigned RESET_SETTLE_ms    =    3;
+
+/** How long to wait after reset before new commands are allowed */
+static constexpr unsigned RESET_RECOVERY_ms  =   10;
 
 /** Max time to wait for the RESET pin to go high after release */
-constexpr unsigned RESET_RELEASE_WAIT_ms = 300;
+static constexpr unsigned RESET_RELEASE_WAIT_ms = 300;
 
 /** Width of sync pulse (us), 128 target-cycle @ 128kHz (<65536/FTMClock) */
 static constexpr unsigned SYNC_WIDTH_us = 1000;
@@ -78,10 +82,13 @@ static constexpr unsigned SPEEDUP_PULSE_WIDTH_ticks = 1;
 
 /** FTM to use */
 using FtmInfo = USBDM::Ftm0Info;
+
 /** FTM channel for BKGD out D6(ch6) */
 constexpr int bkgdOutChannel = 6;
+
 /** FTM channel for BKGD enable C3(ch2) */
 constexpr int bkgdEnChannel = 2;
+
 /** FTM channel for BKGD in D4(ch4) */
 constexpr int bkgdInChannel = 4;
 
@@ -104,6 +111,14 @@ static void disablePins() {
    ftm->SWOCTRL =
          (0<<(bkgdEnChannel+8)) |(1<<bkgdEnChannel)|  // Force low (disable buffer)
          (1<<(bkgdOutChannel+8))|(1<<bkgdOutChannel); // Force high
+}
+
+/**
+ * Enable FTM control of BKGD
+ */
+inline
+static void enablePins() {
+   ftm->SWOCTRL = 0;
 }
 
 /**
@@ -135,16 +150,8 @@ void setBkgd(PinLevelMasks_t pins) {
    ftm->SWOCTRL = value;
 }
 
-/**
- * Enable FTM control from BKGD
- */
 inline
-static void enablePins() {
-   ftm->SWOCTRL = 0;
-}
-
-inline
-static void enableFtmClock() {
+static void enableFtmCounter() {
    ftm->SC =
          FTM_SC_CPWMS(0)| // Left-Aligned
          FTM_SC_CLKS(1)|  // Clock source = SystemBusClock
@@ -153,7 +160,7 @@ static void enableFtmClock() {
 }
 
 inline
-static void disableFtmClock() {
+static void disableFtmCounter() {
    ftm->SC = 0;
 }
 
@@ -178,19 +185,19 @@ using BkgdIn           = USBDM::GpioTable_T<FtmInfo, bkgdInChannel>;
 ///** Transceiver for BKGD */
 //using Bkgd = Lvc1t45<BkgdEn, BkgdOut>;
 
-/** Measured Target SYNC width (Ticks) */
+/** Measured Target SYNC width (Timer Ticks) */
 static unsigned targetSyncWidth;
 
-/** Calculated time for target '1' bit (Ticks) */
+/** Calculated time for target '1' bit (Timer Ticks) */
 static unsigned oneBitTime;
 
-/** Calculated time for target '0' bit (Ticks) */
+/** Calculated time for target '0' bit (Timer Ticks) */
 static unsigned zeroBitTime;
 
-/** Calculated time for to sample target response (Ticks) */
+/** Calculated time for to sample target response (Timer Ticks) */
 static unsigned sampleBitTime;
 
-/** Calculated time for target minimum bit period (Ticks) */
+/** Calculated time for target minimum bit period (Timer Ticks) */
 static unsigned minPeriod;
 
 /** Calculated time for 64 target clock cycles - for ACKN (us) */
@@ -198,18 +205,6 @@ static unsigned targetClocks64TimeUS;
 
 /** Calculated time for 150 target clock cycles - for ACKN (us) */
 static unsigned targetClocks150TimeUS;
-
-///**
-// * Return the maximum of two values
-// *
-// *  @param a One value
-// *  @param b Other value
-// *
-// *  @return Max value
-// */
-//static int max(int a, int b) {
-//   return (a>b)?a:b;
-//}
 
 /**
  * Converts a time in microseconds to number of ticks
@@ -263,14 +258,14 @@ void initialise() {
    ftm->CONF     = FTM_CONF_BDMMODE(2);
 
    // Clear s register changes have immediate effect
-   disableFtmClock();
+   disableFtmCounter();
 
    // Common registers
    ftm->CNTIN    = 0;
    ftm->CNT      = 0;
    ftm->MOD      = (uint32_t)-1;
 
-   enableFtmClock();
+   enableFtmCounter();
 
    ftm->OUTINIT =
          (0<<bkgdEnChannel)|  // Initialise low (disable buffer)
@@ -317,6 +312,8 @@ void setSyncLength(uint16_t syncLength) {
 
    targetClocks64TimeUS   = convertTicksToMicroseconds((syncLength*64)/SYNC_RESPONSE_CYCLES);  // us
    targetClocks150TimeUS  = convertTicksToMicroseconds((syncLength*150)/SYNC_RESPONSE_CYCLES); // us
+
+   cable_status.sync_length = syncLength;
 }
 
 /**
@@ -334,7 +331,7 @@ USBDM_ErrorCode sync(uint16_t &syncLength) {
    /* SYNC pulse width */
    const uint32_t syncPulseWidthInTicks = convertMicrosecondsToTicks(SYNC_WIDTH_us);
 
-   disableFtmClock();
+   disableFtmCounter();
 
    ftm->COMBINE =
          FTM_COMBINE_COMBINE0_MASK<<(bkgdEnChannel*4)|
@@ -358,9 +355,9 @@ USBDM_ErrorCode sync(uint16_t &syncLength) {
    // Release force pin control
    enablePins();
 
+   // Start counter from 0
    ftm->CNT = 0;
-
-   enableFtmClock();
+   enableFtmCounter();
 
    // Clear channel flags
    ftm->STATUS &= ~(
@@ -372,15 +369,15 @@ USBDM_ErrorCode sync(uint16_t &syncLength) {
          return ((ftm->CONTROLS[bkgdOutChannel].CnSC&FTM_CnSC_CHF_MASK) != 0);
    };
    // Wait for start of pulse
-   USBDM::waitUS(TMR_SETUP_TIME, pollPulseStart);
+   USBDM::waitUS(2*TMR_SETUP_TIME, pollPulseStart);
 
-   // Trigger dual-edge capture on BKGD_In
+   // Enable dual-edge capture on BKGD_In
    ftm->COMBINE |= FTM_COMBINE_DECAP0_MASK<<(bkgdInChannel*4);
 
    static auto pollDecap = [] {
          return ((ftm->COMBINE&(FTM_COMBINE_DECAP0_MASK<<(bkgdInChannel*4))) == 0);
    };
-   // Wait for dual-edge & capture
+   // Wait for dual-edge capture
    bool success = USBDM::waitUS(SYNC_TIMEOUT_us, pollDecap);
 
    volatile uint16_t e1 = ftm->CONTROLS[bkgdInChannel].CnV;
@@ -406,14 +403,13 @@ USBDM_ErrorCode sync(uint16_t &syncLength) {
  *       OR
  *    - Busy waits for 64 target CPU clocks
  *
- *  @return
- *    \ref BDM_RC_OK           => Success \n
- *    \ref BDM_RC_ACK_TIMEOUT  => No ACKN detected [timeout]
+ *  @return BDM_RC_OK          Success
+ *  @return BDM_RC_ACK_TIMEOUT No ACKN detected [timeout]
  */
 USBDM_ErrorCode acknowledgeOrWait64(void) {
+   enableInterrupts();
    if (cable_status.ackn==ACKN) {
       // Wait for pin capture or timeout
-      enableInterrupts();
       static auto fn = [] {
             return ((ftm->CONTROLS[bkgdInChannel].CnSC&FTM_CnSC_CHF_MASK) != 0) ||
                    ((ftm->CONTROLS[bkgdInChannel+1].CnSC&FTM_CnSC_CHF_MASK) != 0);
@@ -436,14 +432,13 @@ USBDM_ErrorCode acknowledgeOrWait64(void) {
  *       OR
  *    - Busy waits for 150 target CPU clocks
  *
- *  @return
- *    \ref BDM_RC_OK           => Success \n
- *    \ref BDM_RC_ACK_TIMEOUT  => No ACKN detected [timeout]
+ *  @return BDM_RC_OK          Success
+ *  @return BDM_RC_ACK_TIMEOUT No ACKN detected [timeout]
  */
 USBDM_ErrorCode acknowledgeOrWait150(void) {
+   enableInterrupts();
    if (cable_status.ackn==ACKN) {
       // Wait for pin capture or timeout
-      enableInterrupts();
       static auto fn = [] {
             return ((ftm->CONTROLS[bkgdInChannel].CnSC&FTM_CnSC_CHF_MASK) != 0) ||
                    ((ftm->CONTROLS[bkgdInChannel+1].CnSC&FTM_CnSC_CHF_MASK) != 0);
@@ -465,13 +460,15 @@ USBDM_ErrorCode acknowledgeOrWait150(void) {
  *
  * @param [in]  length Number of bits to receive
  * @param [out] data   Data received
+ *
+ * @return BDM_RC_OK => Success, error otherwise
  */
 USBDM_ErrorCode rx(int length, unsigned &data) {
 
    /** Time to set up Timer - This varies with optimisation! */
-   static constexpr unsigned TMR_SETUP_TIME = 40;
+   static constexpr unsigned TMR_SETUP_TIME = 20;
 
-   disableFtmClock();
+   disableFtmCounter();
 
    ftm->COMBINE =
          FTM_COMBINE_COMBINE0_MASK<<(bkgdEnChannel*4)|
@@ -490,11 +487,13 @@ USBDM_ErrorCode rx(int length, unsigned &data) {
    // Capture rising edge of BKGD in
    ftm->CONTROLS[bkgdInChannel].CnSC    = USBDM::ftm_inputCaptureRisingEdge;
 
-   enableFtmClock();
+   enableFtmCounter();
 
    bool success = true;
    unsigned value = 0;
    while (length-->0) {
+
+      // Restart counter
       ftm->CNT = 0;
 
       // Clear channel flags
@@ -505,19 +504,18 @@ USBDM_ErrorCode rx(int length, unsigned &data) {
 
       // Wait until end of bit
       do {
-         __asm("nop");
-      } while (ftm->CNT < 2*minPeriod);
+      } while (ftm->CNT <= TMR_SETUP_TIME+minPeriod);
 
-      // Should have captured a rising edge from target (or float?)
-      success = (ftm->CONTROLS[bkgdInChannel].CnSC & FTM_CnSC_CHF_MASK) != 0;
+      // Should have captured a rising edge from target
+      success = success && ((ftm->CONTROLS[bkgdInChannel].CnSC & FTM_CnSC_CHF_MASK) != 0);
 
-      volatile uint16_t eventTime = ftm->CONTROLS[bkgdInChannel].CnV;
-      value = (value<<1)|((eventTime>(TMR_SETUP_TIME+sampleBitTime))?0:1);
+      // Use time of rise to determine bit value
+      value = (value<<1)|((ftm->CONTROLS[bkgdInChannel].CnV>(TMR_SETUP_TIME+sampleBitTime))?0:1);
    }
-   data = value;
    if (!success) {
       return BDM_RC_BKGD_TIMEOUT;
    }
+   data = value;
    return BDM_RC_OK;
 }
 
@@ -525,10 +523,12 @@ USBDM_ErrorCode rx(int length, unsigned &data) {
  * Receive an 8-bit value over BDM interface
  *
  * @param [out] data   Data received
+ *
+ * @return BDM_RC_OK => Success, error otherwise
  */
 inline
 USBDM_ErrorCode rx8(uint8_t *data) {
-   unsigned value;
+   unsigned value = 0;
    USBDM_ErrorCode rc = rx(8, value);
    *data = (uint8_t)value;
    return rc;
@@ -538,10 +538,12 @@ USBDM_ErrorCode rx8(uint8_t *data) {
  * Receive an 16-bit value over BDM interface
  *
  * @param [out] data   Data received
+ *
+ * @return BDM_RC_OK => Success, error otherwise
  */
 inline
 USBDM_ErrorCode rx16(uint8_t *data) {
-   unsigned value;
+   unsigned value = 0;
    USBDM_ErrorCode rc = rx(16, value);
    unpack16BE(value, data);
    return rc;
@@ -551,26 +553,34 @@ USBDM_ErrorCode rx16(uint8_t *data) {
  * Receive an 32-bit value over BDM interface
  *
  * @param [out] data   Data received
+ *
+ * @return BDM_RC_OK => Success, error otherwise
  */
 inline
 USBDM_ErrorCode rx32(uint8_t *data) {
-   unsigned value;
+   unsigned value = 0;
    USBDM_ErrorCode rc = rx(32, value);
    unpack32BE(value, data);
    return rc;
 }
 
+/**
+ * Set up for transmission
+ */
 inline
 void txInit() {
-   disableFtmClock();
+   disableFtmCounter();
    ftm->SYNCONF = FTM_SYNCONF_SYNCMODE(1)|FTM_SYNCONF_SWWRBUF(1);
    disableInterrupts();
    enablePins();
 }
 
+/**
+ * End transmission phase
+ */
 inline
 void txComplete() {
-   disableFtmClock();
+   disableFtmCounter();
    enableInterrupts();
    disablePins();
 }
@@ -586,7 +596,7 @@ void txComplete() {
 USBDM_ErrorCode tx(int length, unsigned data) {
 
    /* Time to set up Timer - This varies with optimisation! */
-   static constexpr unsigned TMR_SETUP_TIME = 40;
+   static constexpr unsigned TMR_SETUP_TIME = 20;
    uint32_t mask = (1U<<(length-1));
 
    ftm->COMBINE =
@@ -619,17 +629,17 @@ USBDM_ErrorCode tx(int length, unsigned data) {
          width = TMR_SETUP_TIME+zeroBitTime;
       }
       mask >>= 1;
-      disableFtmClock();
+
+      disableFtmCounter();
       ftm->CNT = 0;
       ftm->CONTROLS[bkgdOutChannel+1].CnV  = width;
       ftm->CONTROLS[bkgdEnChannel+1].CnV   = width+SPEEDUP_PULSE_WIDTH_ticks;
       ftm->SYNC     = FTM_SYNC_SWSYNC(1);
 
-      enableFtmClock();
+      enableFtmCounter();
 
       // Wait until end of bit
       do {
-         __asm("nop");
       } while (ftm->CNT < TMR_SETUP_TIME+minPeriod);
    }
    // Clear channel flags
@@ -641,33 +651,60 @@ USBDM_ErrorCode tx(int length, unsigned data) {
    return BDM_RC_OK;
 }
 
+/**
+ * Transmit an 8-bit value over BDM interface
+ *
+ * @param [in]  data   Data value to transmit
+ *
+ * @return Error code, BDM_RC_OK indicates success
+ */
 inline
 USBDM_ErrorCode tx8(uint8_t data) {
    return tx(8, data);
 }
 
+/**
+ * Transmit an 16-bit value over BDM interface
+ *
+ * @param [in]  data   Data value to transmit
+ *
+ * @return Error code, BDM_RC_OK indicates success
+ */
 inline
 USBDM_ErrorCode tx16(uint16_t data) {
    return tx(16, data);
 }
 
+/**
+ * Transmit an 24-bit value over BDM interface
+ *
+ * @param [in]  data   Data value to transmit
+ *
+ * @return Error code, BDM_RC_OK indicates success
+ */
 inline
 USBDM_ErrorCode tx24(uint32_t data) {
    return tx(24, data);
 }
 
+/**
+ * Transmit an 32-bit value over BDM interface
+ *
+ * @param [in]  data   Data value to transmit
+ *
+ * @return Error code, BDM_RC_OK indicates success
+ */
 inline
 USBDM_ErrorCode tx32(uint32_t data) {
    return tx(32, data);
 }
 
-/**
- * *************************************************************************
+/*
+ * ***************************************************************
+ * The following commands DO NOT expect an ACK & do not delay
+ * Interrupts are left disabled!
+ * ***************************************************************
  */
-//============================================================
-// The following commands DO NOT expect an ACK & do not delay
-// Interrupts are left disabled!
-//
 
 /**
  * Write command byte, truncated sequence
@@ -714,9 +751,11 @@ void cmd_1W1B_0_T(uint8_t cmd, uint16_t parameter1, uint8_t parameter2) {
    //   txComplete();
 }
 
-//============================================================
-// The following commands DO NOT expect an ACK & do not delay
-//
+/*
+ * ***************************************************************
+ * The following commands DO NOT expect an ACK & do not delay
+ * ***************************************************************
+ */
 
 /**
  *  Write cmd without ACK (HCS08/RS08/CFV1)
@@ -827,13 +866,18 @@ void cmd_1W1B_1B_NOACK(uint8_t cmd, uint16_t parameter, uint8_t value, uint8_t *
    txComplete();
 }
 
-//====================================================================
-// The following DO expect an ACK or wait at end of the transmit phase
+/*
+ * *****************************************************************************
+ * The following commands DO expect an ACK or wait at end of the transmit phase
+ * *****************************************************************************
+ */
 
 /**
  *  Write cmd
  *
  *  @param cmd command byte to write
+ *
+ *  @return Error code, BDM_RC_OK indicates success
  *
  *  @note ACK is expected
  */
@@ -850,6 +894,8 @@ USBDM_ErrorCode cmd_0_0(uint8_t cmd) {
  *
  *  @param cmd        command byte to write
  *  @param result     byte read
+ *
+ *  @return Error code, BDM_RC_OK indicates success
  *
  *  @note ACK is expected
  */
@@ -868,6 +914,8 @@ USBDM_ErrorCode cmd_0_1B(uint8_t cmd, uint8_t *result) {
  *  @param cmd    command byte to write
  *  @param result word read
  *
+ *  @return Error code, BDM_RC_OK indicates success
+ *
  *  @note ACK is expected
  */
 USBDM_ErrorCode cmd_0_1W(uint8_t cmd, uint8_t *result) {
@@ -885,6 +933,8 @@ USBDM_ErrorCode cmd_0_1W(uint8_t cmd, uint8_t *result) {
  *  @param cmd    command byte to write
  *  @param result longword read
  *
+ *  @return Error code, BDM_RC_OK indicates success
+ *
  *  @note ACK is expected
  */
 USBDM_ErrorCode cmd_0_1L(uint8_t cmd, uint8_t result[4]) {
@@ -900,6 +950,8 @@ USBDM_ErrorCode cmd_0_1L(uint8_t cmd, uint8_t result[4]) {
  *
  *  @param cmd        command byte to write
  *  @param parameter  byte to write
+ *
+ *  @return Error code, BDM_RC_OK indicates success
  *
  *  @note ACK is expected
  */
@@ -918,6 +970,8 @@ USBDM_ErrorCode cmd_1B_0(uint8_t cmd, uint8_t parameter) {
  *  @param cmd       command byte to write
  *  @param parameter word to write
  *
+ *  @return Error code, BDM_RC_OK indicates success
+ *
  *  @note ACK is expected
  */
 USBDM_ErrorCode cmd_1W_0(uint8_t cmd, uint16_t parameter) {
@@ -934,6 +988,8 @@ USBDM_ErrorCode cmd_1W_0(uint8_t cmd, uint16_t parameter) {
  *
  *  @param cmd       command byte to write
  *  @param parameter longword to write
+ *
+ *  @return Error code, BDM_RC_OK indicates success
  *
  *  @note ACK is expected
  */
@@ -952,6 +1008,8 @@ USBDM_ErrorCode cmd_1L_0(uint8_t cmd, uint32_t parameter) {
  *  @param cmd       command byte to write
  *  @param parameter word to write
  *  @param result    byte read
+ *
+ *  @return Error code, BDM_RC_OK indicates success
  *
  *  @note ACK is expected
  */
@@ -979,6 +1037,8 @@ USBDM_ErrorCode cmd_1W_1WB(uint8_t cmd, uint16_t parameter, uint8_t *result) {
  *  @param parameter1 word to write
  *  @param parameter2 word to write
  *
+ *  @return Error code, BDM_RC_OK indicates success
+ *
  *  @note ACK is expected
  */
 USBDM_ErrorCode cmd_2W_0(uint8_t cmd, uint16_t parameter1, uint16_t parameter2) {
@@ -997,6 +1057,8 @@ USBDM_ErrorCode cmd_2W_0(uint8_t cmd, uint16_t parameter1, uint16_t parameter2) 
  *  @param cmd        command byte to write
  *  @param parameter  word to write
  *  @param result     word read
+ *
+ *  @return Error code, BDM_RC_OK indicates success
  *
  *  @note ACK is expected
  */
@@ -1018,6 +1080,8 @@ USBDM_ErrorCode cmd_1W_1W(uint8_t cmd, uint16_t parameter, uint8_t result[2]) {
  *  @param value      byte to write
  *  @param status     byte pointer for read
  *
+ *  @return Error code, BDM_RC_OK indicates success
+ *
  *  @note ACK is expected
  */
 USBDM_ErrorCode cmd_1W1B_1B(uint8_t cmd, uint16_t parameter, uint8_t value, uint8_t *status) {
@@ -1037,6 +1101,8 @@ USBDM_ErrorCode cmd_1W1B_1B(uint8_t cmd, uint16_t parameter, uint8_t value, uint
  *  @param cmd        command byte to write
  *  @param parameter1 word to write
  *  @param parameter2 bye to write
+ *
+ *  @return Error code, BDM_RC_OK indicates success
  *
  *  @note ACK is expected
  */
@@ -1058,6 +1124,8 @@ USBDM_ErrorCode cmd_2WB_0(uint8_t cmd, uint16_t parameter1, uint8_t parameter2) 
  *  @param parameter  word to write
  *  @param result     byte read
  *
+ *  @return Error code, BDM_RC_OK indicates success
+ *
  *  @note ACK is expected
  */
 USBDM_ErrorCode cmd_1W_1B(uint8_t cmd, uint16_t parameter, uint8_t *result) {
@@ -1077,6 +1145,8 @@ USBDM_ErrorCode cmd_1W_1B(uint8_t cmd, uint16_t parameter, uint8_t *result) {
  *  @param cmd         command byte to write
  *  @param parameter1  word to write
  *  @param parameter2  byte to write
+ *
+ *  @return Error code, BDM_RC_OK indicates success
  *
  *  @note ACK is expected
  */
@@ -1098,6 +1168,8 @@ USBDM_ErrorCode cmd_1W1B_0(uint8_t cmd, uint16_t parameter1, uint8_t parameter2)
  *  @param addr   24-bit value to write
  *  @param value  byte to write
  *
+ *  @return Error code, BDM_RC_OK indicates success
+ *
  *  @note ACK is expected
  */
 USBDM_ErrorCode cmd_1A1B_0(uint8_t cmd, uint32_t addr, uint8_t value) {
@@ -1117,6 +1189,8 @@ USBDM_ErrorCode cmd_1A1B_0(uint8_t cmd, uint32_t addr, uint8_t value) {
  *  @param cmd    command byte to write
  *  @param addr   24-bit value to write
  *  @param value  word to write
+ *
+ *  @return Error code, BDM_RC_OK indicates success
  *
  *  @note ACK is expected
  */
@@ -1138,6 +1212,8 @@ USBDM_ErrorCode cmd_1A1W_0(uint8_t cmd, uint32_t addr, uint16_t value) {
  *  @param addr   24-bit value to write
  *  @param value  ptr to longword to write
  *
+ *  @return Error code, BDM_RC_OK indicates success
+ *
  *  @note ACK is expected
  */
 USBDM_ErrorCode cmd_1A1L_0(uint8_t cmd, uint32_t addr, uint32_t value) {
@@ -1157,6 +1233,8 @@ USBDM_ErrorCode cmd_1A1L_0(uint8_t cmd, uint32_t addr, uint32_t value) {
  *  @param cmd     command byte to write
  *  @param addr    24-bit value to write
  *  @param result  ptr to longword to read
+ *
+ *  @return Error code, BDM_RC_OK indicates success
  *
  *  @note ACK is expected
  */
@@ -1279,12 +1357,13 @@ void enableACKNMode(void) {
  *  Tries to connect to target - doesn't try other strategies such as reset.
  *  This function does a basic connect sequence and tries to enable ACKN.
  *  It doesn't configure the BDM registers on the target.
+ *  It does wait for BKGD and optionally RESET to be inactive
  *
- * @return BDM_RC_OK                  => success
- * @return BDM_RC_VDD_NOT_PRESENT     => no target power present
+ * @return BDM_RC_OK                  => Success
+ * @return BDM_RC_VDD_NOT_PRESENT     => No target power present
  * @return BDM_RC_RESET_TIMEOUT_RISE  => RESET signal timeout - remained low
  * @return BDM_RC_BKGD_TIMEOUT        => BKGD signal timeout - remained low
- * @return BDM_RC_OK                  => other failures
+ * @return != BDM_RC_OK               => Other failures
  */
 USBDM_ErrorCode physicalConnect(void) {
    USBDM_ErrorCode rc;
@@ -1297,22 +1376,19 @@ USBDM_ErrorCode physicalConnect(void) {
    if (rc != BDM_RC_OK) {
       return rc;
    }
-   // Wait with timeout until both RESET and BKGD  are high
    if (bdm_option.useResetSignal) {
+      // Wait with timeout until RESET is high
       if (Reset::isLow()) {
          // TODO May take a while
          //         setBDMBusy();
-         static auto fn = [] { return Reset::isHigh() && BkgdIn::isHigh(); };
-         USBDM::waitMS(RESET_RELEASE_WAIT_ms, fn);
-      }
-      if (Reset::isLow()) {
-         // RESET timeout
-         return(BDM_RC_RESET_TIMEOUT_RISE);
+         if (!USBDM::waitMS(RESET_RELEASE_WAIT_ms, Reset::isHigh)) {
+            // RESET timeout
+            return(BDM_RC_RESET_TIMEOUT_RISE);
+         }
       }
    }
    // Wait with timeout until BKGD is high
-   USBDM::waitMS(RESET_RELEASE_WAIT_ms, BkgdIn::isHigh);
-   if (BkgdIn::isLow()) {
+   if (!USBDM::waitMS(RESET_RELEASE_WAIT_ms, BkgdIn::isHigh)) {
       // BKGD timeout
       return(BDM_RC_BKGD_TIMEOUT);
    }
@@ -1320,17 +1396,17 @@ USBDM_ErrorCode physicalConnect(void) {
    uint16_t syncLength;
    rc = sync(syncLength);
    if (rc != BDM_RC_OK) {
-      // try again
+      // Try again
       rc = sync(syncLength);
    }
    if (rc == BDM_RC_OK) {
       // Speed determined by SYNC method
       cable_status.speed = SPEED_SYNC;
    }
-   //TODO bdmHC12_alt_speed_detect()
+   //TODO hc12_alt_speed_detect()
    //   else if ((bdm_option.guessSpeed) &&          // Try alternative method if enabled
    //       (cable_status.target_type == T_HC12)) { // and HC12 target
-   //      rc = bdmHC12_alt_speed_detect();     // Try alternative method (guessing!)
+   //      rc = hc12_alt_speed_detect();     // Try alternative method (guessing!)
    //   }
    if (rc == BDM_RC_OK) {
       enableACKNMode();  // Try the ACKN feature
@@ -1349,7 +1425,8 @@ USBDM_ErrorCode enableBDM() {
    uint8_t bdm_sts;
    USBDM_ErrorCode rc;
 
-   rc = readBDMStatus(&bdm_sts); // Get current status
+   // Get current status
+   rc = readBDMStatus(&bdm_sts);
    if (rc != BDM_RC_OK) {
       return rc;
    }
@@ -1476,7 +1553,7 @@ USBDM_ErrorCode softwareReset(uint8_t mode) {
    DEBUG_PIN     = 1;
 #endif
 
-   USBDM::waitMS(RESET_SETTLEms);   // Wait for target to start reset (and possibly assert reset)
+   USBDM::waitMS(RESET_SETTLE_ms);   // Wait for target to start reset (and possibly assert reset)
 
 #if (HW_CAPABILITY&CAP_RST_IO)
    if (bdm_option.useResetSignal) {
@@ -1493,7 +1570,7 @@ USBDM_ErrorCode softwareReset(uint8_t mode) {
 
    if (mode == RESET_SPECIAL) {
       // Special mode - release BKGD
-      USBDM::waitUS(BKGD_WAITus);      // Wait for BKGD assertion time after reset rise
+      USBDM::waitUS(BKGD_WAIT_us);      // Wait for BKGD assertion time after reset rise
       disablePins();
    }
 
@@ -1503,7 +1580,7 @@ USBDM_ErrorCode softwareReset(uint8_t mode) {
 #endif
 
    // Wait recovery time before allowing anything else to happen on the BDM
-   USBDM::waitMS(RESET_RECOVERYms);   // Wait for Target to start up after reset
+   USBDM::waitMS(RESET_RECOVERY_ms);   // Wait for Target to start up after reset
 
    disablePins();      // Place interface in idle state
 
@@ -1602,6 +1679,214 @@ USBDM_ErrorCode step(void) {
    else {
       return BDM_CMD_TRACE1();
    }
+}
+
+// PARTID read from HCS12 - used to confirm target connection speed and avoid needless probing
+static uint16_t partid = 0xFA50;
+
+ /**
+  *  Confirm communication at given Sync value.
+  *  Only works on HC12 (and maybe only 1 of 'em!)
+  *
+  *  @return
+  *    == \ref BDM_RC_OK  => Success \n
+  *    != \ref BDM_RC_OK  => Various errors
+  */
+uint8_t hc12confirmSpeed(unsigned syncLength) {
+   uint8_t rc;
+   static constexpr uint16_t FDATA_ADDR = 0x10A;
+
+   setSyncLength(syncLength);
+
+   // Assume probing failed
+   rc = BDM_RC_BDM_EN_FAILED;
+   uint8_t probe[2];
+
+   // Check if we can read a previous PARTID, if so assume still connected
+   // and avoid further target probing
+   // This should be the usual case
+   if ((BDM12_CMD_READW(HCS12_PARTID, probe) == BDM_RC_OK) &&
+         (pack16BE(probe) == partid)) {
+      return BDM_RC_OK;
+   }
+   do {
+      uint8_t probe[2];
+      // This method works for secured or unsecured devices
+      // in special mode that have a common Flash type.
+      // BUT - it may upset flash programming if done at wrong time
+
+      // Set FDATA to 0xAA55 & read back
+      if ((BDM12_CMD_WRITEW(FDATA_ADDR, 0xAA55) != BDM_RC_OK) ||
+            (BDM12_CMD_READW(FDATA_ADDR,  probe) != BDM_RC_OK) ||
+            (pack16BE(probe) != 0xAA55)) {
+         break;
+      }
+      // Set FDATA to 0x55AA & read back
+      if ((BDM12_CMD_WRITEW(FDATA_ADDR, 0x55AA) != BDM_RC_OK) ||
+            (BDM12_CMD_READW(FDATA_ADDR,  probe) != BDM_RC_OK) ||
+            (pack16BE(probe) != 0x55AA)) {
+         break;
+      }
+      // Update partID
+      if (BDM12_CMD_READW(HCS12_PARTID, probe) != BDM_RC_OK) {
+         break;
+      }
+      partid = pack16BE(probe);
+
+      // Success!
+      return BDM_RC_OK;
+
+   } while (false);
+
+   do {
+      uint8_t probe[2];
+      uint8_t originalValue;
+      // This method works for unsecured devices
+      // in special or non-special modes
+      // BUT - it may upset CCR in some (unlikely?) cases
+
+      // Get current BDMCCR
+      if (BDM12_CMD_BDREADB(HC12_BDMCCR,&originalValue) != BDM_RC_OK) {
+         break;
+      }
+      // Set BDMCCR to 0xAA & read back
+      if ((BDM12_CMD_BDWRITEB(HC12_BDMCCR, 0xAA) != BDM_RC_OK) ||
+            (BDM12_CMD_BDREADB(HC12_BDMCCR, probe) != BDM_RC_OK) ||
+            (probe[0] != 0xAA)) {
+         break;
+      }
+      // Set BDMCCR to 0x55 & read back
+      if ((BDM12_CMD_BDWRITEB(HC12_BDMCCR, 0x55) != BDM_RC_OK) ||
+            (BDM12_CMD_BDREADB(HC12_BDMCCR, probe) != BDM_RC_OK) ||
+            (probe[0] != 0x55)) {
+         break;
+      }
+
+      // Restore BDMCCR
+      BDM12_CMD_BDWRITEB(HC12_BDMCCR, originalValue);
+
+      // Update partID
+      if (BDM12_CMD_READW(HCS12_PARTID, probe) != BDM_RC_OK) {
+         break;
+      }
+      partid = pack16BE(probe);
+
+      // Success!
+      return BDM_RC_OK;
+
+   } while (false);
+
+#if 0
+   do {
+      uint8_t probe;
+      uint8_t originalValue;
+
+      // Get current BDMSTS
+      BDM12_CMD_BDREADB(HC12_BDMSTS,&originalValue);
+
+      // Try to clear BDMSTS.ENBDM
+      BDM12_CMD_BDWRITEB(HC12_BDMSTS,originalValue&~HC12_BDMSTS_ENBDM);
+      BDM12_CMD_BDREADB(HC12_BDMSTS, &probe);
+
+      if ((probe & HC12_BDMSTS_ENBDM) != 0) {
+         // Not clear now? - Try next speed
+         break;
+      }
+
+      // Try to set BDMSTS.ENBDM
+      BDM12_CMD_BDWRITEB(HC12_BDMSTS,originalValue|HC12_BDMSTS_ENBDM);
+      BDM12_CMD_BDREADB(HC12_BDMSTS, &probe);
+
+      if ((probe & HC12_BDMSTS_ENBDM) == 0) {
+         // Not set now? - Try next speed
+         break;
+      }
+      return BDM_RC_OK; // Success!
+   } while (false);
+#endif
+
+   cable_status.sync_length  = 1;
+   cable_status.ackn         = WAIT;    // Clear indication of ACKN feature
+   return rc;
+}
+#pragma MESSAGE DEFAULT C4001 // Disable warnings about Condition always true
+
+/**  Attempt to determine target speed by trial and error
+ *
+ *  Basic process used to check for communication is:
+ *    -  Attempt to modify the BDM Status register [BDMSTS] or BDM CCR Save Register [BDMCCR]
+ *
+ *  The above is attempted for a range of 'nice' frequencies and then every Tx driver frequency. \n
+ *  To improve performance the last two successful frequencies are remembered.  This covers the \n
+ *  common case of alternating between two frequencies [reset & clock configured] with a minimum \n
+ *  number of probes.
+ */
+static uint8_t hc12_alt_speed_detect(void) {
+const uint16_t typicalSpeeds[] = { // Table of 'nice' BDM speeds to try
+      convertMicrosecondsToTicks(23),
+   SYNC_MULTIPLE( 4000000UL),  //  4 MHz
+   SYNC_MULTIPLE( 8000000UL),  //  8 MHz
+   SYNC_MULTIPLE(16000000UL),  // 16 MHz
+   SYNC_MULTIPLE(32000000UL),  // 32 MHz
+   SYNC_MULTIPLE(24000000UL),  // 24 MHz
+   SYNC_MULTIPLE(48000000UL),  // 48 MHz
+   SYNC_MULTIPLE(20000000UL),  // 20 MHz
+   SYNC_MULTIPLE( 2000000UL),  //  2 MHz
+   SYNC_MULTIPLE(10000000UL),  // 10 MHz
+   SYNC_MULTIPLE( 1000000UL),  //  1 MHz
+   SYNC_MULTIPLE(  500000UL),  // 500kHz
+   0
+   };
+
+
+#pragma DATA_SEG __SHORT_SEG Z_PAGE
+static uint16_t lastGuess1 = SYNC_MULTIPLE(8000000UL);  // Used to remember last 2 guesses
+static uint16_t lastGuess2 = SYNC_MULTIPLE(16000000UL); // Common situation to change between 2 speeds (reset,running)
+#pragma DATA_SEG DEFAULT
+const TxConfiguration  *txConfigPtr;
+int sub;
+uint16_t currentGuess;
+uint8_t  rc;
+
+   // Try last used speed #1
+   if (hc12confirmSpeed(lastGuess1) == BDM_RC_OK) {
+      cable_status.speed = SPEED_GUESSED;  // Speed found by trial and error
+      return BDM_RC_OK;
+   }
+   // Try last used speed #2
+   currentGuess = lastGuess2;
+   rc = hc12confirmSpeed(lastGuess2);
+   if (rc != BDM_RC_OK) {
+      // This may take a while
+      setBDMBusy();
+   }
+   // Try some likely numbers!
+   for (sub=0; typicalSpeeds[sub]>0; sub++) {
+      if (rc == BDM_RC_OK) {
+         break;
+      }
+      currentGuess = typicalSpeeds[sub];
+      rc           = hc12confirmSpeed(currentGuess);
+      }
+
+   // Try each Tx driver BDM frequency
+   for (  txConfigPtr  = txConfiguration+(sizeof(txConfiguration)/sizeof(txConfiguration[0])-1);
+        --txConfigPtr >= txConfiguration; ) { // Search the table
+      if (rc == BDM_RC_OK) {
+         break;
+      }
+      currentGuess = (txConfigPtr->syncThreshold+(txConfigPtr+1)->syncThreshold)/2;
+      rc           = hc12confirmSpeed(currentGuess);
+      }
+
+   if (rc == BDM_RC_OK) {
+      // Update speed cache (LRU)
+      lastGuess2       = lastGuess1;
+      lastGuess1       = currentGuess;
+      cable_status.speed = SPEED_GUESSED;  // Speed found by trial and error
+      return BDM_RC_OK;
+   }
+   return rc;
 }
 
 }; // End namespace Bdm

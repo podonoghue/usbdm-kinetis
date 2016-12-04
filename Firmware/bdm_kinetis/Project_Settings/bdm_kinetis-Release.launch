@@ -4,7 +4,7 @@
 <stringAttribute key="net.sourceforge.usbdm.gdb.bdmSerialNumber" value="USBDM-JS16-SWD_SER-0001"/>
 <booleanAttribute key="net.sourceforge.usbdm.gdb.bdmSerialNumberMatchRequired" value="false"/>
 <stringAttribute key="net.sourceforge.usbdm.gdb.buildToolId" value="net.sourceforge.usbdm.cdt.toolchain.processor.usbdmConfigure.armLtdGnuToolsForARM"/>
-<booleanAttribute key="net.sourceforge.usbdm.gdb.catchVLLSxEvents" value="true"/>
+<booleanAttribute key="net.sourceforge.usbdm.gdb.catchVLLSxEvents" value="false"/>
 <intAttribute key="net.sourceforge.usbdm.gdb.clockTrimFrequency" value="0"/>
 <intAttribute key="net.sourceforge.usbdm.gdb.connectionTimeout" value="10"/>
 <stringAttribute key="net.sourceforge.usbdm.gdb.deviceName" value="MK22DX256M5"/>
