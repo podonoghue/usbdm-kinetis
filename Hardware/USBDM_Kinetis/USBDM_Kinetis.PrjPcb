@@ -28,7 +28,7 @@ PowerPortNamesTakePriority=0
 PushECOToAnnotationFile=1
 DItemRevisionGUID=
 ReportSuppressedErrorsInMessages=0
-OutputPath=
+OutputPath=Project Outputs for USBDM_Kinetis
 LogFolderPath=
 ManagedProjectGUID=
 
@@ -88,54 +88,66 @@ GenerateClassCluster=0
 DocumentUniqueId=ERNSGOKY
 
 [GeneratedDocument1]
-DocumentPath=Project Outputs for USBDM_Kinetis\USBDM_Kinetis.DRR
+DocumentPath=Project Outputs for USBDM_Kinetis\Design Rule Check - USBDM_Kinetis.html
 DItemRevisionGUID=
 
 [GeneratedDocument2]
-DocumentPath=Project Outputs for USBDM_Kinetis\USBDM_Kinetis.EXTREP
+DocumentPath=Project Outputs for USBDM_Kinetis\USBDM_Kinetis.DRR
 DItemRevisionGUID=
 
 [GeneratedDocument3]
-DocumentPath=Project Outputs for USBDM_Kinetis\USBDM_Kinetis.GBL
+DocumentPath=Project Outputs for USBDM_Kinetis\USBDM_Kinetis.EXTREP
 DItemRevisionGUID=
 
 [GeneratedDocument4]
-DocumentPath=Project Outputs for USBDM_Kinetis\USBDM_Kinetis.GBO
+DocumentPath=Project Outputs for USBDM_Kinetis\USBDM_Kinetis.GBL
 DItemRevisionGUID=
 
 [GeneratedDocument5]
-DocumentPath=Project Outputs for USBDM_Kinetis\USBDM_Kinetis.GBS
+DocumentPath=Project Outputs for USBDM_Kinetis\USBDM_Kinetis.GBO
 DItemRevisionGUID=
 
 [GeneratedDocument6]
-DocumentPath=Project Outputs for USBDM_Kinetis\USBDM_Kinetis.GKO
+DocumentPath=Project Outputs for USBDM_Kinetis\USBDM_Kinetis.GBP
 DItemRevisionGUID=
 
 [GeneratedDocument7]
-DocumentPath=Project Outputs for USBDM_Kinetis\USBDM_Kinetis.GTL
+DocumentPath=Project Outputs for USBDM_Kinetis\USBDM_Kinetis.GBS
 DItemRevisionGUID=
 
 [GeneratedDocument8]
-DocumentPath=Project Outputs for USBDM_Kinetis\USBDM_Kinetis.GTO
+DocumentPath=Project Outputs for USBDM_Kinetis\USBDM_Kinetis.GKO
 DItemRevisionGUID=
 
 [GeneratedDocument9]
-DocumentPath=Project Outputs for USBDM_Kinetis\USBDM_Kinetis.GTS
+DocumentPath=Project Outputs for USBDM_Kinetis\USBDM_Kinetis.GTL
 DItemRevisionGUID=
 
 [GeneratedDocument10]
-DocumentPath=Project Outputs for USBDM_Kinetis\USBDM_Kinetis.LDP
+DocumentPath=Project Outputs for USBDM_Kinetis\USBDM_Kinetis.GTO
 DItemRevisionGUID=
 
 [GeneratedDocument11]
-DocumentPath=Project Outputs for USBDM_Kinetis\USBDM_Kinetis.REP
+DocumentPath=Project Outputs for USBDM_Kinetis\USBDM_Kinetis.GTP
 DItemRevisionGUID=
 
 [GeneratedDocument12]
-DocumentPath=Project Outputs for USBDM_Kinetis\USBDM_Kinetis.RUL
+DocumentPath=Project Outputs for USBDM_Kinetis\USBDM_Kinetis.GTS
 DItemRevisionGUID=
 
 [GeneratedDocument13]
+DocumentPath=Project Outputs for USBDM_Kinetis\USBDM_Kinetis.LDP
+DItemRevisionGUID=
+
+[GeneratedDocument14]
+DocumentPath=Project Outputs for USBDM_Kinetis\USBDM_Kinetis.REP
+DItemRevisionGUID=
+
+[GeneratedDocument15]
+DocumentPath=Project Outputs for USBDM_Kinetis\USBDM_Kinetis.RUL
+DItemRevisionGUID=
+
+[GeneratedDocument16]
 DocumentPath=Project Outputs for USBDM_Kinetis\USBDM_Kinetis.TXT
 DItemRevisionGUID=
 
@@ -150,7 +162,7 @@ GenerateBOM=1
 OutputJobsCount=0
 
 [Generic_EDE]
-OutputDir=
+OutputDir=Project Outputs for USBDM_Kinetis
 
 [OutputGroup1]
 Name=Netlist Outputs
