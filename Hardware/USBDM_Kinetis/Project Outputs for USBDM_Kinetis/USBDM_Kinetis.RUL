@@ -1,4 +1,4 @@
-DRC Rules Export File for PCB: C:\Users\podonoghue\Documents\Development\Kinetis_BDM\Hardware\USBDM_Kinetis\USBDM_Kinetis.PcbDoc
+DRC Rules Export File for PCB: C:\Users\podonoghue\Documents\Development\usbdm-kinetis\Hardware\USBDM_Kinetis\USBDM_Kinetis.PcbDoc
 RuleKind=ShortCircuit|RuleName=ShortCircuit|Scope=Board|Allowed=0
 RuleKind=SolderMaskExpansion|RuleName=SolderMaskExpansion|Scope=Board|Minimum=4.00
 RuleKind=Width|RuleName=Width|Scope=Board|Minimum=6.00
