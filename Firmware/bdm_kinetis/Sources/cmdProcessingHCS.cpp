@@ -220,8 +220,9 @@ USBDM_ErrorCode f_CMD_READ_STATUS_REG(void) {
          ((commandBuffer[4] & CFV1_XCSR_CSTAT) == CFV1_XCSR_CSTAT_OVERRUN)) {
       // Try CFV1 recovery process
       rc = Cfv1::resetCFV1Interface();
-      if (rc != BDM_RC_OK)
+      if (rc != BDM_RC_OK) {
          return rc;
+      }
       rc = readBDMStatus(commandBuffer+4);
    }
    return rc;
@@ -430,10 +431,10 @@ USBDM_ErrorCode f_CMD_READ_REGS(void) {
       case T_RS08:
          BDM08_CMD_READ_PC(commandBuffer+1);    // RS08 Read CCR+PC
          BDM08_CMD_READ_SP(commandBuffer+3);    // RS08 Read Shadow PC
-         commandBuffer[5] = 0;                  // RS08 doesn't have Read HX
+         commandBuffer[5] = 0;                  // RS08 Doesn't have Read HX
          commandBuffer[6] = 0;
          BDM08_CMD_READ_A(commandBuffer+7);     // RS08 Read A
-         commandBuffer[8] = 0;                  // RS08 doesn't have Read CCR
+         commandBuffer[8] = 0;                  // RS08 Doesn't have Read CCR
          returnSize = 9;
          return BDM_RC_OK;
    }
@@ -734,7 +735,7 @@ USBDM_ErrorCode f_CMD_READ_REG(void) {
    if ((commandBuffer[3]<HCS12_RegPC) || (commandBuffer[3]>HCS12_RegSP)) {
       return BDM_RC_ILLEGAL_PARAMS;
    }
-   return BDM12_CMD_READ_REG(commandBuffer[3],commandBuffer+3);
+   return BDM12_CMD_READ_REG(commandBuffer[3], commandBuffer+3);
 }
 }; // end namespace Hcs12
 
@@ -973,7 +974,7 @@ USBDM_ErrorCode f_CMD_READ_REG(void) {
  *  @return != BDM_RC_OK => error
  */
 USBDM_ErrorCode f_CMD_WRITE_BKPT(void) {
-   BDM08_CMD_WRITE_BKPT(*(uint16_t *)(commandBuffer+6));
+   BDM08_CMD_WRITE_BKPT(pack16BE(commandBuffer+6));
    return BDM_RC_OK;
 }
 

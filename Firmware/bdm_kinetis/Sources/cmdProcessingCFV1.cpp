@@ -78,7 +78,7 @@ using namespace Bdm;
 USBDM_ErrorCode f_CMD_WRITE_MEM(void) {
 uint8_t  elementSize = commandBuffer[2];          // Size of the data writes
 uint8_t  count       = commandBuffer[3];          // # of bytes
-uint32_t addr        = *(uint32_t*)(commandBuffer+4);  // Address in target memory
+uint32_t addr        = pack32BE(commandBuffer+4); // Address in target memory
 uint8_t  *data_ptr   = commandBuffer+8;           // Where the data is
 USBDM_ErrorCode rc          = BDM_RC_OK;
 
@@ -145,8 +145,8 @@ USBDM_ErrorCode rc          = BDM_RC_OK;
 USBDM_ErrorCode f_CMD_READ_MEM(void) {
 uint8_t  elementSize = commandBuffer[2];          // Size of the data writes
 uint8_t  count       = commandBuffer[3];          // # of data bytes
-uint32_t addr        = *(uint32_t*)(commandBuffer+4);  // Address in target memory
-uint8_t *data_ptr    = commandBuffer+1;            // Where in buffer to write the data
+uint32_t addr        = pack32BE(commandBuffer+4); // Address in target memory
+uint8_t *data_ptr    = commandBuffer+1;           // Where in buffer to write the data
 USBDM_ErrorCode rc   = BDM_RC_OK;
 
    if (cable_status.speed == SPEED_NO_INFO)
@@ -228,7 +228,7 @@ USBDM_ErrorCode f_CMD_READ_REG(void) {
  *   == \ref BDM_RC_OK => success
  */
 USBDM_ErrorCode f_CMD_WRITE_REG(void) {
-   return BDMCF_CMD_WRITE_REG(commandBuffer[3]&0x9F,(*(uint32_t *)(commandBuffer+4)));
+   return BDMCF_CMD_WRITE_REG(commandBuffer[3]&0x9F,(pack32BE(commandBuffer+4)));
 }
 
 #if HW_CAPABILITY&CAP_CORE_REGS
@@ -258,9 +258,9 @@ static const uint8_t regIndexMap[] = {
  */
 USBDM_ErrorCode f_CMD_READ_ALL_CORE_REGS(void) {
    USBDM_ErrorCode rc;
-   uint8_t regIndex    = commandBuffer[3];
-   uint8_t endRegister = commandBuffer[4];
-   uint8_t* outputPtr  = commandBuffer+1;
+   uint8_t  regIndex    = commandBuffer[3];
+   uint8_t  endRegister = commandBuffer[4];
+   uint8_t* outputPtr   = commandBuffer+1;
    returnSize = 1;
    if (commandBuffer[2] != 0) {
       // Check flag is zero
@@ -292,7 +292,7 @@ USBDM_ErrorCode f_CMD_READ_ALL_CORE_REGS(void) {
  *   == \ref BDM_RC_OK => success
  */
 USBDM_ErrorCode f_CMD_WRITE_DREG(void) {
-uint16_t regNo = *(uint16_t*)(commandBuffer+2);
+uint16_t regNo = pack16BE(commandBuffer+2);
 
    if (regNo >= CFV1_ByteRegs) {
       switch (regNo) {
@@ -304,11 +304,7 @@ uint16_t regNo = *(uint16_t*)(commandBuffer+2);
       return BDM_RC_OK;
    }
    else {
-#ifdef MC51AC256_HACK
-      if (regNo == CFV1_DRegCSR)
-         commandBuffer[5] |= (CFV1_CSR_VBD>>16); // Hack for MC51AC256
-#endif
-      return BDMCF_CMD_WRITE_DREG(commandBuffer[3]&0x1F, (*(uint32_t *)(commandBuffer+4)));
+      return BDMCF_CMD_WRITE_DREG(commandBuffer[3]&0x1F, pack32BE(commandBuffer+4));
    }
 }
 
@@ -326,7 +322,7 @@ uint16_t regNo = *(uint16_t*)(commandBuffer+2);
  *    - [1..4]  =>  32-bit register value
  */
 USBDM_ErrorCode f_CMD_READ_DREG(void) {
-uint16_t regNo = *(uint16_t*)(commandBuffer+2);
+uint16_t regNo = pack16BE(commandBuffer+2);
 USBDM_ErrorCode rc = BDM_RC_OK;
 
    returnSize = 5;
@@ -365,7 +361,7 @@ USBDM_ErrorCode rc = BDM_RC_OK;
  *   == \ref BDM_RC_OK => success
  */
 USBDM_ErrorCode f_CMD_WRITE_CREG(void) {
-   return BDMCF_CMD_WRITE_CREG(commandBuffer[3]&0x1F, (*(uint32_t *)(commandBuffer+4)));
+   return BDMCF_CMD_WRITE_CREG(commandBuffer[3]&0x1F, pack32BE(commandBuffer+4));
 }
 
 /**
