@@ -139,9 +139,9 @@ public:
 };
 
 /**
- * GPIO controlling some SWD related signals
+ * GPIO controlling some interface signals (SWD, UART-TX)
  */
-using Swd_enable = USBDM::GpioC<4>;
+using InterfaceEnable = USBDM::GpioC<4>;
 
 /**
  * 3-State I/O for reset signal

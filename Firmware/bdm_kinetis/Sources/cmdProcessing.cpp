@@ -144,8 +144,11 @@ USBDM_ErrorCode optionalReconnect(AutoConnect_t when) {
       case T_RS08:
       case T_HCS08:
       case T_CFV1:
-         if (bdm_option.autoReconnect == when) // If auto re-connect enabled at this time then ...
-            rc = Bdm::physicalConnect();        //    ...make sure of connection
+         if (bdm_option.autoReconnect == when) {
+            // If auto re-connect enabled at this time then ...
+            //    ...make sure of connection
+            rc = Bdm::physicalConnect();
+         }
          break;
       default: ;
    }
@@ -258,10 +261,6 @@ USBDM_ErrorCode f_CMD_DEBUG(void) {
          returnSize = 4;
       }
       return BDM_RC_OK;
-
-      //      case BDM_DBG_TESTPORT: // Check port I/O timing - hangs USB interface
-      //         bdm_checkTiming();
-      //         return BDM_RC_OK;
 #endif
 #if (HW_CAPABILITY & CAP_FLASH)
       case BDM_DBG_VPP_OFF: // Programming voltage off
@@ -398,6 +397,7 @@ static const uint8_t capabilities[] = {
 
 /**
  *  Returns capability vector for hardware
+ *
  *  @return
  *   commandBuffer                                                \n
  *    - [1..2] = BDM capability, see \ref HardwareCapabilities_t  \n
@@ -438,10 +438,10 @@ USBDM_ErrorCode f_CMD_GET_BDM_STATUS(void) {
  *   - [1..2] = BDM status
  */
 void getPinStatus(void) {
-   uint16_t status = 0;
+   PinLevelMasks_t status = Reset::isHigh()?PIN_RESET_LOW:PIN_RESET_HIGH;
+   Swd::getPinState(status);
+   Bdm::getPinState(status);
 
-   status  = Reset::isHigh()?PIN_RESET_LOW:PIN_RESET_HIGH;
-   status |= Swd::readSwdDin()?PIN_SWD_LOW:PIN_SWD_LOW;
    unpack16BE(status, commandBuffer+1);
    returnSize  = 3;
 }
@@ -547,7 +547,7 @@ USBDM_ErrorCode f_CMD_CONTROL_PINS(void) {
    }
 
 #if (HW_CAPABILITY & CAP_BDM)
-   Bdm::setBkgd(control);
+   Bdm::setPinState(control);
 #endif
 
 #if (HW_CAPABILITY & CAP_RST_OUT)
@@ -598,30 +598,9 @@ USBDM_ErrorCode f_CMD_CONTROL_PINS(void) {
 #endif
 
 #if (HW_CAPABILITY & CAP_SWD_HW)
-   //  Not supported using this interface
-   //   switch (control & PIN_SWD) {
-   //   case PIN_SWD_3STATE :
-   //      SWD_OUT_3STATE();    // Disable SWD buffer, SWDIO = Z
-   //      break;
-   //   case PIN_SWD_LOW :
-   //      SWD_OUT_LOW();       // Enable SWD buffer,  SWDIO = 0
-   //      break;
-   //   case PIN_SWD_HIGH :
-   //      SWD_OUT_HIGH();      // Enable SWD buffer,  SWDIO = 1
-   //      break;
-   //   }
-   //   switch (control & PIN_SWCLK) {
-   //   case PIN_SWCLK_3STATE :
-   //      SWCLK_3STATE();    // Disable SWD buffer, SWDIO = Z
-   //      break;
-   //   case PIN_SWCLK_LOW :
-   //      SWCLK_LOW();       // Enable SWD buffer,  SWDIO = 0
-   //      break;
-   //   case PIN_SWCLK_HIGH :
-   //      SWCLK_HIGH();      // Enable SWD buffer,  SWDIO = 1
-   //      break;
-   //   }
+   Swd::setPinState(control);
 #endif
+
    getPinStatus();
    return BDM_RC_OK;
 }

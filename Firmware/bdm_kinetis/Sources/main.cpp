@@ -307,15 +307,14 @@ void initialise() {
    TargetVdd::initialise();
    Debug::initialise();
 
-   Swd_enable::setOutput();
-   Swd_enable::high();
+   InterfaceEnable::setOutput();
+   InterfaceEnable::high();
 
    // Turn off important things
 #if (HW_CAPABILITY&CAP_VDDCONTROL)
    (void)Vdd::initialise();
 #endif
 
-   // Turn off important things
 #if (HW_CAPABILITY&CAP_FLASH)
    (void)bdmSetVpp(BDM_TARGET_VPP_OFF);
 #endif

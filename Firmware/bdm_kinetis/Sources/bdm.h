@@ -28,11 +28,18 @@ void initialise();
 void disable();
 
 /**
- * Set BKGD pin state
+ * Set pin state
  *
  * @param pins Pin control mask
  */
-void setBkgd(PinLevelMasks_t pins);
+void setPinState(PinLevelMasks_t pins);
+
+/**
+ * Get pin state
+ *
+ * @param [INOUT] status Updated with pin status from this interface
+ */
+void getPinState(PinLevelMasks_t &status);
 
 /**
  * Determine connection speed using sync pulse

@@ -87,6 +87,20 @@ static constexpr uint32_t  DHCSR_C_HALT            = (1<<1);
 static constexpr uint32_t  DHCSR_C_DEBUGEN         = (1<<0);
 
 /**
+ * Set pin state
+ *
+ * @param pins Pin control mask
+ */
+void setPinState(PinLevelMasks_t control);
+
+/**
+ * Get pin state
+ *
+ * @param [INOUT] status Updated with pin status from this interface
+ */
+void getPinState(PinLevelMasks_t &status);
+
+/**
  * Pack 2 bytes into a 32-bit value for ARM addresses
  *
  * @param  data   Data value in BIG-ENDIAN order order

@@ -40,8 +40,23 @@ namespace Swd {
 /** Select SPI to use */
 using SpiInfo = USBDM::Spi0Info;
 
-///** Selects which PCS signal is used to control SWD Transceiver */
-//static constexpr int PCS_NUM = (1);
+/** GPIO for SWD-CLK pin */
+using swdClk = USBDM::GpioTable_T<SpiInfo, 0>;
+
+/** GPIO for SWD-DIN pin */
+using swdIn = USBDM::GpioTable_T<SpiInfo, 1>;
+
+/** GPIO for SWD-DOUT pin */
+using swdOut = USBDM::GpioTable_T<SpiInfo, 2>;
+
+/** GPIO for SWD enable pin */
+using swdDirection = USBDM::GpioTable_T<SpiInfo, 5>;
+
+// Make sure pins have been assigned to SPI
+USBDM::CheckSignal<SpiInfo, 0> sck_chk;
+USBDM::CheckSignal<SpiInfo, 1> sin_chk;
+USBDM::CheckSignal<SpiInfo, 2> sout_chk;
+USBDM::CheckSignal<SpiInfo, 5> enable_chk;
 
 //===========================================================================
 
@@ -62,7 +77,7 @@ static constexpr uint32_t  SWD_WR_DP_CONTROL_POWER_ACK = (1<<31)|(1<<29);
 static constexpr uint32_t  AHB_AP_NUM        = (0x0);
 
 // DP_SELECT register value to access AHB_AP Bank #0 for memory read/write
-static constexpr uint32_t ARM_AHB_AP_BANK0 = Swd::AHB_AP_NUM;
+static constexpr uint32_t ARM_AHB_AP_BANK0 = AHB_AP_NUM;
 
 //   static constexpr uint32_t  AHB_CSW_REGNUM    = (0x0);  // CSW register bank+register number
 //   static constexpr uint32_t  AHB_TAR_REGNUM    = (0x4);  // TAR register bank+register number
@@ -87,10 +102,10 @@ static constexpr uint32_t  AHB_AP_CSW_SIZE_WORD     = (2<<0);
 
 static constexpr uint32_t cswValues[5] = {
       0,
-      Swd::AHB_AP_CSW_SIZE_BYTE    |Swd::AHB_AP_CSW_INC_SINGLE,
-      Swd::AHB_AP_CSW_SIZE_HALFWORD|Swd::AHB_AP_CSW_INC_SINGLE,
+      AHB_AP_CSW_SIZE_BYTE    |AHB_AP_CSW_INC_SINGLE,
+      AHB_AP_CSW_SIZE_HALFWORD|AHB_AP_CSW_INC_SINGLE,
       0,
-      Swd::AHB_AP_CSW_SIZE_WORD    |Swd::AHB_AP_CSW_INC_SINGLE,
+      AHB_AP_CSW_SIZE_WORD    |AHB_AP_CSW_INC_SINGLE,
 };
 
 /**
@@ -198,15 +213,15 @@ static uint8_t calcParity(const uint32_t data) {
    return 0; // stop warning
 }
 
-/**
- * Check status of SWDDIO signal
- *
- * @return Value on SWDIO pin
- */
-bool readSwdDin() {
-   USBDM::GpioTable_T<SpiInfo, 1> SwdDin;
-   return SwdDin.isHigh();
-}
+///**
+// * Check status of SWDDIO signal
+// *
+// * @return Value on SWDIO pin
+// */
+//bool readSwdDin() {
+//   USBDM::GpioTable_T<SpiInfo, 1> SwdDin;
+//   return SwdDin.isHigh();
+//}
 
 /**
  * Transmits 8-bits of idle (SWDIO=0)
@@ -446,10 +461,6 @@ void initialise() {
    Reset::initialise();
    Reset::highZ();
 
-   // Enable SWD interface
-   Swd_enable::setOutput();
-   Swd_enable::high();
-
    // Set mode
    spi->MCR =
          SPI_MCR_FRZ(1)|      // Freeze in debug mode
@@ -473,6 +484,55 @@ void disable() {
 }
 
 /**
+ * Set pin state
+ *
+ * @param pins Pin control mask
+ */
+void setPinState(PinLevelMasks_t control) {
+   switch (control & PIN_SWD_MASK) {
+      case PIN_SWD_3STATE :
+         swdDirection::low();           // Disable SWD buffer, SWDIO = Z
+         swdDirection::setOutput();     // Enable manual control of buffer direction
+         break;
+      case PIN_SWD_LOW :
+         swdOut::high();                // SWD = Low
+         swdOut::setOutput();           // Enable manual control of SWD
+         swdDirection::high();          // Enable SWD buffer, SWDIO = Low
+         swdDirection::setOutput();     // Enable manual control of buffer direction
+         break;
+      case PIN_SWD_HIGH :
+         swdOut::high();                // SWD = High
+         swdOut::setOutput();           // Enable manual control of SWD
+         swdDirection::low();           // Enable SWD buffer, SWDIO = High
+         swdDirection::setOutput();     // Enable manual control of buffer direction
+         break;
+   }
+   switch (control & PIN_SWCLK_MASK) {
+      case PIN_SWCLK_3STATE :
+         // Not supported - approximate as high
+         // No break
+      case PIN_SWCLK_HIGH :
+         swdClk::setOutput();    // Enable manual control of SWDCLK
+         swdClk::high();         // Drive high
+         break;
+      case PIN_SWCLK_LOW :
+         swdClk::setOutput();    // Enable manual control of SWDCLK
+         swdClk::low();          // Drive low
+         break;
+   }
+}
+
+/**
+ * Get pin status
+ *
+ * @param [INOUT] status Updated with pin status from this interface
+ */
+void getPinState(PinLevelMasks_t &status) {
+   status = (PinLevelMasks_t) (status | swdIn::isHigh()?PIN_SWD_LOW:PIN_SWD_LOW);
+   status = (PinLevelMasks_t) (status | swdClk::isHigh()?PIN_SWD_LOW:PIN_SWD_LOW);
+}
+
+/**
  * Obtain default AHB_AP.csw register default value from target
  *
  * @return BDM_RC_OK ahb_ap_csw_defaultValue already valid or successfully updated, error otherwise
@@ -486,12 +546,12 @@ static USBDM_ErrorCode update_ahb_ap_csw_defaultValue() {
    // Read initial AHB-AP.csw register value as device dependent
    // Do posted read - dummy data returned
    uint32_t ahb_ap_cswValue = 0;
-   USBDM_ErrorCode rc = readReg(Swd::SWD_RD_AHB_CSW, ahb_ap_cswValue);
+   USBDM_ErrorCode rc = readReg(SWD_RD_AHB_CSW, ahb_ap_cswValue);
    if (rc != BDM_RC_OK) {
       return rc;
    }
    // Get actual data
-   rc = readReg(Swd::SWD_RD_DP_RDBUFF, ahb_ap_cswValue);
+   rc = readReg(SWD_RD_DP_RDBUFF, ahb_ap_cswValue);
    if (rc != BDM_RC_OK) {
       return rc;
    }
@@ -861,7 +921,7 @@ USBDM_ErrorCode writeMemoryWord(const uint32_t address, const uint32_t data) {
     *  - Write value to DRW (data value to target memory)
     */
    // Select AHB-AP memory bank - subsequent AHB-AP register accesses are all in the same bank
-   rc = writeReg(Swd::SWD_WR_DP_SELECT, ARM_AHB_AP_BANK0);
+   rc = writeReg(SWD_WR_DP_SELECT, ARM_AHB_AP_BANK0);
    if (rc != BDM_RC_OK) {
       return rc;
    }
@@ -870,23 +930,23 @@ USBDM_ErrorCode writeMemoryWord(const uint32_t address, const uint32_t data) {
       return rc;
    }
    // Write CSW (word access etc)
-   rc = writeReg(Swd::SWD_WR_AHB_CSW, ahb_ap_csw_defaultValue|Swd::AHB_AP_CSW_SIZE_WORD);
+   rc = writeReg(SWD_WR_AHB_CSW, ahb_ap_csw_defaultValue|AHB_AP_CSW_SIZE_WORD);
    if (rc != BDM_RC_OK) {
       return rc;
    }
    // Write TAR (target address)
-   rc = writeReg(Swd::SWD_WR_AHB_TAR, address);
+   rc = writeReg(SWD_WR_AHB_TAR, address);
    if (rc != BDM_RC_OK) {
       return rc;
    }
    // Write data value
-   rc = writeReg(Swd::SWD_WR_AHB_DRW, data);
+   rc = writeReg(SWD_WR_AHB_DRW, data);
    if (rc != BDM_RC_OK) {
       return rc;
    }
    // Dummy read to get status
    uint32_t tt;
-   return readReg(Swd::SWD_RD_DP_RDBUFF, tt);
+   return readReg(SWD_RD_DP_RDBUFF, tt);
 }
 
 /**  Write ARM-SWD Memory
@@ -918,7 +978,7 @@ USBDM_ErrorCode writeMemory(
     *    - Write value to DRW (data value to target memory)
     */
    // Select AHB-AP memory bank - subsequent AHB-AP register accesses are all in the same bank
-   rc = writeReg(Swd::SWD_WR_DP_SELECT, ARM_AHB_AP_BANK0);
+   rc = writeReg(SWD_WR_DP_SELECT, ARM_AHB_AP_BANK0);
    if (rc != BDM_RC_OK) {
       return rc;
    }
@@ -927,12 +987,12 @@ USBDM_ErrorCode writeMemory(
       return rc;
    }
    // Write CSW (auto-increment etc)
-   rc = writeReg(Swd::SWD_WR_AHB_CSW, ahb_ap_csw_defaultValue|getcswValue(elementSize));
+   rc = writeReg(SWD_WR_AHB_CSW, ahb_ap_csw_defaultValue|getcswValue(elementSize));
    if (rc != BDM_RC_OK) {
       return rc;
    }
    // Write TAR (target address)
-   rc = writeReg(Swd::SWD_WR_AHB_TAR, addr);
+   rc = writeReg(SWD_WR_AHB_TAR, addr);
    if (rc != BDM_RC_OK) {
       return rc;
    }
@@ -945,7 +1005,7 @@ USBDM_ErrorCode writeMemory(
          case 2: temp[1] = *data_ptr++; break;
          case 3: temp[0] = *data_ptr++; break;
          }
-         rc = writeReg(Swd::SWD_WR_AHB_DRW, temp);
+         rc = writeReg(SWD_WR_AHB_DRW, temp);
          if (rc != BDM_RC_OK) {
             return rc;
          }
@@ -962,7 +1022,7 @@ USBDM_ErrorCode writeMemory(
          case 2:  temp[1] = *data_ptr++;
          temp[0] = *data_ptr++; break;
          }
-         rc = writeReg(Swd::SWD_WR_AHB_DRW, temp);
+         rc = writeReg(SWD_WR_AHB_DRW, temp);
          if (rc != BDM_RC_OK) {
             return rc;
          }
@@ -977,7 +1037,7 @@ USBDM_ErrorCode writeMemory(
          temp[2] = *data_ptr++;
          temp[1] = *data_ptr++;
          temp[0] = *data_ptr++;
-         rc = writeReg(Swd::SWD_WR_AHB_DRW, temp);
+         rc = writeReg(SWD_WR_AHB_DRW, temp);
          if (rc != BDM_RC_OK) {
             return rc;
          }
@@ -985,7 +1045,7 @@ USBDM_ErrorCode writeMemory(
       break;
    }
    // Dummy read to obtain status from last write
-   return readReg(Swd::SWD_RD_DP_RDBUFF, temp);
+   return readReg(SWD_RD_DP_RDBUFF, temp);
 }
 
 /** Read 32-bit value from ARM-SWD Memory
@@ -1006,7 +1066,7 @@ USBDM_ErrorCode readMemoryWord(const uint32_t address, uint32_t &data) {
     *  - Read data value from DP-READBUFF
     */
    // Select AHB-AP memory bank - subsequent AHB-AP register accesses are all in the same bank
-   rc = writeReg(Swd::SWD_WR_DP_SELECT, ARM_AHB_AP_BANK0);
+   rc = writeReg(SWD_WR_DP_SELECT, ARM_AHB_AP_BANK0);
    if (rc != BDM_RC_OK) {
       return rc;
    }
@@ -1015,23 +1075,23 @@ USBDM_ErrorCode readMemoryWord(const uint32_t address, uint32_t &data) {
       return rc;
    }
    // Write memory access control to CSW
-   rc = writeReg(Swd::SWD_WR_AHB_CSW, ahb_ap_csw_defaultValue|Swd::AHB_AP_CSW_SIZE_WORD);
+   rc = writeReg(SWD_WR_AHB_CSW, ahb_ap_csw_defaultValue|AHB_AP_CSW_SIZE_WORD);
    if (rc != BDM_RC_OK) {
       return rc;
    }
    // Write TAR (target address)
-   rc = writeReg(Swd::SWD_WR_AHB_TAR, address);
+   rc = writeReg(SWD_WR_AHB_TAR, address);
    if (rc != BDM_RC_OK) {
       return rc;
    }
    uint32_t tt;
    // Initial read of DRW (dummy data)
-   rc = readReg(Swd::SWD_RD_AHB_DRW, tt);
+   rc = readReg(SWD_RD_AHB_DRW, tt);
    if (rc != BDM_RC_OK) {
       return rc;
    }
    // Read memory data
-   return readReg(Swd::SWD_RD_DP_RDBUFF, data);
+   return readReg(SWD_RD_DP_RDBUFF, data);
 }
 
 /**  Read ARM-SWD Memory
@@ -1069,7 +1129,7 @@ USBDM_ErrorCode readMemory(uint32_t elementSize, int count, uint32_t addr, uint8
    }
 #else
    // Select AHB-AP memory bank - subsequent AHB-AP register accesses are all in the same bank
-   rc = writeReg(Swd::SWD_WR_DP_SELECT, ARM_AHB_AP_BANK0);
+   rc = writeReg(SWD_WR_DP_SELECT, ARM_AHB_AP_BANK0);
    if (rc != BDM_RC_OK) {
       return rc;
    }
@@ -1078,18 +1138,18 @@ USBDM_ErrorCode readMemory(uint32_t elementSize, int count, uint32_t addr, uint8
       return rc;
    }
    // Write CSW (auto-increment etc)
-   rc = writeReg(Swd::SWD_WR_AHB_CSW, ahb_ap_csw_defaultValue|getcswValue(elementSize));
+   rc = writeReg(SWD_WR_AHB_CSW, ahb_ap_csw_defaultValue|getcswValue(elementSize));
    if (rc != BDM_RC_OK) {
       return rc;
    }
    // Write TAR (target address)
-   rc = writeReg(Swd::SWD_WR_AHB_TAR, addr);
+   rc = writeReg(SWD_WR_AHB_TAR, addr);
    if (rc != BDM_RC_OK) {
       return rc;
    }
 
    // Initial read of DRW (dummy data)
-   rc = readReg(Swd::SWD_RD_AHB_DRW, temp);
+   rc = readReg(SWD_RD_AHB_DRW, temp);
    if (rc != BDM_RC_OK) {
       return rc;
    }
@@ -1099,11 +1159,11 @@ USBDM_ErrorCode readMemory(uint32_t elementSize, int count, uint32_t addr, uint8
          count--;
          if (count == 0) {
             // Read data from RDBUFF for final read
-            rc = readReg(Swd::SWD_RD_DP_RDBUFF, temp);
+            rc = readReg(SWD_RD_DP_RDBUFF, temp);
          }
          else {
             // Start next read and collect data from last read
-            rc = readReg(Swd::SWD_RD_AHB_DRW, temp);
+            rc = readReg(SWD_RD_AHB_DRW, temp);
          }
          if (rc != BDM_RC_OK) {
             return rc;
@@ -1124,11 +1184,11 @@ USBDM_ErrorCode readMemory(uint32_t elementSize, int count, uint32_t addr, uint8
          count--;
          if (count == 0) {
             // Read data from RDBUFF for final read
-            rc = readReg(Swd::SWD_RD_DP_RDBUFF, temp);
+            rc = readReg(SWD_RD_DP_RDBUFF, temp);
          }
          else {
             // Start next read and collect data from last read
-            rc = readReg(Swd::SWD_RD_AHB_DRW, temp);
+            rc = readReg(SWD_RD_AHB_DRW, temp);
          }
          if (rc != BDM_RC_OK) {
             return rc;
@@ -1151,11 +1211,11 @@ USBDM_ErrorCode readMemory(uint32_t elementSize, int count, uint32_t addr, uint8
          count--;
          if (count == 0) {
             // Read data from RDBUFF for final read
-            rc = readReg(Swd::SWD_RD_DP_RDBUFF, temp);
+            rc = readReg(SWD_RD_DP_RDBUFF, temp);
          }
          else {
             // Start next read and collect data from last read
-            rc = readReg(Swd::SWD_RD_AHB_DRW, temp);
+            rc = readReg(SWD_RD_AHB_DRW, temp);
          }
          if (rc != BDM_RC_OK) {
             return rc;
@@ -1195,7 +1255,7 @@ USBDM_ErrorCode writeMemory(uint32_t elementSize, int count, uint32_t addr, uint
     *    - Write value to DRW (data value to target memory)
     */
    // Select AHB-AP memory bank - subsequent AHB-AP register accesses are all in the same bank
-   rc = writeReg(Swd::SWD_WR_DP_SELECT, ARM_AHB_AP_BANK0);
+   rc = writeReg(SWD_WR_DP_SELECT, ARM_AHB_AP_BANK0);
    if (rc != BDM_RC_OK) {
       return rc;
    }
@@ -1204,12 +1264,12 @@ USBDM_ErrorCode writeMemory(uint32_t elementSize, int count, uint32_t addr, uint
       return rc;
    }
    // Write CSW (auto-increment etc)
-   rc = writeReg(Swd::SWD_WR_AHB_CSW, ahb_ap_csw_defaultValue|getcswValue(elementSize));
+   rc = writeReg(SWD_WR_AHB_CSW, ahb_ap_csw_defaultValue|getcswValue(elementSize));
    if (rc != BDM_RC_OK) {
       return rc;
    }
    // Write TAR (target address)
-   rc = writeReg(Swd::SWD_WR_AHB_TAR, addr);
+   rc = writeReg(SWD_WR_AHB_TAR, addr);
    if (rc != BDM_RC_OK) {
       return rc;
    }
@@ -1230,7 +1290,7 @@ USBDM_ErrorCode writeMemory(uint32_t elementSize, int count, uint32_t addr, uint
             temp[0] = *data_ptr++;
             break;
          }
-         rc = writeReg(Swd::SWD_WR_AHB_DRW, temp);
+         rc = writeReg(SWD_WR_AHB_DRW, temp);
          if (rc != BDM_RC_OK) {
             return rc;
          }
@@ -1251,7 +1311,7 @@ USBDM_ErrorCode writeMemory(uint32_t elementSize, int count, uint32_t addr, uint
             temp[0] = *data_ptr++;
             break;
          }
-         rc = writeReg(Swd::SWD_WR_AHB_DRW, temp);
+         rc = writeReg(SWD_WR_AHB_DRW, temp);
          if (rc != BDM_RC_OK) {
             return rc;
          }
@@ -1266,7 +1326,7 @@ USBDM_ErrorCode writeMemory(uint32_t elementSize, int count, uint32_t addr, uint
          temp[2] = *data_ptr++;
          temp[1] = *data_ptr++;
          temp[0] = *data_ptr++;
-         rc = writeReg(Swd::SWD_WR_AHB_DRW, temp);
+         rc = writeReg(SWD_WR_AHB_DRW, temp);
          if (rc != BDM_RC_OK) {
             return rc;
          }
@@ -1274,7 +1334,7 @@ USBDM_ErrorCode writeMemory(uint32_t elementSize, int count, uint32_t addr, uint
       break;
    }
    // Dummy read to obtain status from last write
-   return readReg(Swd::SWD_RD_DP_RDBUFF, temp);
+   return readReg(SWD_RD_DP_RDBUFF, temp);
 }
 
 /**

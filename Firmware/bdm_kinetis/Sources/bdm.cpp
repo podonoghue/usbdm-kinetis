@@ -82,7 +82,6 @@ static constexpr unsigned ACKN_TIMEOUT_us = 2500;
 /** Length of high drive before 3-state i.e. speed-up pulse (ticks) */
 static constexpr unsigned SPEEDUP_PULSE_WIDTH_ticks = 1;
 
-
 /** FTM to use */
 using FtmInfo = USBDM::Ftm0Info;
 
@@ -95,10 +94,13 @@ constexpr int bkgdEnChannel = 2;
 /** FTM channel for BKGD in D4(ch4) */
 constexpr int bkgdInChannel = 4;
 
-/* Make sure pins have been configured for FTM */
-USBDM::CheckSignal<FtmInfo, bkgdOutChannel> x;
-USBDM::CheckSignal<FtmInfo, bkgdEnChannel>  y;
-USBDM::CheckSignal<FtmInfo, bkgdInChannel>  z;
+/* Make sure pins have been configured for FTM operation */
+USBDM::CheckSignal<FtmInfo, bkgdOutChannel> bkgdOutChannel_chk;
+USBDM::CheckSignal<FtmInfo, bkgdEnChannel>  bkgdEnChannel_chk;
+USBDM::CheckSignal<FtmInfo, bkgdInChannel>  bkgdInChannel_chk;
+
+/** GPIO for SWD-DIN pin */
+using bkgdInGpio = USBDM::GpioTable_T<FtmInfo, bkgdInChannel>;
 
 /** Pointer to hardware */
 static constexpr volatile FTM_Type *ftm = reinterpret_cast<volatile FTM_Type*>(FtmInfo::ftm);
@@ -125,11 +127,11 @@ static void enablePins() {
 }
 
 /**
- * Set BKGD pin state
+ * Set pin state
  *
  * @param pins Pin control mask
  */
-void setBkgd(PinLevelMasks_t pins) {
+void setPinState(PinLevelMasks_t pins) {
 
    uint16_t value = 0;
    switch ((pins&PIN_BKGD_MASK)) {
@@ -151,6 +153,15 @@ void setBkgd(PinLevelMasks_t pins) {
          break;
    }
    ftm->SWOCTRL = value;
+}
+
+/**
+ * Get pin status
+ *
+ * @param [INOUT] status Updated with pin status from this interface
+ */
+void getPinState(PinLevelMasks_t &status) {
+   status = (PinLevelMasks_t) (status | bkgdInGpio::isHigh()?PIN_BKGD_HIGH:PIN_BKGD_LOW);
 }
 
 inline
@@ -1583,7 +1594,7 @@ USBDM_ErrorCode softwareReset(uint8_t mode) {
    }
    if (mode == RESET_SPECIAL) {
       // Special mode - need BKGD held low out of reset
-      setBkgd(PIN_BKGD_LOW);
+      setPinState(PIN_BKGD_LOW);
    }
    enableInterrupts();
 
@@ -1605,7 +1616,7 @@ USBDM_ErrorCode softwareReset(uint8_t mode) {
       // Wait for BKGD assertion time after reset rise
       USBDM::waitUS(BKGD_WAIT_us);
       // Special mode - release BKGD
-      setBkgd(PIN_BKGD_3STATE);
+      setPinState(PIN_BKGD_3STATE);
    }
    // Wait recovery time before allowing anything else to happen on the BDM
    USBDM::waitMS(RESET_RECOVERY_ms);
