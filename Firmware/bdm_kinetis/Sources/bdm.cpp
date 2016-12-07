@@ -136,6 +136,8 @@ void setPinState(PinLevelMasks_t pins) {
    uint16_t value = 0;
    switch ((pins&PIN_BKGD_MASK)) {
       default:
+      case PIN_BKGD_NC :
+         return;
       case PIN_BKGD_3STATE :
          value =
                (0<<(bkgdEnChannel+8)) |(1<<bkgdEnChannel)|  // Force low (disable buffer)
@@ -149,7 +151,7 @@ void setPinState(PinLevelMasks_t pins) {
       case PIN_BKGD_HIGH :
          value =
                (1<<(bkgdEnChannel+8)) |(1<<bkgdEnChannel)|  // Force high (enable buffer)
-               (0<<(bkgdOutChannel+8))|(1<<bkgdOutChannel); // Force high
+               (1<<(bkgdOutChannel+8))|(1<<bkgdOutChannel); // Force high
          break;
    }
    ftm->SWOCTRL = value;
@@ -286,6 +288,8 @@ void initialise() {
          (1<<bkgdOutChannel); // Initialise high
 
    Reset::initialise();
+
+   enableFtmCounter();
 
    disablePins();
    ftm->CONTROLS[bkgdEnChannel].CnSC  = USBDM::ftm_outputCompareClear;
@@ -474,6 +478,11 @@ USBDM_ErrorCode acknowledgeOrWait150(void) {
  * @param [out] data   Data received
  *
  * @return BDM_RC_OK => Success, error otherwise
+ *
+ * @note FTM use:\n
+ *    bkgdEnChannel,bkgdEnChannel+1   = Positive pulse for buffer enable   \n
+ *    bkgdOutChannel,bkgdOutChannel+1 = Negative pulse for BKGD out        \n
+ *    bkgdInChannel                   = Sampling of data bit from target
  */
 USBDM_ErrorCode rx(int length, unsigned &data) {
 
@@ -591,7 +600,7 @@ void transactionStart() {
  */
 inline
 void transactionComplete() {
-   disableFtmCounter();
+//   disableFtmCounter();
    disablePins();
    enableInterrupts();
 }
@@ -603,6 +612,13 @@ void transactionComplete() {
  * @param [in]  data   Data value to transmit
  *
  * @return Error code, BDM_RC_OK indicates success
+ *
+ * @note FTM use:\n
+ *    bkgdEnChannel,bkgdEnChannel+1   = Positive pulse for buffer enable   \n
+ *    bkgdOutChannel,bkgdOutChannel+1 = Negative pulse for BKGD out, width modified by data 0/1 \n
+ *    bkgdInChannel                   = ACKN capture   \n
+ *    bkgdInChannel+1                 = ACKN timeout   \n
+ * bkgdInChannel,bkgdInChannel+1 are left setup for ACKN.  ACKN is not waited for.
  */
 USBDM_ErrorCode tx(int length, unsigned data) {
 
@@ -634,6 +650,8 @@ USBDM_ErrorCode tx(int length, unsigned data) {
    ftm->CONTROLS[bkgdInChannel+1].CnSC  = USBDM::ftm_outputCompare;
    ftm->CONTROLS[bkgdInChannel+1].CnV   = TMR_SETUP_TIME+ACKN_TIMEOUT_us;
 
+   // Maximum length of a bit
+   const uint16_t maxBitTime = TMR_SETUP_TIME+minPeriod;
    while (mask>0) {
       int width;
       if (data&mask) {
@@ -648,13 +666,13 @@ USBDM_ErrorCode tx(int length, unsigned data) {
       ftm->CNT = 0;
       ftm->CONTROLS[bkgdOutChannel+1].CnV  = width;
       ftm->CONTROLS[bkgdEnChannel+1].CnV   = width+SPEEDUP_PULSE_WIDTH_ticks;
-      ftm->SYNC     = FTM_SYNC_SWSYNC(1);
+      ftm->SYNC = FTM_SYNC_SWSYNC(1);
 
       enableFtmCounter();
 
       // Wait until end of bit
       do {
-      } while (ftm->CNT < TMR_SETUP_TIME+minPeriod);
+      } while (ftm->CNT < maxBitTime);
    }
    // Clear channel flags for ACKN pulse
    ftm->STATUS &= ~(
@@ -730,7 +748,6 @@ USBDM_ErrorCode tx32(uint32_t data) {
 void cmd_0_0_T(uint8_t cmd) {
    transactionStart();
    tx8(cmd);
-   //   transactionComplete();
 }
 
 /**
@@ -745,7 +762,6 @@ void cmd_1B_0_T(uint8_t cmd, uint8_t parameter) {
    transactionStart();
    tx8(cmd);
    tx8(parameter);
-   //   transactionComplete();
 }
 
 /**
@@ -762,7 +778,6 @@ void cmd_1W1B_0_T(uint8_t cmd, uint16_t parameter1, uint8_t parameter2) {
    tx8(cmd);
    tx16(parameter1);
    tx8(parameter2);
-   //   transactionComplete();
 }
 
 /*
@@ -891,7 +906,8 @@ void cmd_1W1B_1B_NOACK(uint8_t cmd, uint16_t parameter, uint8_t value, uint8_t *
  *
  *  @param cmd command byte to write
  *
- *  @return Error code, BDM_RC_OK indicates success
+ *  @return BDM_RC_OK            Success
+ *  @return BDM_RC_ACK_TIMEOUT   Missing ACKN
  *
  *  @note ACK is expected
  */
@@ -909,7 +925,8 @@ USBDM_ErrorCode cmd_0_0(uint8_t cmd) {
  *  @param cmd        command byte to write
  *  @param result     byte read
  *
- *  @return Error code, BDM_RC_OK indicates success
+ *  @return BDM_RC_OK            Success
+ *  @return BDM_RC_ACK_TIMEOUT   Missing ACKN
  *
  *  @note ACK is expected
  */
@@ -928,7 +945,8 @@ USBDM_ErrorCode cmd_0_1B(uint8_t cmd, uint8_t *result) {
  *  @param cmd    command byte to write
  *  @param result word read
  *
- *  @return Error code, BDM_RC_OK indicates success
+ *  @return BDM_RC_OK            Success
+ *  @return BDM_RC_ACK_TIMEOUT   Missing ACKN
  *
  *  @note ACK is expected
  */
@@ -947,7 +965,8 @@ USBDM_ErrorCode cmd_0_1W(uint8_t cmd, uint8_t *result) {
  *  @param cmd    command byte to write
  *  @param result longword read
  *
- *  @return Error code, BDM_RC_OK indicates success
+ *  @return BDM_RC_OK            Success
+ *  @return BDM_RC_ACK_TIMEOUT   Missing ACKN
  *
  *  @note ACK is expected
  */
@@ -965,7 +984,8 @@ USBDM_ErrorCode cmd_0_1L(uint8_t cmd, uint8_t result[4]) {
  *  @param cmd        command byte to write
  *  @param parameter  byte to write
  *
- *  @return Error code, BDM_RC_OK indicates success
+ *  @return BDM_RC_OK            Success
+ *  @return BDM_RC_ACK_TIMEOUT   Missing ACKN
  *
  *  @note ACK is expected
  */
@@ -984,7 +1004,8 @@ USBDM_ErrorCode cmd_1B_0(uint8_t cmd, uint8_t parameter) {
  *  @param cmd       command byte to write
  *  @param parameter word to write
  *
- *  @return Error code, BDM_RC_OK indicates success
+ *  @return BDM_RC_OK            Success
+ *  @return BDM_RC_ACK_TIMEOUT   Missing ACKN
  *
  *  @note ACK is expected
  */
@@ -1003,7 +1024,8 @@ USBDM_ErrorCode cmd_1W_0(uint8_t cmd, uint16_t parameter) {
  *  @param cmd       command byte to write
  *  @param parameter longword to write
  *
- *  @return Error code, BDM_RC_OK indicates success
+ *  @return BDM_RC_OK            Success
+ *  @return BDM_RC_ACK_TIMEOUT   Missing ACKN
  *
  *  @note ACK is expected
  */
@@ -1023,7 +1045,8 @@ USBDM_ErrorCode cmd_1L_0(uint8_t cmd, uint32_t parameter) {
  *  @param parameter word to write
  *  @param result    byte read
  *
- *  @return Error code, BDM_RC_OK indicates success
+ *  @return BDM_RC_OK            Success
+ *  @return BDM_RC_ACK_TIMEOUT   Missing ACKN
  *
  *  @note ACK is expected
  */
@@ -1051,7 +1074,8 @@ USBDM_ErrorCode cmd_1W_1WB(uint8_t cmd, uint16_t parameter, uint8_t *result) {
  *  @param parameter1 word to write
  *  @param parameter2 word to write
  *
- *  @return Error code, BDM_RC_OK indicates success
+ *  @return BDM_RC_OK            Success
+ *  @return BDM_RC_ACK_TIMEOUT   Missing ACKN
  *
  *  @note ACK is expected
  */
@@ -1072,7 +1096,8 @@ USBDM_ErrorCode cmd_2W_0(uint8_t cmd, uint16_t parameter1, uint16_t parameter2) 
  *  @param parameter  word to write
  *  @param result     word read
  *
- *  @return Error code, BDM_RC_OK indicates success
+ *  @return BDM_RC_OK            Success
+ *  @return BDM_RC_ACK_TIMEOUT   Missing ACKN
  *
  *  @note ACK is expected
  */
@@ -1094,7 +1119,8 @@ USBDM_ErrorCode cmd_1W_1W(uint8_t cmd, uint16_t parameter, uint8_t result[2]) {
  *  @param value      byte to write
  *  @param status     byte pointer for read
  *
- *  @return Error code, BDM_RC_OK indicates success
+ *  @return BDM_RC_OK            Success
+ *  @return BDM_RC_ACK_TIMEOUT   Missing ACKN
  *
  *  @note ACK is expected
  */
@@ -1116,7 +1142,8 @@ USBDM_ErrorCode cmd_1W1B_1B(uint8_t cmd, uint16_t parameter, uint8_t value, uint
  *  @param parameter1 word to write
  *  @param parameter2 bye to write
  *
- *  @return Error code, BDM_RC_OK indicates success
+ *  @return BDM_RC_OK            Success
+ *  @return BDM_RC_ACK_TIMEOUT   Missing ACKN
  *
  *  @note ACK is expected
  */
@@ -1138,7 +1165,8 @@ USBDM_ErrorCode cmd_2WB_0(uint8_t cmd, uint16_t parameter1, uint8_t parameter2) 
  *  @param parameter  word to write
  *  @param result     byte read
  *
- *  @return Error code, BDM_RC_OK indicates success
+ *  @return BDM_RC_OK            Success
+ *  @return BDM_RC_ACK_TIMEOUT   Missing ACKN
  *
  *  @note ACK is expected
  */
@@ -1159,7 +1187,8 @@ USBDM_ErrorCode cmd_1W_1B(uint8_t cmd, uint16_t parameter, uint8_t *result) {
  *  @param parameter1  word to write
  *  @param parameter2  byte to write
  *
- *  @return Error code, BDM_RC_OK indicates success
+ *  @return BDM_RC_OK            Success
+ *  @return BDM_RC_ACK_TIMEOUT   Missing ACKN
  *
  *  @note ACK is expected
  */
@@ -1180,7 +1209,8 @@ USBDM_ErrorCode cmd_1W1B_0(uint8_t cmd, uint16_t parameter1, uint8_t parameter2)
  *  @param addr   24-bit value to write
  *  @param value  byte to write
  *
- *  @return Error code, BDM_RC_OK indicates success
+ *  @return BDM_RC_OK            Success
+ *  @return BDM_RC_ACK_TIMEOUT   Missing ACKN
  *
  *  @note ACK is expected
  */
@@ -1201,7 +1231,8 @@ USBDM_ErrorCode cmd_1A1B_0(uint8_t cmd, uint32_t addr, uint8_t value) {
  *  @param addr   24-bit value to write
  *  @param value  word to write
  *
- *  @return Error code, BDM_RC_OK indicates success
+ *  @return BDM_RC_OK            Success
+ *  @return BDM_RC_ACK_TIMEOUT   Missing ACKN
  *
  *  @note ACK is expected
  */
@@ -1222,7 +1253,8 @@ USBDM_ErrorCode cmd_1A1W_0(uint8_t cmd, uint32_t addr, uint16_t value) {
  *  @param addr   24-bit value to write
  *  @param value  ptr to longword to write
  *
- *  @return Error code, BDM_RC_OK indicates success
+ *  @return BDM_RC_OK            Success
+ *  @return BDM_RC_ACK_TIMEOUT   Missing ACKN
  *
  *  @note ACK is expected
  */
@@ -1243,7 +1275,8 @@ USBDM_ErrorCode cmd_1A1L_0(uint8_t cmd, uint32_t addr, uint32_t value) {
  *  @param addr    24-bit value to write
  *  @param result  ptr to read location
  *
- *  @return Error code, BDM_RC_OK indicates success
+ *  @return BDM_RC_OK            Success
+ *  @return BDM_RC_ACK_TIMEOUT   Missing ACKN
  *
  *  @note ACK is expected
  */
@@ -1264,7 +1297,8 @@ USBDM_ErrorCode cmd_1A_1B(uint8_t cmd, uint32_t addr, uint8_t *result) {
  *  @param addr    24-bit value to write
  *  @param result  pointer to read location
  *
- *  @return Error code, BDM_RC_OK indicates success
+ *  @return BDM_RC_OK            Success
+ *  @return BDM_RC_ACK_TIMEOUT   Missing ACKN
  *
  *  @note ACK is expected
  */
@@ -1285,7 +1319,8 @@ USBDM_ErrorCode cmd_1A_1W(uint8_t cmd, uint32_t addr, uint8_t *result) {
  *  @param addr    24-bit value to write
  *  @param result  pointer to read location
  *
- *  @return Error code, BDM_RC_OK indicates success
+ *  @return BDM_RC_OK            Success
+ *  @return BDM_RC_ACK_TIMEOUT   Missing ACKN
  *
  *  @note ACK is expected
  */
@@ -1716,9 +1751,6 @@ USBDM_ErrorCode step(void) {
    }
 }
 
-// PARTID read from HCS12 - used to confirm target connection speed and avoid needless probing
-static uint16_t partid = 0xFA50;
-
  /**
   *  Confirm communication at given Sync value.
   *  Only works on HC12 (and maybe only 1 of 'em!)
@@ -1728,117 +1760,91 @@ static uint16_t partid = 0xFA50;
   *    != \ref BDM_RC_OK  => Various errors
   */
 USBDM_ErrorCode hc12confirmSpeed(unsigned syncLength) {
-   USBDM_ErrorCode rc;
-   static constexpr uint16_t FDATA_ADDR = 0x10A;
+   // PARTID retrieved from HCS12
+   // Used to quickly confirm target connection speed and avoid needless probing
+   static uint16_t partid = 0xFA50;
 
    setSyncLength(syncLength);
 
    // Assume probing failed
-   rc = BDM_RC_BDM_EN_FAILED;
+   USBDM_ErrorCode rc = BDM_RC_BDM_EN_FAILED;
    uint8_t probe[2];
+   uint16_t newPartid;
 
-   // Check if we can read a previous PARTID, if so assume still connected
-   // and avoid further target probing
-   // This should be the usual case
-   if ((BDM12_CMD_READW(HCS12_PARTID, probe) == BDM_RC_OK) &&
-         (pack16BE(probe) == partid)) {
-      return BDM_RC_OK;
-   }
    do {
-      uint8_t probe[2];
-      // This method works for secured or unsecured devices
-      // in special mode that have a common Flash type.
-      // BUT - it may upset flash programming if done at wrong time
-
-      // Set FDATA to 0xAA55 & read back
-      if ((BDM12_CMD_WRITEW(FDATA_ADDR, 0xAA55) != BDM_RC_OK) ||
-            (BDM12_CMD_READW(FDATA_ADDR,  probe) != BDM_RC_OK) ||
-            (pack16BE(probe) != 0xAA55)) {
-         break;
-      }
-      // Set FDATA to 0x55AA & read back
-      if ((BDM12_CMD_WRITEW(FDATA_ADDR, 0x55AA) != BDM_RC_OK) ||
-            (BDM12_CMD_READW(FDATA_ADDR,  probe) != BDM_RC_OK) ||
-            (pack16BE(probe) != 0x55AA)) {
-         break;
-      }
-      // Update partID
+      // Check if we can read a previously retrieved PARTID.
+      // If so, assume still connected and avoid further target probing
+      // This should be the usual case
       if (BDM12_CMD_READW(HCS12_PARTID, probe) != BDM_RC_OK) {
+         // Can't even read PartID - give up entirely
          break;
       }
-      partid = pack16BE(probe);
+      newPartid = pack16BE(probe);
+      if (newPartid == partid) {
+         // PartID unchanged assume connected at this speed
+         return BDM_RC_OK;
+      }
 
-      // Success!
-      return BDM_RC_OK;
+      do {
+         // This method works for secured or unsecured devices
+         // in special mode that have a common Flash type.
+         // BUT - it may upset flash programming if done at wrong time
 
+         // Flash controller register to access
+         static constexpr uint16_t FDATA_ADDR = 0x10A;
+
+         // Set FDATA to 0xAA55 & read back
+         if ((BDM12_CMD_WRITEW(FDATA_ADDR, 0xAA55) != BDM_RC_OK) ||
+               (BDM12_CMD_READW(FDATA_ADDR, probe) != BDM_RC_OK) ||
+               (pack16BE(probe) != 0xAA55)) {
+            break;
+         }
+         // Set FDATA to 0x55AA & read back
+         if ((BDM12_CMD_WRITEW(FDATA_ADDR, 0x55AA) != BDM_RC_OK) ||
+               (BDM12_CMD_READW(FDATA_ADDR, probe) != BDM_RC_OK) ||
+               (pack16BE(probe) != 0x55AA)) {
+            break;
+         }
+         // Update partID
+         partid = newPartid;
+
+         // Success!
+         return BDM_RC_OK;
+
+      } while (false);
+
+      do {
+         uint8_t originalValue;
+         // This method works for unsecured devices
+         // in special or non-special modes
+         // BUT - it may upset CCR in some (unlikely?) cases
+
+         // Get current BDMCCR
+         if (BDM12_CMD_BDREADB(HC12_BDMCCR,&originalValue) != BDM_RC_OK) {
+            break;
+         }
+         // Set BDMCCR to 0xAA & read back
+         if ((BDM12_CMD_BDWRITEB(HC12_BDMCCR, 0xAA) != BDM_RC_OK) ||
+               (BDM12_CMD_BDREADB(HC12_BDMCCR, probe) != BDM_RC_OK) ||
+               (probe[0] != 0xAA)) {
+            break;
+         }
+         // Set BDMCCR to 0x55 & read back
+         if ((BDM12_CMD_BDWRITEB(HC12_BDMCCR, 0x55) != BDM_RC_OK) ||
+               (BDM12_CMD_BDREADB(HC12_BDMCCR, probe) != BDM_RC_OK) ||
+               (probe[0] != 0x55)) {
+            break;
+         }
+         // Restore BDMCCR
+         BDM12_CMD_BDWRITEB(HC12_BDMCCR, originalValue);
+
+         // Update partID
+         partid = newPartid;
+
+         // Success!
+         return BDM_RC_OK;
+      } while (false);
    } while (false);
-
-   do {
-      uint8_t probe[2];
-      uint8_t originalValue;
-      // This method works for unsecured devices
-      // in special or non-special modes
-      // BUT - it may upset CCR in some (unlikely?) cases
-
-      // Get current BDMCCR
-      if (BDM12_CMD_BDREADB(HC12_BDMCCR,&originalValue) != BDM_RC_OK) {
-         break;
-      }
-      // Set BDMCCR to 0xAA & read back
-      if ((BDM12_CMD_BDWRITEB(HC12_BDMCCR, 0xAA) != BDM_RC_OK) ||
-            (BDM12_CMD_BDREADB(HC12_BDMCCR, probe) != BDM_RC_OK) ||
-            (probe[0] != 0xAA)) {
-         break;
-      }
-      // Set BDMCCR to 0x55 & read back
-      if ((BDM12_CMD_BDWRITEB(HC12_BDMCCR, 0x55) != BDM_RC_OK) ||
-            (BDM12_CMD_BDREADB(HC12_BDMCCR, probe) != BDM_RC_OK) ||
-            (probe[0] != 0x55)) {
-         break;
-      }
-
-      // Restore BDMCCR
-      BDM12_CMD_BDWRITEB(HC12_BDMCCR, originalValue);
-
-      // Update partID
-      if (BDM12_CMD_READW(HCS12_PARTID, probe) != BDM_RC_OK) {
-         break;
-      }
-      partid = pack16BE(probe);
-
-      // Success!
-      return BDM_RC_OK;
-
-   } while (false);
-
-#if 0
-   do {
-      uint8_t probe;
-      uint8_t originalValue;
-
-      // Get current BDMSTS
-      BDM12_CMD_BDREADB(HC12_BDMSTS,&originalValue);
-
-      // Try to clear BDMSTS.ENBDM
-      BDM12_CMD_BDWRITEB(HC12_BDMSTS,originalValue&~HC12_BDMSTS_ENBDM);
-      BDM12_CMD_BDREADB(HC12_BDMSTS, &probe);
-
-      if ((probe & HC12_BDMSTS_ENBDM) != 0) {
-         // Not clear now? - Try next speed
-         break;
-      }
-
-      // Try to set BDMSTS.ENBDM
-      BDM12_CMD_BDWRITEB(HC12_BDMSTS,originalValue|HC12_BDMSTS_ENBDM);
-      BDM12_CMD_BDREADB(HC12_BDMSTS, &probe);
-
-      if ((probe & HC12_BDMSTS_ENBDM) == 0) {
-         // Not set now? - Try next speed
-         break;
-      }
-      return BDM_RC_OK; // Success!
-   } while (false);
-#endif
 
    cable_status.sync_length  = 1;
    cable_status.ackn         = WAIT;    // Clear indication of ACKN feature
@@ -1868,8 +1874,8 @@ constexpr uint32_t convertFrequencyToSyncValue(uint32_t frequency) {
 static USBDM_ErrorCode hc12_alt_speed_detect(void) {
 static const uint32_t typicalSpeeds[] = {
       // Table of 'nice' BDM speeds to try
-      convertFrequencyToSyncValue(8000000),
-      convertFrequencyToSyncValue(16000000),
+      8000000,
+      16000000,
    0
    };
 static uint16_t lastGuess1 = convertFrequencyToSyncValue(8000000);  // Used to remember last 2 guesses
@@ -1896,13 +1902,13 @@ USBDM_ErrorCode  rc;
       if (rc == BDM_RC_OK) {
          break;
       }
-      currentGuess = typicalSpeeds[sub];
+      currentGuess = convertFrequencyToSyncValue(typicalSpeeds[sub]);
       rc           = hc12confirmSpeed(currentGuess);
       }
    if (rc == BDM_RC_OK) {
       // Update speed cache (LRU)
-      lastGuess2       = lastGuess1;
-      lastGuess1       = currentGuess;
+      lastGuess2         = lastGuess1;
+      lastGuess1         = currentGuess;
       cable_status.speed = SPEED_GUESSED;  // Speed found by trial and error
       return BDM_RC_OK;
    }

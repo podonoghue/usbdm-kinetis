@@ -495,7 +495,7 @@ void setPinState(PinLevelMasks_t control) {
          swdDirection::setOutput();     // Enable manual control of buffer direction
          break;
       case PIN_SWD_LOW :
-         swdOut::high();                // SWD = Low
+         swdOut::low();                 // SWD = Low
          swdOut::setOutput();           // Enable manual control of SWD
          swdDirection::high();          // Enable SWD buffer, SWDIO = Low
          swdDirection::setOutput();     // Enable manual control of buffer direction
@@ -503,7 +503,7 @@ void setPinState(PinLevelMasks_t control) {
       case PIN_SWD_HIGH :
          swdOut::high();                // SWD = High
          swdOut::setOutput();           // Enable manual control of SWD
-         swdDirection::low();           // Enable SWD buffer, SWDIO = High
+         swdDirection::high();          // Enable SWD buffer, SWDIO = High
          swdDirection::setOutput();     // Enable manual control of buffer direction
          break;
    }

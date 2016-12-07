@@ -340,6 +340,11 @@ int main() {
 
    USBDM::UsbImplementation::initialise();
 
+//   Bdm::initialise();
+//   for(;;) {
+//      FTM0->SWOCTRL = 0xFF;
+//      FTM0->SWOCTRL = 0xFFFF;
+//   }
    for(;;) {
       // Wait for USB connection
       while(!USBDM::UsbImplementation::isConfigured()) {
