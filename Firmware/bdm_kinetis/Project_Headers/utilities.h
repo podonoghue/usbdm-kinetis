@@ -324,5 +324,4 @@ void unpack16BE(uint32_t data, uint8_t ar[2]) {
 
 #endif /* __cplusplus */
 
-
 #endif /* UTILTIES_H_ */

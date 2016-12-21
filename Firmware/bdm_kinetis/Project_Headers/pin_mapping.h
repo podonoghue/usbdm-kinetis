@@ -56,7 +56,7 @@ public:
    // Template:osc0_mk
 
    //! Frequency of OSC Clock or Crystal
-   static constexpr uint32_t oscclk_clock = 8000000UL;
+   static constexpr uint32_t oscclk_clock = 24000000UL;
 
    //! Frequency of 32K OSC Clock or Crystal (if applicable)
    static constexpr uint32_t osc32kclk_clock = 0UL;
@@ -558,7 +558,7 @@ public:
    static constexpr PcrInfo  info[] = {
 
          //      Signal                 Pin                                 clockMask          pcrAddress      gpioAddress     bit  PCR value
-         /*   0: --                   = --                             */  { 0, 0, 0, INVALID_PCR,  0 },
+         /*   0: ADC0_SE0             = ADC0_DP0 (p7)                  */  { 0, 0, 0, FIXED_NO_PCR, 0 },
          /*   1: --                   = --                             */  { 0, 0, 0, INVALID_PCR,  0 },
          /*   2: --                   = --                             */  { 0, 0, 0, INVALID_PCR,  0 },
          /*   3: --                   = --                             */  { 0, 0, 0, INVALID_PCR,  0 },
@@ -577,7 +577,7 @@ public:
          /*  16: --                   = --                             */  { 0, 0, 0, INVALID_PCR,  0 },
          /*  17: --                   = --                             */  { 0, 0, 0, INVALID_PCR,  0 },
          /*  18: --                   = --                             */  { 0, 0, 0, INVALID_PCR,  0 },
-         /*  19: --                   = --                             */  { 0, 0, 0, INVALID_PCR,  0 },
+         /*  19: ADC0_SE19            = ADC0_DM0 (p8)                  */  { 0, 0, 0, FIXED_NO_PCR, 0 },
          /*  20: --                   = --                             */  { 0, 0, 0, INVALID_PCR,  0 },
          /*  21: ADC0_SE21            = --                             */  { 0, 0, 0, UNMAPPED_PCR, 0 },
          /*  22: ADC0_SE22            = --                             */  { 0, 0, 0, UNMAPPED_PCR, 0 },
@@ -1995,7 +1995,7 @@ public:
          /*   9: LLWU_P9              = --                             */  { 0, 0, 0, UNMAPPED_PCR, 0 },
          /*  10: LLWU_P10             = --                             */  { 0, 0, 0, UNMAPPED_PCR, 0 },
          /*  11: --                   = --                             */  { 0, 0, 0, INVALID_PCR,  0 },
-         /*  12: LLWU_P12             = --                             */  { 0, 0, 0, UNMAPPED_PCR, 0 },
+         /*  12: LLWU_P12             = PTD0 (p41)                     */  { PORTD_CLOCK_MASK, PORTD_BasePtr,  GPIOD_BasePtr,  0,   PORT_PCR_MUX(1)|defaultPcrValue  },
          /*  13: LLWU_P13             = --                             */  { 0, 0, 0, UNMAPPED_PCR, 0 },
          /*  14: LLWU_P14             = --                             */  { 0, 0, 0, UNMAPPED_PCR, 0 },
          /*  15: LLWU_P15             = --                             */  { 0, 0, 0, UNMAPPED_PCR, 0 },
@@ -2005,20 +2005,22 @@ public:
     * Initialise pins used by peripheral
     */
    static void initPCRs(uint32_t pcrValue=defaultPcrValue) {
-      enablePortClocks(PORTB_CLOCK_MASK|PORTC_CLOCK_MASK);
+      enablePortClocks(PORTB_CLOCK_MASK|PORTC_CLOCK_MASK|PORTD_CLOCK_MASK);
 
       ((PORT_Type *)PORTB_BasePtr)->GPCLR = pcrValue|PORT_PCR_MUX(1)|PORT_GPCLR_GPWE(0x0001UL);
       ((PORT_Type *)PORTC_BasePtr)->GPCLR = pcrValue|PORT_PCR_MUX(1)|PORT_GPCLR_GPWE(0x0002UL);
+      ((PORT_Type *)PORTD_BasePtr)->GPCLR = pcrValue|PORT_PCR_MUX(1)|PORT_GPCLR_GPWE(0x0001UL);
    }
 
    /**
     * Resets pins used by peripheral
     */
    static void clearPCRs() {
-      enablePortClocks(PORTB_CLOCK_MASK|PORTC_CLOCK_MASK);
+      enablePortClocks(PORTB_CLOCK_MASK|PORTC_CLOCK_MASK|PORTD_CLOCK_MASK);
 
       ((PORT_Type *)PORTB_BasePtr)->GPCLR = PORT_PCR_MUX(0)|PORT_GPCLR_GPWE(0x1U);
       ((PORT_Type *)PORTC_BasePtr)->GPCLR = PORT_PCR_MUX(0)|PORT_GPCLR_GPWE(0x2U);
+      ((PORT_Type *)PORTD_BasePtr)->GPCLR = PORT_PCR_MUX(0)|PORT_GPCLR_GPWE(0x1U);
    }
 
 };
@@ -2904,7 +2906,9 @@ namespace USBDM {
  * @{
  */
 using adc_p8               = const USBDM::Adc0Channel<0>;
+//using adc_p8               = const USBDM::Adc0Channel<19>;
 using adc_p7               = const USBDM::Adc0Channel<0>;
+//using adc_p7               = const USBDM::Adc0Channel<0>;
 using adc_p29              = const USBDM::Adc0Channel<12>;
 /** 
  * End ADC_Group
@@ -2931,6 +2935,8 @@ using gpio_p27             = const USBDM::GpioB<0>;
 using gpio_p30             = const USBDM::GpioB<3>;
 using gpio_p33             = const USBDM::GpioC<0>;
 using gpio_p34             = const USBDM::GpioC<1>;
+using gpio_p41             = const USBDM::GpioD<0>;
+using gpio_p42             = const USBDM::GpioD<1>;
 using gpio_p48             = const USBDM::GpioD<7>;
 /** 
  * End GPIO_Group
@@ -2951,12 +2957,12 @@ extern void mapAllPins();
  *
  *    Pin Name               |   Functions                                 |  Location                 |  Description  
  *  ------------------------ | --------------------------------------------|---------------------------| ------------- 
- *  ADC0_DM0                 | ADC0_DM0                                    | p8                        | N/C       
- *  ADC0_DP0                 | ADC0_DP0                                    | p7                        | N/C       
+ *  ADC0_DM0                 | ADC0_DM0/ADC0_SE19                          | p8                        | N/C       
+ *  ADC0_DP0                 | ADC0_DP0/ADC0_SE0                           | p7                        | N/C       
  *  EXTAL32                  | EXTAL32                                     | p15                       | N/C       
  *  PTA0                     | JTAG_TCLK/SWD_CLK                           | p17                       | SWD_CLK       
- *  PTA1                     | -                                           | p18                       | N/C       
- *  PTA2                     | -                                           | p19                       | N/C       
+ *  PTA1                     | -                                           | p18                       | Console_Rx       
+ *  PTA2                     | -                                           | p19                       | Console_Tx       
  *  PTA3                     | JTAG_TMS/SWD_DIO                            | p20                       | SWD_DIO       
  *  PTA4                     | -                                           | p21                       | N/C       
  *  PTA18                    | EXTAL0                                      | p24                       | EXTAL       
@@ -2964,7 +2970,7 @@ extern void mapAllPins();
  *  PTB0                     | GPIOB_0/LLWU_P5                             | p27                       | TPa       
  *  PTB1                     | -                                           | p28                       | TPa       
  *  PTB2                     | ADC0_SE12                                   | p29                       | Vbdm       
- *  PTB3                     | GPIOB_3                                     | p30                       | TVdd_LED       
+ *  PTB3                     | GPIOB_3                                     | p30                       | TVDD_LED       
  *  PTB16                    | UART0_RX                                    | p31                       | DBG_Rx       
  *  PTB17                    | UART0_TX                                    | p32                       | DBG_Tx       
  *  PTC0                     | GPIOC_0                                     | p33                       | RST_DIR       
@@ -2975,8 +2981,8 @@ extern void mapAllPins();
  *  PTC5                     | SPI0_SCK                                    | p38                       | SWCLK_O       
  *  PTC6                     | SPI0_SOUT                                   | p39                       | BKGD/SWD_0       
  *  PTC7                     | -                                           | p40                       | N/C       
- *  PTD0                     | -                                           | p41                       | N/C       
- *  PTD1                     | -                                           | p42                       | N/C       
+ *  PTD0                     | GPIOD_0/LLWU_P12                            | p41                       | VDD_FAULT       
+ *  PTD1                     | GPIOD_1                                     | p42                       | VDD_EN       
  *  PTD2                     | -                                           | p43                       | N/C       
  *  PTD3                     | SPI0_SIN                                    | p44                       | BKGD/SWD_I       
  *  PTD4                     | FTM0_CH4                                    | p45                       | BKGD/SWD_I       
@@ -3011,8 +3017,8 @@ extern void mapAllPins();
  *  USB0_DM                  | USB0_DM                                     | p4                        | USB_DM       
  *  VOUT33                   | VOUT33                                      | p5                        | -       
  *  VREGIN                   | VREGIN                                      | p6                        | -       
- *  ADC0_DP0                 | ADC0_DP0                                    | p7                        | N/C       
- *  ADC0_DM0                 | ADC0_DM0                                    | p8                        | N/C       
+ *  ADC0_DP0                 | ADC0_DP0/ADC0_SE0                           | p7                        | N/C       
+ *  ADC0_DM0                 | ADC0_DM0/ADC0_SE19                          | p8                        | N/C       
  *  VDDA                     | VDDA                                        | p9                        | -       
  *  VREFH                    | VREFH                                       | p10                       | -       
  *  VREFL                    | VREFL                                       | p11                       | -       
@@ -3022,8 +3028,8 @@ extern void mapAllPins();
  *  EXTAL32                  | EXTAL32                                     | p15                       | N/C       
  *  VBAT                     | VBAT                                        | p16                       | N/C       
  *  PTA0                     | JTAG_TCLK/SWD_CLK                           | p17                       | SWD_CLK       
- *  PTA1                     | -                                           | p18                       | N/C       
- *  PTA2                     | -                                           | p19                       | N/C       
+ *  PTA1                     | -                                           | p18                       | Console_Rx       
+ *  PTA2                     | -                                           | p19                       | Console_Tx       
  *  PTA3                     | JTAG_TMS/SWD_DIO                            | p20                       | SWD_DIO       
  *  PTA4                     | -                                           | p21                       | N/C       
  *  VDD2                     | VDD2                                        | p22                       | -       
@@ -3034,7 +3040,7 @@ extern void mapAllPins();
  *  PTB0                     | GPIOB_0/LLWU_P5                             | p27                       | TPa       
  *  PTB1                     | -                                           | p28                       | TPa       
  *  PTB2                     | ADC0_SE12                                   | p29                       | Vbdm       
- *  PTB3                     | GPIOB_3                                     | p30                       | TVdd_LED       
+ *  PTB3                     | GPIOB_3                                     | p30                       | TVDD_LED       
  *  PTB16                    | UART0_RX                                    | p31                       | DBG_Rx       
  *  PTB17                    | UART0_TX                                    | p32                       | DBG_Tx       
  *  PTC0                     | GPIOC_0                                     | p33                       | RST_DIR       
@@ -3045,8 +3051,8 @@ extern void mapAllPins();
  *  PTC5                     | SPI0_SCK                                    | p38                       | SWCLK_O       
  *  PTC6                     | SPI0_SOUT                                   | p39                       | BKGD/SWD_0       
  *  PTC7                     | -                                           | p40                       | N/C       
- *  PTD0                     | -                                           | p41                       | N/C       
- *  PTD1                     | -                                           | p42                       | N/C       
+ *  PTD0                     | GPIOD_0/LLWU_P12                            | p41                       | VDD_FAULT       
+ *  PTD1                     | GPIOD_1                                     | p42                       | VDD_EN       
  *  PTD2                     | -                                           | p43                       | N/C       
  *  PTD3                     | SPI0_SIN                                    | p44                       | BKGD/SWD_I       
  *  PTD4                     | FTM0_CH4                                    | p45                       | BKGD/SWD_I       
@@ -3060,8 +3066,8 @@ extern void mapAllPins();
  *    Pin Name               |   Functions                                 |  Location                 |  Description  
  *  ------------------------ | --------------------------------------------|---------------------------| ------------- 
  *  PTD5                     | -                                           | p46                       | N/C       
- *  ADC0_DM0                 | ADC0_DM0                                    | p8                        | N/C       
- *  ADC0_DP0                 | ADC0_DP0                                    | p7                        | N/C       
+ *  ADC0_DM0                 | ADC0_DM0/ADC0_SE19                          | p8                        | N/C       
+ *  ADC0_DP0                 | ADC0_DP0/ADC0_SE0                           | p7                        | N/C       
  *  PTB2                     | ADC0_SE12                                   | p29                       | Vbdm       
  *  PTA18                    | EXTAL0                                      | p24                       | EXTAL       
  *  EXTAL32                  | EXTAL32                                     | p15                       | N/C       
@@ -3069,9 +3075,11 @@ extern void mapAllPins();
  *  PTD4                     | FTM0_CH4                                    | p45                       | BKGD/SWD_I       
  *  PTD6                     | FTM0_CH6                                    | p47                       | BKGD/SWD_0       
  *  PTB0                     | GPIOB_0/LLWU_P5                             | p27                       | TPa       
- *  PTB3                     | GPIOB_3                                     | p30                       | TVdd_LED       
+ *  PTB3                     | GPIOB_3                                     | p30                       | TVDD_LED       
  *  PTC0                     | GPIOC_0                                     | p33                       | RST_DIR       
  *  PTC1                     | GPIOC_1/LLWU_P6                             | p34                       | RST_IO       
+ *  PTD0                     | GPIOD_0/LLWU_P12                            | p41                       | VDD_FAULT       
+ *  PTD1                     | GPIOD_1                                     | p42                       | VDD_EN       
  *  PTD7                     | GPIOD_7                                     | p48                       | USB_LED       
  *  PTA0                     | JTAG_TCLK/SWD_CLK                           | p17                       | SWD_CLK       
  *  PTA3                     | JTAG_TMS/SWD_DIO                            | p20                       | SWD_DIO       

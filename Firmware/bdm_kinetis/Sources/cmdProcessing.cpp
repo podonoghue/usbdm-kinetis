@@ -16,6 +16,7 @@
 #include "bdm.h"
 #include "cmdProcessingSWD.h"
 #include "cmdProcessingHCS.h"
+#include "TargetVddInterface.h"
 
 /** Buffer for USB command in, result out */
 uint8_t commandBuffer[MAX_COMMAND_SIZE+4];
@@ -278,19 +279,19 @@ USBDM_ErrorCode f_CMD_DEBUG(void) {
 #endif
 #if (HW_CAPABILITY & CAP_VDDCONTROL)
       case BDM_DBG_VDD_OFF: // Target Vdd voltage off
-         VDD_OFF();
+         TargetVddInterface::vddOff();
          return BDM_RC_OK;
 
       case BDM_DBG_VDD3_ON: // Target Vdd voltage on
-         VDD3_ON();
+         TargetVddInterface::vdd3V3On();
          return BDM_RC_OK;
 
       case BDM_DBG_VDD5_ON: // Target Vdd voltage on
-         VDD5_ON();
+         TargetVddInterface::vdd5On();
          return BDM_RC_OK;
 
       case BDM_DBG_CYCLE_POWER: // Cycle power to target
-         return bdm_cycleTargetVdd(RESET_SPECIAL);
+         return cycleTargetVdd(RESET_SPECIAL);
 #endif
 #if (HW_CAPABILITY & CAP_VDDSENSE)
       case BDM_DBG_MEASURE_VDD: // Measure Target Vdd
@@ -561,7 +562,9 @@ USBDM_ErrorCode f_CMD_CONTROL_PINS(void) {
 #endif // (HW_CAPABILITY&CAP_RST_IN)
          break;
       case PIN_RESET_LOW :
+         Debug::toggle();
          Reset::low();
+         Debug::toggle();
          break;
    }
 #endif // (HW_CAPABILITY&CAP_RST_OUT)
@@ -614,18 +617,28 @@ USBDM_ErrorCode f_CMD_CONTROL_PINS(void) {
  *      Exit:  none
  */
 USBDM_ErrorCode f_CMD_SET_VDD(void) {
-   USBDM_ErrorCode rc;
+
+
 #if (HW_CAPABILITY&CAP_VDDCONTROL)
-   bdm_option.targetVdd = commandBuffer[3];
-   rc = bdm_setTargetVdd();
+   TargetVddSelect_t vddSelect = (TargetVddSelect_t)commandBuffer[3];
+   switch(vddSelect) {
+      case BDM_TARGET_VDD_DISABLE:
+      case BDM_TARGET_VDD_ENABLE:
+         // Retain current option
+         return setTargetVdd(BDM_TARGET_VDD_ENABLE);
+
+      case BDM_TARGET_VDD_OFF:
+      case BDM_TARGET_VDD_3V3:
+      case BDM_TARGET_VDD_5V:
+         // Change option
+         bdm_option.targetVdd = (TargetVddSelect_t)commandBuffer[3];
+         return enableTargetVdd();
+      default:
+         return BDM_RC_ILLEGAL_PARAMS;
+   }
 #else
-   rc = checkTargetVdd();
+   return checkTargetVdd();
 #endif
-   // It's OK if there is no external power at the moment
-   if ((commandBuffer[3] == BDM_TARGET_VDD_OFF) &&
-         (rc == BDM_RC_VDD_NOT_PRESENT))
-      rc = BDM_RC_OK;
-   return rc;
 }
 
 //=================================================
@@ -1070,10 +1083,12 @@ USBDM_ErrorCode f_CMD_SET_TARGET(void) {
  *      commandBuffer[1..N] = command results
  */
 static void commandExec(void) {
+   Debug::high();
+
    BDMCommands command    = (BDMCommands)commandBuffer[1];  // Command is 1st byte
    FunctionPtr commandPtr = f_CMD_ILLEGAL;     // Default to illegal command
 
-   PRINTF("Command = %d\n", command);
+//   PRINTF("Command = %d\n", command);
 
    // Check if modeless command
    if ((uint8_t)command < sizeof(commonFunctionPtrs)/sizeof(FunctionPtr)) {
@@ -1141,6 +1156,7 @@ static void commandExec(void) {
 #endif
       }
    }
+   Debug::low();
 }
 
 /**

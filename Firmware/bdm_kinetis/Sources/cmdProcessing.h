@@ -1,6 +1,6 @@
 /*! \file
     \brief Main command procedure for executing BDM commands received over the USB.
-*/    
+*/
 #ifndef _CMDPROCESSING_H_
 #define _CMDPROCESSING_H_
 #include <stdint.h>
@@ -59,7 +59,7 @@ struct BDM_Option_t {
    bool               leaveTargetPowered:1;   //!< Leave target power on exit
    bool               guessSpeed:1;           //!< Guess speed for target w/o ACKN
    bool               useResetSignal:1;       //!< Use RESET signal on BDM interface
-   TargetVddSelect_t  targetVdd;              //!< Target Vdd (off, 3.3V or 5V)
+   TargetVddSelect_t  targetVdd;              //!< Selected target Vdd (off, 3.3V or 5V)
    ClkSwValues_t      useAltBDMClock:8;       //!< Use alternative BDM clock source in target (HCS08)
    AutoConnect_t      autoReconnect:8;        //!< Automatically re-connect method (for speed change)
    uint16_t           SBDFRaddress;           //!< Address of HCS08_SBDFR register

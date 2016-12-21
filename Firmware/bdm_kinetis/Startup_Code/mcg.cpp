@@ -14,7 +14,9 @@
 #include "utilities.h"
 #include "stdbool.h"
 #include "hardware.h"
+#ifdef USBDM_RTC_IS_DEFINED
 #include "rtc.h"
+#endif
 #include "mcg.h"
 #include "osc.h"
  /*
@@ -39,13 +41,13 @@ namespace USBDM {
       0,
 
       //! Control Register 1
-      MCG_C1_FRDIV(3)   | // FRDIV    FLL External Reference Divider
+      MCG_C1_FRDIV(4)   | // FRDIV    FLL External Reference Divider
       MCG_C1_IRCLKEN(1) | // IRCLEN   Internal Reference Clock Enable
       MCG_C1_IREFSTEN(0), // IREFSTEN Internal Reference Stop Enable
 
       //! Control Register 2
       MCG_C2_LOCRE0(0) | // LOLRE0  Loss of Clock Reset Enable
-      MCG_C2_RANGE0(1) | // RANGE   Frequency Range Select
+      MCG_C2_RANGE0(2) | // RANGE   Frequency Range Select
       MCG_C2_HGO0(0)   | // HGO     High Gain Oscillator Select
       MCG_C2_EREFS0(1) | // EREFS   External Reference Select
       MCG_C2_IRCS(0),    // IRCS    Internal Reference Clock Select
@@ -57,7 +59,7 @@ namespace USBDM {
       //! Control Register 5
       MCG_C5_PLLCLKEN0(0)  | // PLLCLKEN0 PLL Clock Enable
       MCG_C5_PLLSTEN0(0)   | // PLLSTEN0  PLL Stop Enable
-      MCG_C5_PRDIV0(1),     // PRDIV0    PLL External Reference Divider
+      MCG_C5_PRDIV0(5),     // PRDIV0    PLL External Reference Divider
 
       //! Control Register 6
       MCG_C6_LOLIE0(0) | // LOLIE0 Loss of Lock interrupt Enable

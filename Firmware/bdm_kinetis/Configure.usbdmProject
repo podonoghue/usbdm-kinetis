@@ -18,8 +18,8 @@
    <item key="$signal$PTA18_muxSetting"                    value="mux0" />
    <item key="$signal$PTA19_descriptionSetting"            value="XTAL" />
    <item key="$signal$PTA19_muxSetting"                    value="mux0" />
-   <item key="$signal$PTA1_descriptionSetting"             value="N/C" />
-   <item key="$signal$PTA2_descriptionSetting"             value="N/C" />
+   <item key="$signal$PTA1_descriptionSetting"             value="Console_Rx" />
+   <item key="$signal$PTA2_descriptionSetting"             value="Console_Tx" />
    <item key="$signal$PTA3_descriptionSetting"             value="SWD_DIO" />
    <item key="$signal$PTA3_muxSetting"                     value="mux7" />
    <item key="$signal$PTA3_pcrSetting"                     value="3" />
@@ -35,7 +35,7 @@
    <item key="$signal$PTB1_descriptionSetting"             value="TPa" />
    <item key="$signal$PTB2_descriptionSetting"             value="Vbdm" />
    <item key="$signal$PTB2_muxSetting"                     value="mux0" />
-   <item key="$signal$PTB3_descriptionSetting"             value="TVdd_LED" />
+   <item key="$signal$PTB3_descriptionSetting"             value="TVDD_LED" />
    <item key="$signal$PTB3_muxSetting"                     value="mux1" />
    <item key="$signal$PTC0_descriptionSetting"             value="RST_DIR" />
    <item key="$signal$PTC0_muxSetting"                     value="mux1" />
@@ -58,8 +58,12 @@
    <item key="$signal$PTC6_muxSetting"                     value="mux2" />
    <item key="$signal$PTC6_pcrSetting"                     value="3" />
    <item key="$signal$PTC7_descriptionSetting"             value="N/C" />
-   <item key="$signal$PTD0_descriptionSetting"             value="N/C" />
-   <item key="$signal$PTD1_descriptionSetting"             value="N/C" />
+   <item key="$signal$PTD0_descriptionSetting"             value="VDD_FAULT" />
+   <item key="$signal$PTD0_muxSetting"                     value="mux1" />
+   <item key="$signal$PTD0_pcrSetting"                     value="3" />
+   <item key="$signal$PTD1_descriptionSetting"             value="VDD_EN" />
+   <item key="$signal$PTD1_muxSetting"                     value="mux1" />
+   <item key="$signal$PTD1_pcrSetting"                     value="2" />
    <item key="$signal$PTD2_descriptionSetting"             value="N/C" />
    <item key="$signal$PTD3_descriptionSetting"             value="BKGD/SWD_I" />
    <item key="$signal$PTD3_muxSetting"                     value="mux2" />
@@ -206,12 +210,12 @@
    <item key="/MCG/LowPower"                               value="false" />
    <item key="/MCG/McgInfoSize"                            value="1" />
    <item key="/MCG/clock_mode"                             value="ClockMode_PEE" />
-   <item key="/MCG/fllInputFrequency"                      value="31250" />
+   <item key="/MCG/fllInputFrequency"                      value="46875" />
    <item key="/MCG/fll_enabled"                            value="false" />
    <item key="/MCG/irqHandlerInstalled"                    value="false" />
    <item key="/MCG/irqLevel"                               value="0" />
    <item key="/MCG/mcg_c1_clks"                            value="0" />
-   <item key="/MCG/mcg_c1_frdiv"                           value="3" />
+   <item key="/MCG/mcg_c1_frdiv"                           value="4" />
    <item key="/MCG/mcg_c1_irclken"                         value="true" />
    <item key="/MCG/mcg_c1_irefs"                           value="false" />
    <item key="/MCG/mcg_c1_irefsten"                        value="false" />
@@ -222,7 +226,7 @@
    <item key="/MCG/mcg_c4_drst_drs"                        value="0" />
    <item key="/MCG/mcg_c5_pllclken"                        value="false" />
    <item key="/MCG/mcg_c5_pllsten"                         value="false" />
-   <item key="/MCG/mcg_c5_prdiv0"                          value="2" />
+   <item key="/MCG/mcg_c5_prdiv0"                          value="6" />
    <item key="/MCG/mcg_c6_cme0"                            value="false" />
    <item key="/MCG/mcg_c6_lolie0"                          value="false" />
    <item key="/MCG/mcg_c6_plls"                            value="true" />
@@ -231,14 +235,14 @@
    <item key="/MCG/mcg_c8_cme1"                            value="false" />
    <item key="/MCG/mcg_c8_locre1"                          value="false" />
    <item key="/MCG/mcg_c8_lolre"                           value="false" />
-   <item key="/MCG/mcg_erc_clock"                          value="8000000" />
+   <item key="/MCG/mcg_erc_clock"                          value="24000000" />
    <item key="/MCG/mcg_sc_fcrdiv"                          value="0" />
    <item key="/MCG/pll0Enabled"                            value="true" />
    <item key="/MCG/pll0InputFrequency"                     value="4000000" />
    <item key="/MCG/pll0OutputFrequency"                    value="96000000" />
    <item key="/MCG/system_fast_irc_clock"                  value="4000000" />
    <item key="/MCG/system_low_power_clock"                 value="1000" />
-   <item key="/MCG/system_mcgffclk_clock"                  value="31250" />
+   <item key="/MCG/system_mcgffclk_clock"                  value="46875" />
    <item key="/MCG/system_mcgfllclk_clock"                 value="96000000" />
    <item key="/MCG/system_mcgirclk_clock"                  value="32768" />
    <item key="/MCG/system_mcgoutclk_clock"                 value="96000000" />
@@ -252,11 +256,11 @@
    <item key="/OSC0/osc_cr_erclken"                        value="true" />
    <item key="/OSC0/osc_cr_erefsten"                       value="false" />
    <item key="/OSC0/osc_cr_scp"                            value="2" />
-   <item key="/OSC0/osc_input_freq"                        value="8000000" />
-   <item key="/OSC0/oscclk_clock"                          value="8000000" />
-   <item key="/OSC0/range"                                 value="1" />
-   <item key="/OSC0/range_out"                             value="1" />
-   <item key="/OSC0/system_oscerclk_clock"                 value="8000000" />
+   <item key="/OSC0/osc_input_freq"                        value="24000000" />
+   <item key="/OSC0/oscclk_clock"                          value="24000000" />
+   <item key="/OSC0/range"                                 value="2" />
+   <item key="/OSC0/range_out"                             value="2" />
+   <item key="/OSC0/system_oscerclk_clock"                 value="24000000" />
    <item key="/PDB0/irqHandlerInstalled"                   value="false" />
    <item key="/PDB0/irqLevel"                              value="0" />
    <item key="/PIT/irqHandlerInstalled"                    value="false" />

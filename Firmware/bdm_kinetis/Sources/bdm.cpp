@@ -130,6 +130,8 @@ static void enablePins() {
  * Set pin state
  *
  * @param pins Pin control mask
+ *
+ * @note Only handles BKGD functions as others (such as reset) are assumed handled in common code
  */
 void setPinState(PinLevelMasks_t pins) {
 

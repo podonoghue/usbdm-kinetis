@@ -487,6 +487,8 @@ void disable() {
  * Set pin state
  *
  * @param pins Pin control mask
+ *
+ * @note Only handles SWD, SWCLK functions as others (such as reset) are assumed handled in common code
  */
 void setPinState(PinLevelMasks_t control) {
    switch (control & PIN_SWD_MASK) {

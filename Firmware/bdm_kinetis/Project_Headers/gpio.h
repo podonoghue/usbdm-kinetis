@@ -20,9 +20,19 @@
 #include "derivative.h"
 #include "bitband.h"
 
+/*
+ * Default port information
+ */
+#ifndef FIXED_PORT_CLOCK_REG
+#define FIXED_PORT_CLOCK_REG SCGC5
+#endif
+
 namespace USBDM {
 
-enum Polarity {ActiveLow=false, ActiveHigh=true};
+enum Polarity {
+   ActiveLow=false,
+   ActiveHigh=true
+};
 
 /**
  * @addtogroup GPIO_Group GPIO, Digital Input/Output
@@ -209,6 +219,40 @@ public:
    static bool isLow() {
       return (gpio->PDIR & (1<<bitNum)) == 0;
    }
+   /**
+    * Sets pin interrupt mode
+    *
+    * @param mode Interrupt/DMA mode
+    */
+   static void setIrq(InterruptMode mode) {
+      Pcr::setIrq(mode);
+   }
+
+   /**
+    * Set pull device on pin
+    *
+    * @param mode Pull control value (PullNone, PullUp, PullDown)
+    */
+   static void setPullDevice(PullModes mode) {
+      Pcr::setPullDevice(mode);
+   }
+
+   /**
+    * Locks most of the pin properties e.g. drive strength, pull-device etc.
+    */
+   static void lock() {
+      Pcr::lock();
+   }
+
+   /**
+    * Enable/disable pin interrupts
+    *
+    * @param enable True => enable, False => disable
+    */
+   static void enableNvicInterrupts(bool enable=true) {
+      Pcr::enableNvicInterrupts(enable);
+   }
+
 };
 
 /**
@@ -268,7 +312,7 @@ using  GpioTable_T = GpioBase_T<Info::info[index].clockMask, Info::info[index].p
  * @tparam right          Bit number of rightmost bit in GPIO (inclusive)
  * @tparam defPcrValue    Default value for PCR including multiplexor value
  */
-template<class Info, const uint32_t left, const uint32_t right, uint32_t defPcrValue=Info::defaultPcrValue>
+template<class Info, const uint32_t left, const uint32_t right>
 class Field_T {
 
 private:
@@ -283,16 +327,16 @@ private:
     *
     * @param pcrValue PCR value to use in configuring port (excluding mux fn)
     */
-   static void setPCRs(uint32_t pcrValue) {
+   static void setPCRs(uint32_t pcrValue=GPIO_DEFAULT_PCR) {
       // Enable clock to GPCLR & GPCHR
       SIM->FIXED_PORT_CLOCK_REG |= Info::clockMask;
 
       // Include the if's as I expect one branch to be removed by optimisation unless the field spans the boundary
       if ((MASK&0xFFFFUL) != 0) {
-         port->GPCLR = PORT_GPCLR_GPWE(MASK)|(pcrValue&~PORT_PCR_MUX_MASK)|(defPcrValue&PORT_PCR_MUX_MASK);
+         port->GPCLR = PORT_GPCLR_GPWE(MASK)|(pcrValue&~PORT_PCR_MUX_MASK)|PORT_PCR_MUX(FIXED_GPIO_FN);
       }
       if ((MASK&~0xFFFFUL) != 0) {
-         port->GPCHR = PORT_GPCHR_GPWE(MASK>>16)|(pcrValue&~PORT_PCR_MUX_MASK)|(defPcrValue&PORT_PCR_MUX_MASK);
+         port->GPCHR = PORT_GPCHR_GPWE(MASK>>16)|(pcrValue&~PORT_PCR_MUX_MASK)|PORT_PCR_MUX(FIXED_GPIO_FN);
       }
    }
 public:
@@ -301,7 +345,7 @@ public:
     *
     * @param pcrValue PCR value to use in configuring port (excluding mux fn)
     */
-   static void setOutput(uint32_t pcrValue=defPcrValue) {
+   static void setOutput(uint32_t pcrValue=GPIO_DEFAULT_PCR) {
       setPCRs(pcrValue);
       gpio->PDDR |= MASK;
    }
@@ -310,7 +354,7 @@ public:
     *
     * @param pcrValue PCR value to use in configuring port (excluding mux fn)
     */
-   static void setInput(uint32_t pcrValue=defPcrValue) {
+   static void setInput(uint32_t pcrValue=GPIO_DEFAULT_PCR) {
       setPCRs(pcrValue);
       gpio->PDDR &= ~MASK;
    }

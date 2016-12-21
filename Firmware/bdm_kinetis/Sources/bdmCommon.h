@@ -10,24 +10,13 @@
 
 #include <stdint.h>
 
-//================================================================================
-//  Timer Usage:
-//
-//   TPMx-CHa - BDM_IN pin, SYNC measuring, ACKN detection (IC rising & falling edges)
-//   TPMx-CHb - ACKN & SYNC Timeouts (Output compare)
-//
-//================================================================================
-
-/*
- * Initialises the timers, input captures and interrupts
- */
-USBDM_ErrorCode   setTarget(TargetType_t target);
-USBDM_ErrorCode   checkTargetVdd(void);
-void              suspend(void);
-USBDM_ErrorCode   cycleTargetVddOn(uint8_t mode);
-USBDM_ErrorCode   cycleTargetVdd(uint8_t mode);
-uint16_t          targetVddMeasure(void);
-USBDM_ErrorCode   setTargetVdd( void );  // Low-level - bdm_cycleTargetVddOn() preferred
-USBDM_ErrorCode   clearStatus(void);
-
+USBDM_ErrorCode setTarget(TargetType_t target);
+USBDM_ErrorCode checkTargetVdd(void);
+void            suspend(void);
+USBDM_ErrorCode cycleTargetVddOn(TargetMode_t mode);
+USBDM_ErrorCode cycleTargetVdd(TargetMode_t mode);
+uint16_t        targetVddMeasure(void);
+USBDM_ErrorCode clearStatus(void);
+USBDM_ErrorCode enableTargetVdd();
+USBDM_ErrorCode setTargetVdd(TargetVddSelect_t targetVdd);
 #endif // _BDMCOMMON_H_

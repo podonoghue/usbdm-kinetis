@@ -36,7 +36,7 @@ public:
 };
 
 /**
- * GPIO for Activity LED
+ * GPIO for Debug pin
  */
 class Debug : public USBDM::GpioB<1> {
 public:
@@ -44,97 +44,6 @@ public:
    static void initialise() {
       setOutput();
       low();
-   }
-};
-
-/**
- * GPIO for Target Vdd LED
- */
-class TVddLed : public USBDM::GpioB<3> {
-public:
-   /** Initialise activity LED */
-   static void initialise() {
-      setOutput();
-      off();
-   }
-   /** Turn on activity LED */
-   static void on() {
-      high();
-   }
-   /** Turn off activity LED */
-   static void off() {
-      low();
-   }
-};
-
-/**
- * GPIO for Power LED\n
- * Dummy class
- */
-class PowerLed {
-public:
-   /** Initialise power LED */
-   static void initialise() {
-   }
-   /** Turn on power LED */
-   static void on() {
-   }
-   /** Turn off power LED */
-   static void off() {
-   }
-};
-
-/**
- * ADC channel for target Vdd measurement
- */
-class TargetVdd : USBDM::Adc0Channel<12> {
-private:
-   /**
-    * 2:1 voltage divider on input
-    */
-   static constexpr int   externalDivider = 2;
-   /**
-    * Conversion factor for ADC reading to input voltage\n
-    * 3.3V range, 8 bit conversion, voltage divider on input
-    * V = ADCValue * scaleFactor
-    */
-   static constexpr float scaleFactor = (externalDivider*3.3)/((1<<8)-1);
-
-   /**
-    * Minimum working input voltage as an ADC reading \n
-    * 1.5 V as ADC reading
-    */
-   static constexpr int   threshold = (int)(1.5/scaleFactor);
-
-public:
-   /**
-    * Initialise target Vdd measurement
-    */
-   static void initialise() {
-      enable();
-      setResolution(USBDM::resolution_8bit_se);
-   }
-   /**
-    * Read target Vdd
-    *
-    * @return Target Vdd as an integer in the range 0-255 => 0-5V
-    */
-   static int readRawVoltage() {
-      return round(readAnalogue()*(externalDivider*3.3/5));
-   }
-   /**
-    * Read target Vdd
-    *
-    * @return Target Vdd in volts as a float
-    */
-   static float readVoltage() {
-      return readAnalogue()*scaleFactor;
-   }
-   /**
-    * Check if target Vdd is present
-    */
-   static bool vddOK() {
-      return readAnalogue()>threshold;
    }
 };
 
@@ -163,13 +72,8 @@ using Reset = Lvc1t45<USBDM::GpioC<1>, USBDM::GpioC<0>>;
 //==========================================================================================
 // Capabilities of the hardware - used to enable/disable appropriate code
 //
-#ifdef SDA_POWER
-#define HW_CAPABILITY       (CAP_RST_OUT|CAP_RST_IN|CAP_CDC|CAP_SWD_HW|CAP_BDM|CAP_SWD_HW|CAP_CORE_REGS|CAP_VDDCONTROL)
+#define HW_CAPABILITY       (CAP_RST_OUT|CAP_RST_IN|CAP_CDC|CAP_SWD_HW|CAP_BDM|CAP_SWD_HW|CAP_CORE_REGS|CAP_VDDCONTROL|CAP_VDDSENSE)
 #define TARGET_CAPABILITY   (CAP_RST               |CAP_CDC|CAP_HCS08|CAP_HCS12|CAP_S12Z|CAP_CFV1|CAP_ARM_SWD|CAP_VDDCONTROL)
-#else
-#define HW_CAPABILITY       (CAP_RST_OUT|CAP_RST_IN|CAP_CDC|CAP_SWD_HW|CAP_BDM|CAP_SWD_HW|CAP_CORE_REGS|CAP_VDDSENSE)
-#define TARGET_CAPABILITY   (CAP_RST               |CAP_CDC|CAP_HCS08|CAP_HCS12|CAP_S12Z|CAP_CFV1|CAP_ARM_SWD)
-#endif
 
 #define CPU  MK20D5
 

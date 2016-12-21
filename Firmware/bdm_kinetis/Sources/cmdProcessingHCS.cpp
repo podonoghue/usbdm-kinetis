@@ -253,8 +253,9 @@ USBDM_ErrorCode f_CMD_WRITE_CONTROL_REG(void) {
  *  @return != BDM_RC_OK => error
  */
 USBDM_ErrorCode f_CMD_RESET(void) {
-   register uint8_t mode = commandBuffer[2]&RESET_MODE_MASK;
-   USBDM_ErrorCode rc = BDM_RC_OK;
+
+   TargetMode_t    mode = (TargetMode_t)(commandBuffer[2]&RESET_MODE_MASK);
+   USBDM_ErrorCode rc   = BDM_RC_OK;
 
    // TODO This may take a while
    //setBDMBusy();
@@ -276,7 +277,7 @@ USBDM_ErrorCode f_CMD_RESET(void) {
          break;
 #if (HW_CAPABILITY&CAP_VDDCONTROL)
       case RESET_POWER :
-         rc =  cycleTargetVdd(mode);
+         rc = cycleTargetVdd(mode);
          break;
 #endif
       case RESET_ALL :

@@ -21,6 +21,7 @@
 #include "bdm.h"
 #include "cmdProcessingSWD.h"
 #include "cmdProcessingHCS.h"
+#include "TargetVddInterface.h"
 
 #if 0
 /** Check error code from USBDM API function
@@ -303,21 +304,11 @@ void hcs08Testing () {
 void initialise() {
    Reset::initialise();
    UsbLed::initialise();
-   PowerLed::initialise();
-   TargetVdd::initialise();
+   TargetVddInterface::initialise();
    Debug::initialise();
 
    InterfaceEnable::setOutput();
    InterfaceEnable::high();
-
-   // Turn off important things
-#if (HW_CAPABILITY&CAP_VDDCONTROL)
-   (void)Vdd::initialise();
-#endif
-
-#if (HW_CAPABILITY&CAP_FLASH)
-   (void)bdmSetVpp(BDM_TARGET_VPP_OFF);
-#endif
 
    // Update power status
    checkTargetVdd();
@@ -336,7 +327,7 @@ int main() {
    PRINTF("SystemBusClock  = %ld\n", SystemBusClock);
    PRINTF("SystemCoreClock = %ld\n", SystemCoreClock);
 
-   PRINTF("Target Vdd = %f\n", TargetVdd::readVoltage());
+   PRINTF("Target Vdd = %f\n", TargetVddInterface::readVoltage());
 
    USBDM::UsbImplementation::initialise();
 
