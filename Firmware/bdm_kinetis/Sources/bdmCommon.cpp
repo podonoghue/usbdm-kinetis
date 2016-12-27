@@ -1,10 +1,6 @@
 /*! \file
     \brief USBDM - Common BDM routines.
 
-   \verbatim
-   This software was modified from \e TBLCF software
-   This software was modified from \e TBDML software
-
    USBDM
    Copyright (C) 2016  Peter O'Donoghue
 
@@ -32,13 +28,14 @@
  */
 
 #include <string.h>
-#include "Configure.h"
-#include "Commands.h"
+#include <targetVddInterface.h>
+#include "configure.h"
 #include "bdmCommon.h"
-#include "cmdProcessing.h"
 #include "swd.h"
 #include "bdm.h"
-#include "TargetVddInterface.h"
+#include "resetInterface.h"
+#include "cmdProcessing.h"
+#include "commands.h"
 
 /** How long to wait for Target Vdd rise */
 static constexpr uint32_t VDD_RISE_TIMEms = 100;
@@ -58,11 +55,11 @@ static constexpr uint32_t RESET_RECOVERYms = 10;
 /**
  *  Interrupt function servicing the interrupt from Vdd changes
  *  This routine has several purposes:
- *   - Triggers POR into Debug mode on RS08/HCS08/CFV1 targets\n
- *   - Turns off Target power on overload\n
- *   - Updates Target power status\n
+ *   - Triggers POR into Debug mode on RS08/HCS08/CFV1 targets \n
+ *   - Turns off Target power on overload \n
+ *   - Updates Target power status
  */
-void targetVddSense(void) {
+void targetVddSense() {
    //TODO targetVddSense()
 }
 
@@ -71,8 +68,7 @@ void targetVddSense(void) {
  */
 void resetSense(void) {
    //TODO resetSense()
-   //   CLEAR_RESET_SENSE_FLAG();             // Acknowledge RESET IC Event
-   if (Reset::isLow()) {
+   if (ResetInterface::isLow()) {
       cable_status.reset = RESET_DETECTED;  // Record that reset was asserted
    }
 }
@@ -264,7 +260,7 @@ USBDM_ErrorCode cycleTargetVddOn(TargetMode_t mode) {
 #if (HW_CAPABILITY&CAP_RST_IN)
    // RESET rise may be delayed by target POR
    if (bdm_option.useResetSignal) {
-      USBDM::waitUS(RESET_RISE_TIMEus, Reset::isHigh);
+      USBDM::waitUS(RESET_RISE_TIMEus, ResetInterface::isHigh);
    }
 #endif // (HW_CAPABILITY&CAP_RST_IN)
 
@@ -272,7 +268,7 @@ USBDM_ErrorCode cycleTargetVddOn(TargetMode_t mode) {
    USBDM::waitUS(BKGD_WAITus);
 
 #if (HW_CAPABILITY&CAP_RST_IN)
-   if (bdm_option.useResetSignal && Reset::isLow()) {
+   if (bdm_option.useResetSignal && ResetInterface::isLow()) {
       // RESET didn't rise
       rc = BDM_RC_RESET_TIMEOUT_RISE;
       goto cleanUp;

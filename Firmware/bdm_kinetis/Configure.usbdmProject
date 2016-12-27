@@ -50,6 +50,7 @@
    <item key="$signal$PTC3_muxSetting"                     value="mux4" />
    <item key="$signal$PTC3_pcrSetting"                     value="3" />
    <item key="$signal$PTC4_descriptionSetting"             value="SWD_EN" />
+   <item key="$signal$PTC4_muxSetting"                     value="mux1" />
    <item key="$signal$PTC4_pcrSetting"                     value="3" />
    <item key="$signal$PTC5_descriptionSetting"             value="SWCLK_O" />
    <item key="$signal$PTC5_muxSetting"                     value="mux2" />
@@ -57,7 +58,8 @@
    <item key="$signal$PTC6_descriptionSetting"             value="BKGD/SWD_0" />
    <item key="$signal$PTC6_muxSetting"                     value="mux2" />
    <item key="$signal$PTC6_pcrSetting"                     value="3" />
-   <item key="$signal$PTC7_descriptionSetting"             value="N/C" />
+   <item key="$signal$PTC7_descriptionSetting"             value="Vbdm" />
+   <item key="$signal$PTC7_muxSetting"                     value="mux0" />
    <item key="$signal$PTD0_descriptionSetting"             value="VDD_FAULT" />
    <item key="$signal$PTD0_muxSetting"                     value="mux1" />
    <item key="$signal$PTD0_pcrSetting"                     value="3" />
@@ -99,7 +101,7 @@
    <item key="/ADC0/clockFrequency"                        value="5200000.0" />
    <item key="/ADC0/irqHandlerInstalled"                   value="false" />
    <item key="/ADC0/irqLevel"                              value="0" />
-   <item key="/CMP0/cmp_cr0_filter_cnt"                    value="0" />
+   <item key="/CMP0/cmp_cr0_filter_cnt"                    value="4" />
    <item key="/CMP0/cmp_cr0_hystctr"                       value="0" />
    <item key="/CMP0/cmp_cr1_cos"                           value="false" />
    <item key="/CMP0/cmp_cr1_inv"                           value="false" />
@@ -108,15 +110,15 @@
    <item key="/CMP0/cmp_cr1_se"                            value="false" />
    <item key="/CMP0/cmp_cr1_trigm"                         value="false" />
    <item key="/CMP0/cmp_cr1_we"                            value="false" />
-   <item key="/CMP0/cmp_daccr_vrsel"                       value="false" />
+   <item key="/CMP0/cmp_daccr_vrsel"                       value="true" />
    <item key="/CMP0/cmp_fpr_filt_per"                      value="0" />
-   <item key="/CMP0/cmp_muxcr_msel"                        value="0" />
-   <item key="/CMP0/cmp_muxcr_psel"                        value="0" />
+   <item key="/CMP0/cmp_muxcr_msel"                        value="1" />
+   <item key="/CMP0/cmp_muxcr_psel"                        value="7" />
    <item key="/CMP0/cmp_scr_dmaen"                         value="false" />
    <item key="/CMP0/cmp_scr_ief"                           value="false" />
    <item key="/CMP0/cmp_scr_ier"                           value="false" />
-   <item key="/CMP0/irqHandlerInstalled"                   value="false" />
-   <item key="/CMP0/irqLevel"                              value="0" />
+   <item key="/CMP0/irqHandlerInstalled"                   value="true" />
+   <item key="/CMP0/irqLevel"                              value="4" />
    <item key="/CMP1/cmp_cr0_filter_cnt"                    value="0" />
    <item key="/CMP1/cmp_cr0_hystctr"                       value="0" />
    <item key="/CMP1/cmp_cr1_cos"                           value="false" />
@@ -161,7 +163,7 @@
    <item key="/FTM1/maximumPeriod"                         value="0.0013653333333333334" />
    <item key="/FTM1/minimumResolution"                     value="100" />
    <item key="/FTM1/period"                                value="10000" />
-   <item key="/GPIOA/irqHandlerInstalled"                  value="false" />
+   <item key="/GPIOA/irqHandlerInstalled"                  value="true" />
    <item key="/GPIOA/irqLevel"                             value="0" />
    <item key="/GPIOB/irqHandlerInstalled"                  value="false" />
    <item key="/GPIOB/irqLevel"                             value="0" />

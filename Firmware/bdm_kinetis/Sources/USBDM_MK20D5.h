@@ -12,8 +12,8 @@
 #ifndef _CONFIGURE_H_
 #define _CONFIGURE_H_
 
-#include "transceiver.h"
 #include "utilities.h"
+#include "hardware.h"
 
 /**
  * GPIO for Activity LED
@@ -51,11 +51,6 @@ public:
  * GPIO controlling some interface signals (SWD, UART-TX)
  */
 using InterfaceEnable = USBDM::GpioC<4>;
-
-/**
- * 3-State I/O for reset signal
- */
-using Reset = Lvc1t45<USBDM::GpioC<1>, USBDM::GpioC<0>>;
 
 #include <swd.h>
 

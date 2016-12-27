@@ -90,6 +90,11 @@ void SystemInitLowLevel(void) {
    /* Set the interrupt vector table position */
    SCB_VTOR = (uint32_t)__vector_table;
 
+#ifdef RCM_MR_BOOTROM
+   // Set boot from Flash
+   RCM->MR = RCM_MR_BOOTROM(3);
+#endif
+
    // Disable watch-dog
    WDOG_UNLOCK  = KINETIS_WDOG_UNLOCK_SEQ_1;
    WDOG_UNLOCK  = KINETIS_WDOG_UNLOCK_SEQ_2;
@@ -137,6 +142,15 @@ void SystemInit(void) {
 
 /** Nesting count for interrupt disable */
 static int disableInterruptCount = 0;
+
+/**
+ * Check interrupt status
+ *
+ * @return true if interrupts are enabled
+ */
+int areInterruptsEnabled() {
+   return disableInterruptCount == 0;
+}
 
 /**
  * Disable interrupts

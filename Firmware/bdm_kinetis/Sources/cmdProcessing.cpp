@@ -6,17 +6,18 @@
  */
 
 #include <string.h>
+#include <targetVddInterface.h>
 #include "delay.h"
 #include "configure.h"
 #include "targetDefines.h"
-#include "cmdProcessing.h"
-#include "bdmCommon.h"
+#include "resetInterface.h"
 #include "usb.h"
 #include "swd.h"
 #include "bdm.h"
+#include "bdmCommon.h"
+#include "cmdProcessing.h"
 #include "cmdProcessingSWD.h"
 #include "cmdProcessingHCS.h"
-#include "TargetVddInterface.h"
 
 /** Buffer for USB command in, result out */
 uint8_t commandBuffer[MAX_COMMAND_SIZE+4];
@@ -88,12 +89,12 @@ uint16_t makeStatusWord(void) {
                break;
    }
 #if (HW_CAPABILITY&CAP_RST_IN)
-   if (Reset::read()) {
+   if (ResetInterface::read()) {
       status |= S_RESET_STATE;   // The RSTO pin is currently high
    }
    if (cable_status.reset==RESET_DETECTED) {
       status |= S_RESET_DETECT;                    // The target was recently reset externally
-      if (!Reset::read()) {
+      if (!ResetInterface::read()) {
          cable_status.reset = NO_RESET_ACTIVITY;   // Clear the flag if reset pin has returned high
       }
    }
@@ -439,7 +440,7 @@ USBDM_ErrorCode f_CMD_GET_BDM_STATUS(void) {
  *   - [1..2] = BDM status
  */
 void getPinStatus(void) {
-   PinLevelMasks_t status = Reset::isHigh()?PIN_RESET_LOW:PIN_RESET_HIGH;
+   PinLevelMasks_t status = ResetInterface::isHigh()?PIN_RESET_LOW:PIN_RESET_HIGH;
    Swd::getPinState(status);
    Bdm::getPinState(status);
 
@@ -554,17 +555,15 @@ USBDM_ErrorCode f_CMD_CONTROL_PINS(void) {
 #if (HW_CAPABILITY & CAP_RST_OUT)
    switch (control & PIN_RESET_MASK) {
       case PIN_RESET_3STATE :
-         Reset::highZ();
+         ResetInterface::highZ();
 #if (HW_CAPABILITY & CAP_RST_IN)
-         if (!USBDM::waitMS(200, Reset::read)) {
+         if (!USBDM::waitMS(200, ResetInterface::read)) {
             return(BDM_RC_RESET_TIMEOUT_RISE);
          }
 #endif // (HW_CAPABILITY&CAP_RST_IN)
          break;
       case PIN_RESET_LOW :
-         Debug::toggle();
-         Reset::low();
-         Debug::toggle();
+         ResetInterface::low();
          break;
    }
 #endif // (HW_CAPABILITY&CAP_RST_OUT)
@@ -625,7 +624,7 @@ USBDM_ErrorCode f_CMD_SET_VDD(void) {
       case BDM_TARGET_VDD_DISABLE:
       case BDM_TARGET_VDD_ENABLE:
          // Retain current option
-         return setTargetVdd(BDM_TARGET_VDD_ENABLE);
+         return setTargetVdd(vddSelect);
 
       case BDM_TARGET_VDD_OFF:
       case BDM_TARGET_VDD_3V3:
@@ -1083,7 +1082,7 @@ USBDM_ErrorCode f_CMD_SET_TARGET(void) {
  *      commandBuffer[1..N] = command results
  */
 static void commandExec(void) {
-   Debug::high();
+//   Debug::high();
 
    BDMCommands command    = (BDMCommands)commandBuffer[1];  // Command is 1st byte
    FunctionPtr commandPtr = f_CMD_ILLEGAL;     // Default to illegal command
@@ -1156,7 +1155,7 @@ static void commandExec(void) {
 #endif
       }
    }
-   Debug::low();
+//   Debug::low();
 }
 
 /**
@@ -1178,9 +1177,7 @@ void commandLoop(void) {
       (void)USBDM::UsbImplementation::receiveBulkData(MAX_COMMAND_SIZE, commandBuffer);
       commandSequence = commandBuffer[1] & 0xC0;
       commandBuffer[1] &= 0x3F;
-      Debug::high();
       commandExec();
-      Debug::low();
       commandBuffer[0] |= commandSequence;
       USBDM::UsbImplementation::sendBulkData(returnSize, commandBuffer);
    }

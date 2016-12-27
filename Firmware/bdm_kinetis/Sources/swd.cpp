@@ -30,6 +30,8 @@
  */
 
 #include <stdio.h>
+#include "delay.h"
+#include "resetInterface.h"
 #include "spi.h"
 #include "commands.h"
 #include "targetDefines.h"
@@ -458,8 +460,8 @@ void initialise() {
 
    setSpeed(15000000);
 
-   Reset::initialise();
-   Reset::highZ();
+   ResetInterface::initialise();
+   ResetInterface::highZ();
 
    // Set mode
    spi->MCR =
@@ -841,7 +843,7 @@ USBDM_ErrorCode kinetisMassErase(void) {
    uint8_t rc;
    uint32_t valueRead;
 
-   Reset::low();
+   ResetInterface::low();
    for (;;) {
       UsbLed::on();
       if (attemptCount++>ATTEMPT_MULTIPLE) {

@@ -12,16 +12,17 @@
 #include <string.h>
 #include <random>
 #include <stdlib.h>
-#include "configure.h"
 #include "hardware.h"
-#include "delay.h"
-#include "commands.h"
 #include "usb.h"
+#include "targetVddInterface.h"
+#include "resetInterface.h"
+#include "delay.h"
+#include "configure.h"
+#include "commands.h"
 #include "bdmCommon.h"
 #include "bdm.h"
 #include "cmdProcessingSWD.h"
 #include "cmdProcessingHCS.h"
-#include "TargetVddInterface.h"
 
 #if 0
 /** Check error code from USBDM API function
@@ -258,13 +259,13 @@ USBDM_ErrorCode checkIDcode() {
 
 void testReset() {
    for(;;) {
-      Reset::low();
+      ResetInterface::low();
       USBDM::waitMS(100);
-      Reset::high();
+      ResetInterface::high();
       USBDM::waitMS(100);
-      Reset::low();
+      ResetInterface::low();
       USBDM::waitMS(100);
-      Reset::highZ();
+      ResetInterface::highZ();
       USBDM::waitMS(100);
    }
 }
@@ -302,9 +303,10 @@ void hcs08Testing () {
 #endif
 
 void initialise() {
-   Reset::initialise();
+   ResetInterface::initialise();
    UsbLed::initialise();
    TargetVddInterface::initialise();
+   TargetVddInterface::setCallback(targetVddSense);
    Debug::initialise();
 
    InterfaceEnable::setOutput();

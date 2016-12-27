@@ -10,11 +10,13 @@
 
 #include "math.h"
 #include "hardware.h"
+#include "cmp.h"
 
 /**
  * Low-level interface to Vdd control and sensing
  */
 class TargetVddInterface {
+
 private:
    /**
     * Represents the 2:1 voltage divider on input
@@ -35,13 +37,19 @@ private:
    static constexpr int onThreshold = (int)(1.5/scaleFactor);
 
    /**
-    * Minimum working input voltage as an ADC reading \n
-    * 0.5 V as ADC reading
+    * Minimum POR input voltage as an ADC reading. \n
+    * This is the voltage needed to ensure a power-on-reset of the target. \n
+    * 0.8 V as ADC reading
     */
-   static constexpr int offThreshold = (int)(0.5/scaleFactor);
+   static constexpr int powerOnResetThresholdAdc = (int)(0.8/scaleFactor);
 
+   /**
+    * Minimum POR input voltage as an ADC reading. \n
+    * This is the voltage needed to ensure a power-on-reset of the target. \n
+    * 0.8 V as ADC reading
+    */
+   static constexpr int powerOnResetThresholdDac = (int)(0.8*255/3.3);
 
-private:
    /**
     * GPIO for Target Vdd enable pin
     */
@@ -53,19 +61,67 @@ private:
    using Led = USBDM::GpioB<3>;
 
    /**
-    * ADC channel for target Vdd measurement
+    * ADC channel for Target Vdd measurement
     */
-   using VddSense = USBDM::Adc0Channel<12>;
+   using VddMeasure = USBDM::Adc0Channel<12>;
+
+   /**
+    * Comparator to monitor Vdd level
+    */
+   using VddMonitor = USBDM::Cmp0;
+
+   /**
+    * GPIO used monitor Power switch error indicator
+    */
+   using VddPowerSwitchMonitor = USBDM::GpioD<0>;
+
+   /**
+    * Callback for Vdd changes
+    */
+   static void (*fCallback)();
 
 public:
+   static void vddMonitorCallback(int status) {
+      if ((status && CMP_SCR_CFF_MASK) != 0) {
+         // In case Vdd overload
+         vddOff();
+      }
+      (void)status;
+      fCallback();
+   }
+
+   static void powerMonitorCallback() {
+      fCallback();
+   }
+
+   static void setCallback(void (*callback)()) {
+      fCallback = callback;
+   }
+
+   /**
+    * Initialise Vdd control and measurement interface
+    */
    static void initialise() {
       Control::setOutput();
       vddOff();
+
       Led::setOutput();
       ledOff();
-      VddSense::enable();
-      VddSense::setResolution(USBDM::resolution_8bit_se);
-      }
+
+      VddMeasure::enable();
+      VddMeasure::setResolution(USBDM::resolution_8bit_se);
+
+      VddMonitor::enable();
+      VddMonitor::selectInputs(7, 1);
+      VddMonitor::setDacLevel(powerOnResetThresholdDac);
+      VddMonitor::setCallback(vddMonitorCallback);
+      VddMonitor::enableNvicInterrupts(true);
+
+      VddPowerSwitchMonitor::setInput();
+      VddPowerSwitchMonitor::setPullDevice(USBDM::PullUp);
+      VddPowerSwitchMonitor::setIrq(USBDM::PinIrqFalling);
+      VddPowerSwitchMonitor::setCallback(powerMonitorCallback);
+   }
 
    /**
     * Turn on Target Vdd
@@ -102,7 +158,7 @@ public:
       Led::high();
    }
 
-   /** Turn off Tvdd LED */
+   /** Turn off TVdd LED */
    static void ledOff() {
       Led::low();
    }
@@ -113,7 +169,7 @@ public:
     * @return Target Vdd as an integer in the range 0-255 => 0-5V
     */
    static int readRawVoltage() {
-      return round(VddSense::readAnalogue()*(externalDivider*3.3/5));
+      return round(VddMeasure::readAnalogue()*(externalDivider*3.3/5));
    }
 
    /**
@@ -122,15 +178,15 @@ public:
     * @return Target Vdd in volts as a float
     */
    static float readVoltage() {
-      return VddSense::readAnalogue()*scaleFactor;
+      return VddMeasure::readAnalogue()*scaleFactor;
    }
 
    /**
-    * Check if target Vdd is present\n
+    * Check if target Vdd is present \n
     * Also updates Target Vdd LED
     */
    static bool isVddOK() {
-      if (VddSense::readAnalogue()>onThreshold) {
+      if (VddMeasure::readAnalogue()>onThreshold) {
          ledOn();
          return true;
       }
@@ -140,16 +196,16 @@ public:
       }
    }
    /**
-    * Check if target Vdd is low\n
+    * Check if target Vdd has reached POR level\n
     * Also updates Target Vdd LED
     */
    static bool isVddLow() {
-      if (VddSense::readAnalogue()<offThreshold) {
-         ledOn();
+      if (VddMeasure::readAnalogue()<powerOnResetThresholdAdc) {
+         ledOff();
          return true;
       }
       else {
-         ledOff();
+         ledOn();
          return false;
       }
    }
@@ -158,15 +214,14 @@ public:
     * Clear VDD change flag
     */
    static void clearVddChangeFlag() {
-      // TODO Vdd Sensing
+      VddMonitor::clearInterruptFlags();
    }
 
    /**
     * Clear VDD change flag
     */
    static void enableVddChangeSense(bool enable) {
-      // TODO Vdd Sensing
-      (void)enable;
+      VddMonitor::enableFallingEdgeInterrupts(enable);
    }
 };
 

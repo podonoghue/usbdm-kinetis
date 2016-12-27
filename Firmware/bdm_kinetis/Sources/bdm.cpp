@@ -38,25 +38,21 @@
  */
 
 #include <stdint.h>
+#include "delay.h"
 #include "configure.h"
 #include "system.h"
 #include "derivative.h"
 #include "hardware.h"
-#include "delay.h"
+#include "resetInterface.h"
 #include "USBDM_MK20D5.h"
-#include "targetDefines.h"
 #include "cmdProcessingHCS.h"
 #include "bdm.h"
 #include "bdmCommon.h"
+#include "targetDefines.h"
 
 namespace Bdm {
 
 static USBDM_ErrorCode hc12_alt_speed_detect(void);
-
-//constexpr unsigned SOFT_RESETus         =  10000U; //!< us - longest time needed for soft reset of the BDM interface (512 BDM cycles @ 400kHz = 1280us)
-//constexpr unsigned RESET_LENGTHms       =    100U; //!< ms - time of RESET assertion
-//constexpr unsigned RESET_INITIAL_WAITms =     10U; //!< ms - max time to wait for the RESET pin to come high after release
-//static constexpr int VDD_RISE_TIME_us   = 2000; // Minimum time to allow for controlled target Vdd rise
 
 /** Time to hold BKGD pin low after reset pin rise for special modes */
 static constexpr unsigned BKGD_WAIT_us = 10;
@@ -289,7 +285,7 @@ void initialise() {
          (0<<bkgdEnChannel)|  // Initialise low (disable buffer)
          (1<<bkgdOutChannel); // Initialise high
 
-   Reset::initialise();
+   ResetInterface::initialise();
 
    enableFtmCounter();
 
@@ -977,6 +973,7 @@ USBDM_ErrorCode cmd_0_1L(uint8_t cmd, uint8_t result[4]) {
    tx8(cmd);
    USBDM_ErrorCode rc = acknowledgeOrWait64();
    rx32(result);
+   transactionComplete();
    return rc;
 }
 
@@ -1465,10 +1462,10 @@ USBDM_ErrorCode physicalConnect(void) {
    }
    if (bdm_option.useResetSignal) {
       // Wait with timeout until RESET is high
-      if (Reset::isLow()) {
+      if (ResetInterface::isLow()) {
          // TODO This may take a while
          //         setBDMBusy();
-         if (!USBDM::waitMS(RESET_RELEASE_WAIT_ms, Reset::isHigh)) {
+         if (!USBDM::waitMS(RESET_RELEASE_WAIT_ms, ResetInterface::isHigh)) {
             // RESET timeout
             return(BDM_RC_RESET_TIMEOUT_RISE);
          }
@@ -1640,7 +1637,7 @@ USBDM_ErrorCode softwareReset(uint8_t mode) {
 
    if (bdm_option.useResetSignal) {
       // Wait with timeout until RESET is high
-      if (!USBDM::waitMS(RESET_RELEASE_WAIT_ms, Reset::isHigh)) {
+      if (!USBDM::waitMS(RESET_RELEASE_WAIT_ms, ResetInterface::isHigh)) {
          // RESET timeout
          return(BDM_RC_RESET_TIMEOUT_RISE);
       }

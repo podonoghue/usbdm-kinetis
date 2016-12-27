@@ -62,7 +62,7 @@ const uint8_t *const Usb0::stringDescriptors[] = {
       s_config,
 
       s_bulk_interface,
-      
+
       s_cdc_interface,
       s_cdc_control,
       s_cdc_data
@@ -474,6 +474,9 @@ void Usb0::initialise() {
 int Usb0::receiveBulkData(uint8_t maxSize, uint8_t *buffer) {
    epBulkOut.startRxTransaction(EPDataOut, maxSize, buffer);
    while(epBulkOut.getState() != EPIdle) {
+      if (!areInterruptsEnabled()) {
+         ::enableInterrupts();
+      }
       __WFI();
    }
    setActive();
