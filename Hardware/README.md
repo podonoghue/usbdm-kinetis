@@ -13,8 +13,8 @@ Refer to the PDFs in the Project Outputs directory
 PCBs may be ordered from OSH park <a href="https://oshpark.com/shared_projects/222HxyrK"><img src="https://oshpark.com/assets/badge-5b7ec47045b78aef6eb9d83b3bac6b1920de805e9a0c227658eac6e19a045b9c.png" alt="Order from OSH Park"></img></a>
 
 #USBDM_Kinetis_MK22F_V3 (MK22F Version)  
-(supports initial bootloader, higher speed communication)
 ====
+Supports initial bootloader, higher speed communication.  
 Refer to the PDFs in the Project Outputs directory 
 <a href="https://github.com/podonoghue/usbdm-kinetis/blob/master/Hardware/USBDM_Kinetis_MK22F/Project%20Outputs%20for%20USBDM_Kinetis_MK22F/USBDM_Kinetis_MK22F.PDF">PDF Documentation</img></a>
 
