@@ -9,8 +9,8 @@
     If you need to create another configuration make a copy of this file
     under a new name and change Configure.h appropriately.
 */
-#ifndef _CONFIGURE_H_
-#define _CONFIGURE_H_
+#ifndef _USBDM_MK_H_
+#define _USBDM_MK_H_
 
 #include "utilities.h"
 #include "hardware.h"
@@ -72,5 +72,7 @@ using InterfaceEnable = USBDM::GpioC<4>;
 
 #define CPU  MK20D5
 
-#endif // _CONFIGURE_H_
+#define VERSION_HW  (HW_ARM+TARGET_HARDWARE)
+
+#endif // _USBDM_MK_H_
 

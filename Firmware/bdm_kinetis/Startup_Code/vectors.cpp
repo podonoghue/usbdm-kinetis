@@ -1,8 +1,8 @@
 /*
- *  @file Vectors.cpp 
- *  Derived from  Vectors-mk.cpp
+ *  @file vectors.cpp 
+ *  Derived from  vectors-mk.cpp
  *
- *  Generic vectors and security for Kinetis MKxxx
+ *  Vectors and security for Kinetis MKxxx
  *
  *  Created on: 07/12/2012
  *      Author: podonoghue
