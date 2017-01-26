@@ -80,6 +80,10 @@ static constexpr uint  CDC_DATA_IN_EP_MAXSIZE       = 16; //!< CDC data in      
  */
 class Usb0 : public UsbBase_T<Usb0Info, CONTROL_EP_MAXSIZE> {
 
+   // Select UART to use
+   using Uart = CdcUart<Uart1Info>;
+
+   // Allow superclass to access handleTokenComplete(void);
    friend UsbBase_T<Usb0Info, CONTROL_EP_MAXSIZE>;
 
 public:
@@ -168,8 +172,6 @@ protected:
 
    /** Force command handler to exit and restart */
    static bool forceCommandHandlerInitialise;
-
-   using Uart = CdcUart<Uart0Info>;
 
 public:
 
@@ -266,7 +268,7 @@ protected:
       epBulkIn.initialise();
       addEndpoint(&epBulkIn);
       epBulkIn.setCallback(bulkInTransactionCallback);
-	  
+
       epCdcNotification.initialise();
       addEndpoint(&epCdcNotification);
 
@@ -283,7 +285,7 @@ protected:
 
       // Start CDC status transmission
       epCdcSendNotification();
-	  
+
       static const uint8_t cdcInBuff[] = "Hello there\n";
       epCdcDataIn.startTxTransaction(EPDataIn, sizeof(cdcInBuff), cdcInBuff);
    }

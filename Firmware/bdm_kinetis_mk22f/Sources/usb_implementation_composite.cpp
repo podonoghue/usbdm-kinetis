@@ -458,7 +458,7 @@ void Usb0::initialise() {
 
    setSOFCallback(sofCallback);
 
-   CdcUart<Uart0Info>::setInCallback(putCdcChar);
+   Uart::setInCallback(putCdcChar);
 }
 
 /**

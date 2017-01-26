@@ -21,17 +21,17 @@
    <item key="$signal$PTA18_descriptionSetting"            value="N/C" />
    <item key="$signal$PTA19_descriptionSetting"            value="N/C" />
    <item key="$signal$PTA1_descriptionSetting"             value="Console_Rx" />
+   <item key="$signal$PTA1_muxSetting"                     value="mux2" />
    <item key="$signal$PTA2_descriptionSetting"             value="Console_Tx" />
+   <item key="$signal$PTA2_muxSetting"                     value="mux2" />
    <item key="$signal$PTA3_descriptionSetting"             value="SWD_DIO" />
    <item key="$signal$PTA3_muxSetting"                     value="mux7" />
    <item key="$signal$PTA4_descriptionSetting"             value="N/C" />
    <item key="$signal$PTA5_descriptionSetting"             value="N/C" />
    <item key="$signal$PTB0_descriptionSetting"             value="TPa" />
    <item key="$signal$PTB0_muxSetting"                     value="mux1" />
-   <item key="$signal$PTB16_descriptionSetting"            value="DBG_Rx" />
-   <item key="$signal$PTB16_muxSetting"                    value="mux3" />
-   <item key="$signal$PTB17_descriptionSetting"            value="DBG_Tx" />
-   <item key="$signal$PTB17_muxSetting"                    value="mux3" />
+   <item key="$signal$PTB16_descriptionSetting"            value="N/C" />
+   <item key="$signal$PTB17_descriptionSetting"            value="N/C" />
    <item key="$signal$PTB18_descriptionSetting"            value="N/C" />
    <item key="$signal$PTB19_descriptionSetting"            value="N/C" />
    <item key="$signal$PTB1_descriptionSetting"             value="TPa" />
@@ -73,8 +73,10 @@
    <item key="$signal$PTD6_muxSetting"                     value="mux4" />
    <item key="$signal$PTD7_descriptionSetting"             value="USB_LED" />
    <item key="$signal$PTD7_muxSetting"                     value="mux1" />
-   <item key="$signal$PTE0_descriptionSetting"             value="N/C" />
-   <item key="$signal$PTE1_descriptionSetting"             value="N/C" />
+   <item key="$signal$PTE0_descriptionSetting"             value="DBG_Tx" />
+   <item key="$signal$PTE0_muxSetting"                     value="mux3" />
+   <item key="$signal$PTE1_descriptionSetting"             value="DBG_Rx" />
+   <item key="$signal$PTE1_muxSetting"                     value="mux3" />
    <item key="$signal$RESET_b_descriptionSetting"          value="Resetb" />
    <item key="$signal$USB0_DM_descriptionSetting"          value="USB_DM" />
    <item key="$signal$USB0_DP_descriptionSetting"          value="USB_DP" />
@@ -133,10 +135,10 @@
    <item key="/CMP0/cmp_cr1_se"                            value="false" />
    <item key="/CMP0/cmp_cr1_trigm"                         value="false" />
    <item key="/CMP0/cmp_cr1_we"                            value="false" />
-   <item key="/CMP0/cmp_daccr_vrsel"                       value="false" />
+   <item key="/CMP0/cmp_daccr_vrsel"                       value="true" />
    <item key="/CMP0/cmp_fpr_filt_per"                      value="0" />
-   <item key="/CMP0/cmp_muxcr_msel"                        value="0" />
-   <item key="/CMP0/cmp_muxcr_psel"                        value="0" />
+   <item key="/CMP0/cmp_muxcr_msel"                        value="7" />
+   <item key="/CMP0/cmp_muxcr_psel"                        value="1" />
    <item key="/CMP0/cmp_scr_dmaen"                         value="false" />
    <item key="/CMP0/cmp_scr_ief"                           value="false" />
    <item key="/CMP0/cmp_scr_ier"                           value="false" />
@@ -448,11 +450,11 @@
    <item key="/SPI1/spi_mode"                              value="1" />
    <item key="/UART0/clockSource"                          value="SystemCoreClock" />
    <item key="/UART0/defaultBaudRate"                      value="115200" />
-   <item key="/UART0/irqHandlerInstalled"                  value="true" />
+   <item key="/UART0/irqHandlerInstalled"                  value="false" />
    <item key="/UART0/irqLevel"                             value="0" />
    <item key="/UART1/clockSource"                          value="SystemCoreClock" />
    <item key="/UART1/defaultBaudRate"                      value="115200" />
-   <item key="/UART1/irqHandlerInstalled"                  value="false" />
+   <item key="/UART1/irqHandlerInstalled"                  value="true" />
    <item key="/UART1/irqLevel"                             value="0" />
    <item key="/UART2/clockSource"                          value="SystemBusClock" />
    <item key="/UART2/defaultBaudRate"                      value="115200" />
