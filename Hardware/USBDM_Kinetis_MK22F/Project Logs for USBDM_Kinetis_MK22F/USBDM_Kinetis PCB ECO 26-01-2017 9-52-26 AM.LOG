@@ -1,0 +1,4 @@
+Change Component Comment : Designator=C5 Old Comment=2u2F/6V New Comment=4u7F/6V
+Change Component Comment : Designator=C7 Old Comment=2u2F/6V New Comment=4u7F/6V
+Added Pin To Net: NetName=DBG_TX Pin=U5-1
+Added Pin To Net: NetName=DBG_RX Pin=U5-2

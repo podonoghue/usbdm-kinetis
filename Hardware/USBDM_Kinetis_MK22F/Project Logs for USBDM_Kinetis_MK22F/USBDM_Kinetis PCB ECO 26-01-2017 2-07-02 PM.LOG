@@ -1,0 +1,9 @@
+Change Component Comment : Designator=P1 Old Comment=BDM2X3 New Comment=BDM Connector
+Change Component Comment : Designator=L1 Old Comment=FB New Comment=Ferrite Bead
+Change Component Comment : Designator=L2 Old Comment=FB New Comment=Ferrite Bead
+Change Component Comment : Designator=P2 Old Comment=SWD-2x10 New Comment=SWD-2x10 (reducued pins)
+Change Component Comment : Designator=J1 Old Comment=USB_MICRO_B_CONNECTOR New Comment=USB Micro-B Connector
+Change Component Description : Designator=P1 Old Description= New Description=HCS BDM connector (2x3 0.1")
+Change Component Description : Designator=P2 Old Description=SWD Connector 2x10-Pin New Description=SWD Connector 2x10-Pin (reduced pins)
+Change Component Description : Designator=J1 Old Description=USB Micro-B Connector New Description=USB Micro-B (MOLEX - 47346-0001)
+Change Component Library : Designator=P1 Old Library=MyLibrary.IntLib New Library=MySchLib.schlib

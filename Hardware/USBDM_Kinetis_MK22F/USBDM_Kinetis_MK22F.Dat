@@ -1,23 +1,22 @@
-Field=Comment~String~Comment~100|Field=Description~String~Description~100|Field=Designator~String~Designator~100|Field=Footprint~String~Footprint~100|Field=LibRef~String~LibRef~100|Field=Quantity~Integer~Quantity~100|Field=Farnell PN~String~Farnell PN~100|Field=Digikey~String~Digikey~100|ReportField=Currency~<none>|ReportField=ProductionQuantity~1|ReportField=ProjectFileName~USBDM_Kinetis_MK22F.PrjPcb|ReportField=ProjectFullPath~C:\Users\podonoghue\Documents\Development\usbdm-kinetis\Hardware\USBDM_Kinetis_MK22F\USBDM_Kinetis_MK22F.PrjPcb|ReportField=Title~Bill of Materials For Project [USBDM_Kinetis_MK22F.PrjPcb] (No PCB Document Selected)|ReportField=TotalQuantity~56|ReportField=ReportTime~1:15:31 PM|ReportField=ReportDate~22/01/2017|ReportField=ReportDateTime~22/01/2017 1:15:31 PM|ReportField=OutputName~Bill of Materials|ReportField=OutputType~BOM_PartType|ReportField=GeneratorName~BOM|ReportField=GeneratorDescription~Bill of Materials|ReportField=VariantName~None|ReportField=Address1~|ReportField=Address2~|ReportField=Address3~|ReportField=Address4~|ReportField=Application_BuildNumber~|ReportField=ApprovedBy~|ReportField=Author~|ReportField=CheckedBy~|ReportField=CompanyName~|ReportField=CurrentDate~|ReportField=CurrentTime~|ReportField=Date~|ReportField=DocumentFullPathAndName~|ReportField=DocumentName~|ReportField=DocumentNumber~|ReportField=DrawnBy~|ReportField=Engineer~|ReportField=ImagePath~|ReportField=ModifiedDate~|ReportField=Organization~|ReportField=ProjectName~|ReportField=Revision~3.0|ReportField=Rule~|ReportField=SheetNumber~|ReportField=SheetTotal~|ReportField=Time~|ReportField=Title~USBDM-Kinetis|ReportField=DataSourceFileName~USBDM_Kinetis_MK22F.PrjPcb|ReportField=DataSourceFullPath~C:\Users\podonoghue\Documents\Development\usbdm-kinetis\Hardware\USBDM_Kinetis_MK22F\USBDM_Kinetis_MK22F.PrjPcb
+Field=Comment~String~Comment~100|Field=Description~String~Description~100|Field=Designator~String~Designator~100|Field=Footprint~String~Footprint~100|Field=LibRef~String~LibRef~100|Field=Quantity~Integer~Quantity~100|Field=Farnell PN~String~Farnell PN~100|Field=Digikey~String~Digikey~100|ReportField=Currency~<none>|ReportField=ProductionQuantity~1|ReportField=ProjectFileName~USBDM_Kinetis_MK22F.PrjPcb|ReportField=ProjectFullPath~C:\Users\podonoghue\Documents\Development\usbdm-kinetis\Hardware\USBDM_Kinetis_MK22F\USBDM_Kinetis_MK22F.PrjPcb|ReportField=Title~Bill of Materials For Project [USBDM_Kinetis_MK22F.PrjPcb] (No PCB Document Selected)|ReportField=TotalQuantity~56|ReportField=ReportTime~4:41:48 PM|ReportField=ReportDate~26/01/2017|ReportField=ReportDateTime~26/01/2017 4:41:48 PM|ReportField=OutputName~Bill of Materials|ReportField=OutputType~BOM_PartType|ReportField=GeneratorName~BOM|ReportField=GeneratorDescription~Bill of Materials|ReportField=VariantName~None|ReportField=Address1~|ReportField=Address2~|ReportField=Address3~|ReportField=Address4~|ReportField=Application_BuildNumber~|ReportField=ApprovedBy~|ReportField=Author~|ReportField=CheckedBy~|ReportField=CompanyName~|ReportField=CurrentDate~|ReportField=CurrentTime~|ReportField=Date~|ReportField=DocumentFullPathAndName~|ReportField=DocumentName~|ReportField=DocumentNumber~|ReportField=DrawnBy~|ReportField=Engineer~|ReportField=ImagePath~|ReportField=ModifiedDate~|ReportField=Organization~|ReportField=ProjectName~|ReportField=Revision~3.1|ReportField=Rule~|ReportField=SheetNumber~|ReportField=SheetTotal~|ReportField=Time~|ReportField=Title~USBDM-Kinetis|ReportField=DataSourceFileName~USBDM_Kinetis_MK22F.PrjPcb|ReportField=DataSourceFullPath~C:\Users\podonoghue\Documents\Development\usbdm-kinetis\Hardware\USBDM_Kinetis_MK22F\USBDM_Kinetis_MK22F.PrjPcb
 100nF|Capacitor SMT 0603|C1, C4, C6, C8, C9, C10, C11, C12, C14, C15, C16|CCNP1608-0603|Cap|11|1709957|
 10uF/16V|Capacitor SMT 0805|C2|CCNP2012-0805|Cap_CCNP_0805|1|2497049|
-4u7F/6V|Capacitor SMT 0603|C3, C13|CCNP1608-0603|Cap_CCNP_0603|2|2496930|
-2u2F/6V|Capacitor SMT 0603|C5, C7|CCNP1608-0603|Cap_CCNP_0603|2|2496850|
-LED Green|LED 0603 Green|D1|LED1608-0603-GREEN|LED-0603-Green|1|5790852|
-LED Red|LED 0603 Red|D2|LED1608-0603-RED|LED-0603-Red|1|5790852|
-USB_MICRO_B_CONNECTOR|USB Micro-B Connector|J1|MOLEX - 47346-0001|USB_MICRO_B_CONNECTOR|1|1568026|
+4u7F/6V|Capacitor SMT 0603|C3, C5, C7, C13|CCNP1608-0603|Cap_CCNP_0603|4|2496930|
+LED Green|LED 0603 Green (HSMG-C170  1.25mm x 1.4mm, 20 mA, 2.2 V, 572 nm)|D1|LED1608-0603-GREEN|LED-0603-Green|1|5790852|
+LED Red|LED 0603 Red (HSMS-C170, 1.25mm x 1.4mm, 20 mA, 2.1 V, 626 nm)|D2|LED1608-0603-RED|LED-0603-Red|1|5790839|
+USB Micro-B Connector|USB Micro-B (MOLEX - 47346-0001)|J1|MOLEX - 47346-0001|USB_MICRO_B_CONNECTOR|1|1568026|
 Header 1x3 2mm|Header, 1x3, 2mm|JP1|Header 1x3 (2mm)|Header 1x3 2mm|1||
-FB|Ferrite Bead (0805) 0.045OHM, 2A|L1, L2|CR2012-0805|Ferrite Bead 0805|2|1515661|
-BDM2X3||P1|BDM|BDM2X3|1||
-SWD-2x10|SWD Connector 2x10-Pin|P2|SWD-2x10 - reduced|SWD2X10-Reduced|1|1865289|
+Ferrite Bead|Ferrite Bead SMT 0805, TDK MPZ2012S102AT, 0.15OHM, 1.5A|L1, L2|FB2012-0805|Ferrite Bead 0805|2|1669733|
+BDM Connector|HCS BDM connector (2x3 0.1")|P1|BDM|BDM2X3|1||
+SWD-2x10 (reduced pins)|SWD Connector 2x10-Pin (reduced pins)|P2|SWD-2x10 - reduced|SWD2X10-Reduced|1|1865289|
 SWD2X5|SWD Connector 2x5-Pin|P3|SWD-2x5|SWD2X5|1|1865285|
-1K|Resistor SMT|R1, R20|CR1608-0603|Res|2|2331727|
-33R|Resistor SMT|R2, R3|CR1608-0603|Res|2|1632431|
-10K|Resistor SMT|R4, R11, R12, R17, R22|CR1608-0603|Res|5|1632490|
-470R|Resistor SMT|R5, R21|CR1608-0603|Res|2|2073508|
-100K|Resistor SMT|R6, R9, R10, R15, R18|CR1608-0603|Res, Res, Res_CR0603, Res, Res|5|9332405|
-47R|Resistor SMT|R7, R8, R14, R16, R19|CR1608-0603|Res|5|1646283|
-0R|Resistor SMT|R13|CR1608-0603|Res_CR0603|1|1631319|
+1K|Resistor SMT 0603|R1, R20|CR1608-0603|Res|2|2331727|
+33R|Resistor SMT 0603|R2, R3|CR1608-0603|Res|2|1632431|
+10K|Resistor SMT 0603|R4, R11, R12, R17, R22|CR1608-0603|Res|5|1632490|
+470R|Resistor SMT 0603|R5, R21|CR1608-0603|Res|2|2073508|
+100K|Resistor SMT 0603|R6, R9, R10, R15, R18|CR1608-0603|Res, Res, Res_CR0603, Res, Res|5|9332405|
+47R|Resistor SMT 0603|R7, R8, R14, R16, R19|CR1608-0603|Res|5|1646283|
+0R|Resistor SMT 0603|R13|CR1608-0603|Res_CR0603|1|1631319|
 SW-PB-SMT-B3U-1000P-B|Switch OMRON B3U series|S1|SW_SMT_PB2-B3U-1000P-B|SW-PB-SMT-B3U-1000P-B|1|1333654|
 MIC2005-0.5YM6-TR|Power Switch|U1|SOT23-6-Power|MIC2005-0.5YM6-TR|1|2509880|
 74LVC1T45DCK|Dual voltage bidirection buffer|U2, U7|SC70_N|74LVC1T45DCK|2|2395603|
