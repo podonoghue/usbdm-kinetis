@@ -1,6 +1,0 @@
-Change Component Description : Designator=L1 Old Description=Ferrite Bead (0805) 0.045OHM, 2A New Description=Ferrite Bead SMT 0805, TDK  MMZ2012Y600B 0.1OHM, 1A, 
-Change Component Description : Designator=L2 Old Description=Ferrite Bead (0805) 0.045OHM, 2A New Description=Ferrite Bead SMT 0805, TDK  MMZ2012Y600B 0.1OHM, 1A, 
-Added Pin To Net: NetName=PTB16 Pin=U5-39
-Added Net: Name=PTB16
-Added Pin To Net: NetName=PTB17 Pin=U5-40
-Added Net: Name=PTB17

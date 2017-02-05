@@ -1,4 +1,0 @@
-Change Component Description : Designator=D1 Old Description=LED 0603 Green New Description=LED 0603 Green (HSMG-C170  1.25mm x 1.4mm, 20 mA, 2.2 V, 572 nm)
-Change Component Description : Designator=D2 Old Description=LED 0603 Red New Description=LED 0603 Red (HSMS-C150.  1.6mm x 2mm, 20 mA, 2.1 V, 626 nm)
-Change Component Library : Designator=D1 Old Library=MyLibrary.IntLib New Library=MySchLib.schlib
-Change Component Library : Designator=D2 Old Library=MyLibrary.IntLib New Library=MySchLib.schlib

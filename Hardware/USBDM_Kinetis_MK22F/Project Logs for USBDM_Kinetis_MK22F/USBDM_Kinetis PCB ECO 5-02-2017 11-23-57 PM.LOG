@@ -1,4 +1,0 @@
-Added Component: Designator=R23(CR1608-0603)
-Added Pin To Net: NetName=VDD_EN Pin=R23-1
-Added Pin To Net: NetName=GND Pin=R23-2
-Added Member To Class: ClassName=USBDM_Kinetis Member=Component R23 10K
