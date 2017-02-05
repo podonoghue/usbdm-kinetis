@@ -312,6 +312,9 @@ void initialise() {
    InterfaceEnable::setOutput();
    InterfaceEnable::high();
 
+   // Wait for Vbdm stable
+   USBDM::wait(10*USBDM::ms);
+
    // Update power status
    checkTargetVdd();
 }
@@ -328,6 +331,7 @@ int main() {
 
    PRINTF("SystemBusClock  = %ld\n", SystemBusClock);
    PRINTF("SystemCoreClock = %ld\n", SystemCoreClock);
+   PRINTF("SystemCoreClock = %d\n",  HardwareId::getId());
 
    PRINTF("Target Vdd = %f\n", TargetVddInterface::readVoltage());
 
