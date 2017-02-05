@@ -48,7 +48,7 @@ private:
     * This is the voltage needed to ensure a power-on-reset of the target. \n
     * 0.8 V as ADC reading
     */
-   static constexpr int powerOnResetThresholdDac = (int)(0.8*255/3.3);
+   static constexpr int powerOnResetThresholdDac = (int)(0.8*64/3.3);
 
    /**
     * GPIO for Target Vdd enable pin
@@ -71,7 +71,7 @@ private:
    using VddMonitor = USBDM::Cmp0;
 
    /**
-    * GPIO used monitor Power switch error indicator
+    * GPIO used to monitor power switch error indicator
     */
    using VddPowerSwitchMonitor = USBDM::GpioD<0>;
 
@@ -80,21 +80,39 @@ private:
     */
    static void (*fCallback)();
 
+   /**
+    * Dummy routine used if callback is not set
+    */
+   static void nullCallback() {
+#ifdef DEBUG_BUILD
+      __BKPT();
+#endif
+   }
+
 public:
+   /**
+    * Monitors Vbdm level (comparator)
+    */
    static void vddMonitorCallback(int status) {
       if ((status && CMP_SCR_CFF_MASK) != 0) {
          // In case Vdd overload
          vddOff();
       }
-      (void)status;
+      // Notify callback
       fCallback();
    }
 
+   /**
+    * Monitors Vbdm power switch (IRQ pin)
+    */
    static void powerMonitorCallback() {
       fCallback();
    }
 
    static void setCallback(void (*callback)()) {
+      if (callback == nullptr) {
+         callback = nullCallback;
+      }
       fCallback = callback;
    }
 
@@ -112,10 +130,11 @@ public:
       VddMeasure::setResolution(USBDM::resolution_8bit_se);
 
       VddMonitor::enable();
-      VddMonitor::selectInputs(7, 1);
+      VddMonitor::selectInputs(1, 7);
       VddMonitor::setDacLevel(powerOnResetThresholdDac);
       VddMonitor::setCallback(vddMonitorCallback);
       VddMonitor::enableNvicInterrupts(true);
+      fCallback = nullCallback;
 
       VddPowerSwitchMonitor::setInput();
       VddPowerSwitchMonitor::setPullDevice(USBDM::PullUp);
@@ -142,7 +161,7 @@ public:
     * Turn on Target Vdd @ 5V\n
     * Dummy routine as voltage level controlled by physical link
     */
-   static void vdd5On() {
+   static void vdd5VOn() {
       vddOn();
    }
 
@@ -178,6 +197,8 @@ public:
     * @return Target Vdd in volts as a float
     */
    static float readVoltage() {
+      VddMeasure::enable();
+      VddMeasure::setResolution(USBDM::resolution_8bit_se);
       return VddMeasure::readAnalogue()*scaleFactor;
    }
 
@@ -195,6 +216,7 @@ public:
          return false;
       }
    }
+
    /**
     * Check if target Vdd has reached POR level\n
     * Also updates Target Vdd LED
@@ -218,7 +240,7 @@ public:
    }
 
    /**
-    * Clear VDD change flag
+    * Enable/disable VDD change monitoring
     */
    static void enableVddChangeSense(bool enable) {
       VddMonitor::enableFallingEdgeInterrupts(enable);

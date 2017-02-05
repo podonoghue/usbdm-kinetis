@@ -7,7 +7,7 @@
 
 #include "targetVddInterface.h"
 
-void (*TargetVddInterface::fCallback)() = nullptr;
+void (*TargetVddInterface::fCallback)() = TargetVddInterface::nullCallback;
 
 
 
