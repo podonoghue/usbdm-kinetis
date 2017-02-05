@@ -40,9 +40,9 @@ public:
       // Direction low => input
       Direction::low();
       Direction::setOutput();
-//      Data::setIrq(USBDM::PinIrqFalling);
-//      Data::setCallback(callback);
-//      Data::enableNvicInterrupts(true);
+      Data::setIrq(USBDM::PinIrqFalling);
+      Data::setCallback(callback);
+      Data::enableNvicInterrupts(true);
    }
    /**
     * Drive signal high\n
