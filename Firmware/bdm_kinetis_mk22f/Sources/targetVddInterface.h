@@ -105,8 +105,10 @@ public:
    /**
     * Monitors Vbdm power switch (IRQ pin)
     */
-   static void powerMonitorCallback() {
-      fCallback();
+   static void powerMonitorCallback(uint32_t status) {
+      if ((VddPowerSwitchMonitor::MASK & status) != 0) {
+         fCallback();
+      }
    }
 
    static void setCallback(void (*callback)()) {

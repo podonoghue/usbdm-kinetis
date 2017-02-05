@@ -35,3 +35,4 @@
 /usb_implementation_composite.h
 /usb_implementation_composite.cpp
 /usb_cdc_uart.h
+/cmp.cpp

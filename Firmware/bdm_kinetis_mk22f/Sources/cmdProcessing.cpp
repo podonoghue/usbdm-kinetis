@@ -288,7 +288,7 @@ USBDM_ErrorCode f_CMD_DEBUG(void) {
          return BDM_RC_OK;
 
       case BDM_DBG_VDD5_ON: // Target Vdd voltage on
-         TargetVddInterface::vdd5On();
+         TargetVddInterface::vdd5VOn();
          return BDM_RC_OK;
 
       case BDM_DBG_CYCLE_POWER: // Cycle power to target

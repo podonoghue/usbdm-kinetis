@@ -24,7 +24,7 @@ USBDM_ErrorCode f_CMD_RESET(void);
 USBDM_ErrorCode f_CMD_STEP(void);
 USBDM_ErrorCode f_CMD_GO(void);
 USBDM_ErrorCode f_CMD_HALT(void);
-}; // End namespace Bdm
+}; // End namespace Hcs
 
 namespace Hcs08 {
 USBDM_ErrorCode f_CMD_WRITE_MEM(void);

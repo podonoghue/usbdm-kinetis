@@ -20,9 +20,10 @@ private:
    using Direction = USBDM::GpioC<0>;
    using Data      = USBDM::GpioC<1>;
 
-   static void callback() {
-      Debug::toggle();
-      __asm__("nop");
+   static void callback(uint32_t status) {
+      if ((Data::MASK & status) != 0) {
+         Debug::toggle();
+      }
    }
 
 public:
@@ -50,7 +51,7 @@ public:
     */
    static void high() {
       Data::high();
-      Data::setOutput();
+      Data::setOut();
       Direction::high();
    }
    /**
@@ -66,7 +67,7 @@ public:
     */
    static void low() {
       Data::low();
-      Data::setOutput();
+      Data::setOut();
       Direction::high();
    }
    /**
@@ -83,7 +84,7 @@ public:
     */
    static void highZ() {
       Direction::low();
-      Data::setInput();
+      Data::setIn();
    }
    /**
     * Read value from receiver
@@ -92,7 +93,7 @@ public:
     */
    static bool read() {
       Direction::low();
-      Data::setInput();
+      Data::setIn();
       return Data::read();
    }
    /**

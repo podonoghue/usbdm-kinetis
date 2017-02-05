@@ -56,8 +56,6 @@ static constexpr uint32_t RESET_RECOVERYms = 10;
  *  Interrupt function servicing the interrupt from Vdd changes
  *  This routine has several purposes:
  *   - Triggers POR into Debug mode on RS08/HCS08/CFV1 targets \n
- *   - Turns off Target power on overload \n
- *   - Updates Target power status
  */
 void targetVddSense() {
    //TODO targetVddSense()
@@ -102,10 +100,8 @@ USBDM_ErrorCode checkTargetVdd(void) {
       }
       else {
          cable_status.power = BDM_TARGET_VDD_ERR;
-#if (HW_CAPABILITY&CAP_VDDCONTROL)
          // Possible overload
          TargetVddInterface::vddOff();
-#endif
       }
    }
 #else
@@ -162,7 +158,7 @@ USBDM_ErrorCode setTargetVdd(TargetVddSelect_t targetVdd) {
          }
          break;
       case BDM_TARGET_VDD_5V  :
-         TargetVddInterface::vdd5On();
+         TargetVddInterface::vdd5VOn();
          // Wait for Vdd to rise
          if (!USBDM::waitMS(VDD_RISE_TIMEms, TargetVddInterface::isVddOK)) {
             // In case of Vdd overload

@@ -126,8 +126,8 @@
    <item key="/ADC1/clockFrequency"                        value="5200000.0" />
    <item key="/ADC1/irqHandlerInstalled"                   value="false" />
    <item key="/ADC1/irqLevel"                              value="0" />
-   <item key="/CMP0/cmp_cr0_filter_cnt"                    value="0" />
-   <item key="/CMP0/cmp_cr0_hystctr"                       value="0" />
+   <item key="/CMP0/cmp_cr0_filter_cnt"                    value="2" />
+   <item key="/CMP0/cmp_cr0_hystctr"                       value="2" />
    <item key="/CMP0/cmp_cr1_cos"                           value="false" />
    <item key="/CMP0/cmp_cr1_inv"                           value="false" />
    <item key="/CMP0/cmp_cr1_ope"                           value="false" />
@@ -136,12 +136,12 @@
    <item key="/CMP0/cmp_cr1_trigm"                         value="false" />
    <item key="/CMP0/cmp_cr1_we"                            value="false" />
    <item key="/CMP0/cmp_daccr_vrsel"                       value="true" />
-   <item key="/CMP0/cmp_fpr_filt_per"                      value="0" />
+   <item key="/CMP0/cmp_fpr_filt_per"                      value="10" />
    <item key="/CMP0/cmp_muxcr_msel"                        value="7" />
    <item key="/CMP0/cmp_muxcr_psel"                        value="1" />
    <item key="/CMP0/cmp_scr_dmaen"                         value="false" />
-   <item key="/CMP0/cmp_scr_ief"                           value="false" />
-   <item key="/CMP0/cmp_scr_ier"                           value="false" />
+   <item key="/CMP0/cmp_scr_ief"                           value="true" />
+   <item key="/CMP0/cmp_scr_ier"                           value="true" />
    <item key="/CMP0/irqHandlerInstalled"                   value="true" />
    <item key="/CMP0/irqLevel"                              value="0" />
    <item key="/CMP1/cmp_cr0_filter_cnt"                    value="0" />
@@ -242,9 +242,9 @@
    <item key="/GPIOA/irqLevel"                             value="0" />
    <item key="/GPIOB/irqHandlerInstalled"                  value="false" />
    <item key="/GPIOB/irqLevel"                             value="0" />
-   <item key="/GPIOC/irqHandlerInstalled"                  value="false" />
+   <item key="/GPIOC/irqHandlerInstalled"                  value="true" />
    <item key="/GPIOC/irqLevel"                             value="0" />
-   <item key="/GPIOD/irqHandlerInstalled"                  value="false" />
+   <item key="/GPIOD/irqHandlerInstalled"                  value="true" />
    <item key="/GPIOD/irqLevel"                             value="0" />
    <item key="/GPIOE/irqHandlerInstalled"                  value="false" />
    <item key="/GPIOE/irqLevel"                             value="0" />
