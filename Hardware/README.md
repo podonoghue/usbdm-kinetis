@@ -3,7 +3,7 @@
 PCB designs for Kinetis based USBDM.  
 These are Altium designer projects.  
 
-#USBDM_Kinetis_MK22F_V3.1 (MK22F Version)  
+#USBDM_Kinetis_MK22F_V3.2 (MK22F Version)  
 ====
 Supports initial bootloader, higher speed communication.  
 Refer to the PDFs in the Project Outputs directory 
