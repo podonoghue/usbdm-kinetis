@@ -34,17 +34,17 @@
    \verbatim
    Change History
    +=======================================================================================
-   | 18 Jul 2014 | Added HCS12ZVM support                                             - pgo V4.10.6.170
-   | 28 Feb 2014 | Improved error checking on memory read/write           V4.10.6.120 - pgo
-   | 27 Jul 2013 | Added f_CMD_READ_ALL_CORE_REGS()                    V4.10.6     - pgo
-   | 15 Feb 2011 | Masked address value for CFV1                          V4.5        - pgo
-   | 14 Apr 2010 | Fixed f_CMD_READ_DREG for MC51AC256_HACK                        - pgo
-   | 01 Apr 2010 | Fixed byte read/writes to CSR2 etc                                 - pgo
-   |    Oct 2009 | Added byte read/writes to CSR2 etc                                 - pgo
-   |    Sep 2009 | Major changes for V2                                               - pgo
+   | 18 Jul 2014 | Added HCS12ZVM support                                 - pgo V4.10.6.170
+   | 28 Feb 2014 | Improved error checking on memory read/write           - pgo V4.10.6.120
+   | 27 Jul 2013 | Added f_CMD_READ_ALL_CORE_REGS()                       - pgo V4.10.6
+   | 15 Feb 2011 | Masked address value for CFV1                          - pgo V4.5
+   | 14 Apr 2010 | Fixed f_CMD_READ_DREG for MC51AC256_HACK               - pgo
+   | 01 Apr 2010 | Fixed byte read/writes to CSR2 etc                     - pgo
+   |    Oct 2009 | Added byte read/writes to CSR2 etc                     - pgo
+   |    Sep 2009 | Major changes for V2                                   - pgo
    -=======================================================================================
-   | 10 Dec 2008 | Added MC51AC256 Hack                                               - pgo
-   | 13 Jun 2008 | Changed mem_write/read [coldfire]                                  - pgo
+   | 10 Dec 2008 | Added MC51AC256 Hack                                   - pgo
+   | 13 Jun 2008 | Changed mem_write/read [coldfire]                      - pgo
    +=======================================================================================
    \endverbatim
 */

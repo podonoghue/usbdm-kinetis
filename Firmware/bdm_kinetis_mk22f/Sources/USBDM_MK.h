@@ -38,7 +38,7 @@ public:
 /**
  * GPIO for Debug pin
  */
-class Debug : public USBDM::GpioB<1> {
+class Debug : public USBDM::GpioB<0> {
 public:
    /** Initialise debug pin */
    static void initialise() {

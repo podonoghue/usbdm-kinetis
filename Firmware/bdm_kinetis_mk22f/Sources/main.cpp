@@ -329,6 +329,12 @@ int main() {
    // Need to initialise for debug UART0
    ::initialise();
 
+//   for(;;) {
+//      TargetVddInterface::vdd5VOn();
+//      int id = targetVddMeasure();
+//      PRINTF("ID  = %d\n", id);
+//   }
+
    PRINTF("SystemBusClock  = %ld\n", SystemBusClock);
    PRINTF("SystemCoreClock = %ld\n", SystemCoreClock);
    PRINTF("SystemCoreClock = %d\n",  HardwareId::getId());
