@@ -94,7 +94,7 @@ public:
     * Monitors Vbdm level (comparator)
     */
    static void vddMonitorCallback(int status) {
-      if ((status && CMP_SCR_CFF_MASK) != 0) {
+      if ((status & CMP_SCR_CFF_MASK) != 0) {
          // In case Vdd overload
          vddOff();
       }
