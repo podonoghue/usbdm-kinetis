@@ -252,7 +252,7 @@ public:
    };
 
    /**
-    * Other descriptors
+    * All other descriptors
     */
    static const Descriptors otherDescriptors;
 

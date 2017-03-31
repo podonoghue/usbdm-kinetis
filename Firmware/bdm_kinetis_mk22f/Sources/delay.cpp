@@ -43,7 +43,7 @@ static void waitTicks(int64_t delayct) {
       // Note: This relies on the loop executing in less than the roll-over time
       // of the kernel counter
       uint32_t now = osKernelSysTick();
-      delayct -= (uint32_t)(TIMER_MASK&(last-now));
+      delayct -= (uint32_t)(now-last);
       last = now;
    }
 }
@@ -166,7 +166,7 @@ static bool waitTicks(int64_t delayct, bool testFn(void)) {
       // Note: This relies on the loop executing in less than the roll-over time
       // of the kernel counter
       uint32_t now = osKernelSysTick();
-      delayct -= (uint32_t)(TIMER_MASK&(last-now));
+      delayct -= (uint32_t)(now-last);
       last = now;
    }
    return false;

@@ -600,11 +600,5 @@ void Usb0::handleUserEp0SetupRequests(const SetupPacket &setup) {
    }
 }
 
-void idleLoop() {
-   for(;;) {
-      __asm__("nop");
-   }
-}
-
 } // End namespace USBDM
 
