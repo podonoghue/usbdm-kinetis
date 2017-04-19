@@ -87,6 +87,10 @@ DItemRevisionGUID=
 GenerateClassCluster=0
 DocumentUniqueId=ERNSGOKY
 
+[Parameter1]
+Name=ProjectRevision
+Value=V3.3
+
 [Configuration1]
 Name=Default Configuration
 ParameterCount=0

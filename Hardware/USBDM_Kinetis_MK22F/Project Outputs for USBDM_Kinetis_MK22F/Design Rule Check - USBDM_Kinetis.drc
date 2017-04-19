@@ -1,7 +1,7 @@
 Protel Design System Design Rule Check
 PCB File : C:\Users\podonoghue\Documents\Development\usbdm-kinetis\Hardware\USBDM_Kinetis_MK22F\USBDM_Kinetis.PcbDoc
-Date     : 7/02/2017
-Time     : 8:57:49 PM
+Date     : 19/04/2017
+Time     : 12:37:11 PM
 
 Processing Rule : Room USBDM_Kinetis (Bounding Region = (100mil, 700mil, 2500mil, 1700mil) (InComponentClass('USBDM_Kinetis'))
 Rule Violations :0
