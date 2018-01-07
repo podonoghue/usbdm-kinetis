@@ -96,7 +96,7 @@ USBDM::CheckSignal<FtmInfo, bkgdEnChannel>  bkgdEnChannel_chk;
 USBDM::CheckSignal<FtmInfo, bkgdInChannel>  bkgdInChannel_chk;
 
 /** GPIO for SWD-DIN pin */
-using bkgdInGpio = USBDM::GpioTable_T<FtmInfo, bkgdInChannel>;
+using bkgdInGpio = USBDM::GpioTable_T<FtmInfo, bkgdInChannel, USBDM::ActiveHigh>;
 
 /** Pointer to hardware */
 static constexpr volatile FTM_Type *ftm = reinterpret_cast<volatile FTM_Type*>(FtmInfo::ftm);
@@ -188,7 +188,7 @@ static void disableFtmCounter() {
 //using BkgdOutPcr       = USBDM::PcrTable_T<FtmInfo, bkgdOutChannel>;
 //
 /** GPIO for BKGD in pin */
-using BkgdIn           = USBDM::GpioTable_T<FtmInfo, bkgdInChannel>;
+using BkgdIn           = USBDM::GpioTable_T<FtmInfo, bkgdInChannel, USBDM::ActiveHigh>;
 
 ///** GPIO for BKGD enable pin used by timer */
 //using BkgdEn = USBDM::GpioTable_T<FtmInfo, bkgdEnChannel>;
@@ -249,7 +249,7 @@ static uint32_t convertMicrosecondsToTicks(int time) {
  * @note Assumes prescale has been chosen as a appropriate value. No range checking.
  */
 static uint32_t convertTicksToMicroseconds(int time) {
-   long t = ((uint64_t)time*1000000)/FtmInfo::getClockFrequency();
+   long t = ((uint64_t)time*1000000)/FtmInfo::getInputClockFrequency();
 
    assert((long)(uint32_t)t == t);
    assert(t != 0);
@@ -290,8 +290,8 @@ void initialise() {
    enableFtmCounter();
 
    disablePins();
-   ftm->CONTROLS[bkgdEnChannel].CnSC  = USBDM::ftm_outputCompareClear;
-   ftm->CONTROLS[bkgdOutChannel].CnSC = USBDM::ftm_outputCompareSet;
+   ftm->CONTROLS[bkgdEnChannel].CnSC  = USBDM::FtmChMode_OutputCompareClear;
+   ftm->CONTROLS[bkgdOutChannel].CnSC = USBDM::FtmChMode_OutputCompareSet;
 
    // Switch pins to FTM
    FtmInfo::initPCRs(PORT_PCR_DSE_MASK|PORT_PCR_PE_MASK); // DS+PDN
@@ -355,18 +355,18 @@ USBDM_ErrorCode sync(uint16_t &syncLength) {
          FTM_COMBINE_DECAPEN0_MASK<<(bkgdInChannel*4);
 
    // Positive pulse for buffer enable, 2nd edge delayed for speed-up pulse (bkgdEnChannel, bkgdEnChannel+1)
-   ftm->CONTROLS[bkgdEnChannel].CnSC    = USBDM::ftm_CombinePositivePulse;
+   ftm->CONTROLS[bkgdEnChannel].CnSC    = USBDM::FtmChMode_CombinePositivePulse;
    ftm->CONTROLS[bkgdEnChannel].CnV     = TMR_SETUP_TIME;
    ftm->CONTROLS[bkgdEnChannel+1].CnV   = TMR_SETUP_TIME+syncPulseWidthInTicks+SPEEDUP_PULSE_WIDTH_ticks;
 
    // Negative pulse for BKGD out (bkgdOutChannel, bkgdOutChannel+1)
-   ftm->CONTROLS[bkgdOutChannel].CnSC   = USBDM::ftm_CombineNegativePulse;
+   ftm->CONTROLS[bkgdOutChannel].CnSC   = USBDM::FtmChMode_CombineNegativePulse;
    ftm->CONTROLS[bkgdOutChannel].CnV    = TMR_SETUP_TIME;
    ftm->CONTROLS[bkgdOutChannel+1].CnV  = TMR_SETUP_TIME+syncPulseWidthInTicks;
 
    // Enable dual capture on BKGD in (bkgdInChannel, bkgdInChannel+1)
-   ftm->CONTROLS[bkgdInChannel].CnSC    = USBDM::ftm_dualEdgeCaptureOneShotFallingEdge;
-   ftm->CONTROLS[bkgdInChannel+1].CnSC  = USBDM::ftm_inputCaptureRisingEdge;
+   ftm->CONTROLS[bkgdInChannel].CnSC    = USBDM::FtmChMode_DualEdgeCaptureOneShotFallingEdge;
+   ftm->CONTROLS[bkgdInChannel+1].CnSC  = USBDM::FtmChMode_InputCaptureRisingEdge;
 
    // Release force pin control
    enablePins();
@@ -504,7 +504,7 @@ USBDM_ErrorCode rx(int length, unsigned &data) {
    ftm->CONTROLS[bkgdOutChannel+1].CnV  = TMR_SETUP_TIME+oneBitTime;
 
    // Capture rising edge of BKGD in
-   ftm->CONTROLS[bkgdInChannel].CnSC    = USBDM::ftm_inputCaptureRisingEdge;
+   ftm->CONTROLS[bkgdInChannel].CnSC    = USBDM::FtmChMode_InputCaptureRisingEdge;
 
    enableFtmCounter();
 
@@ -634,18 +634,18 @@ USBDM_ErrorCode tx(int length, unsigned data) {
    disableFtmCounter();
 
    // Positive pulse for buffer enable
-   ftm->CONTROLS[bkgdEnChannel].CnSC    = USBDM::ftm_CombinePositivePulse;
+   ftm->CONTROLS[bkgdEnChannel].CnSC    = USBDM::FtmChMode_CombinePositivePulse;
    ftm->CONTROLS[bkgdEnChannel].CnV     = TMR_SETUP_TIME;
 
    // Negative pulse for BKGD out
-   ftm->CONTROLS[bkgdOutChannel].CnSC   = USBDM::ftm_CombineNegativePulse;
+   ftm->CONTROLS[bkgdOutChannel].CnSC   = USBDM::FtmChMode_CombineNegativePulse;
    ftm->CONTROLS[bkgdOutChannel].CnV    = TMR_SETUP_TIME;
 
    // Data sample capture rising edge of BKGD in
-   ftm->CONTROLS[bkgdInChannel].CnSC    = USBDM::ftm_inputCaptureRisingEdge;
+   ftm->CONTROLS[bkgdInChannel].CnSC    = USBDM::FtmChMode_InputCaptureRisingEdge;
 
    // ACKN timeout
-   ftm->CONTROLS[bkgdInChannel+1].CnSC  = USBDM::ftm_outputCompare;
+   ftm->CONTROLS[bkgdInChannel+1].CnSC  = USBDM::FtmChMode_OutputCompare;
    ftm->CONTROLS[bkgdInChannel+1].CnV   = TMR_SETUP_TIME+ACKN_TIMEOUT_us;
 
    // Maximum length of a bit

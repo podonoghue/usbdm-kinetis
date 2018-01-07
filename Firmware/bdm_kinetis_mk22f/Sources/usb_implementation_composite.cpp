@@ -293,7 +293,7 @@ void Usb0::epCdcSendNotification() {
    epCdcNotification.getBuffer()[sizeof(cdcNotification)+1] = 0;
 
    // Set up to Tx packet
-//   PRINTF("epCdcSendNotification(0x%2X)\n", epCdcNotification.getBuffer()[sizeof(cdcNotification)+0]);
+//   console.write("epCdcSendNotification() 0x").writeln(epCdcNotification.getBuffer()[sizeof(cdcNotification)+0], USBDM::Radix_16);
    epCdcNotification.startTxTransaction(EPDataIn, sizeof(cdcNotification)+2);
 }
 
@@ -337,15 +337,15 @@ void Usb0::handleTokenComplete() {
          return;
 
       case CDC_NOTIFICATION_ENDPOINT: // Accept IN token
-//         PRINTF("CDC_NOTIFICATION_ENDPOINT\n");
+//         console.writeln("CDC_NOTIFICATION_ENDPOINT");
          epCdcSendNotification();
          return;
       case CDC_DATA_OUT_ENDPOINT: // Accept OUT token
-//         PRINTF("CDC_DATA_OUT_ENDPOINT\n");
+//         console.writeln("CDC_DATA_OUT_ENDPOINT");
          epCdcDataOut.handleOutToken();
          return;
       case CDC_DATA_IN_ENDPOINT:  // Accept IN token
-//         PRINTF("CDC_DATA_IN_ENDPOINT\n");
+//         console.writeln("CDC_DATA_IN_ENDPOINT");
          epCdcDataIn.handleInToken();
          return;
    }
@@ -358,7 +358,7 @@ void Usb0::handleTokenComplete() {
  * @param state Current end-point state
  */
 void Usb0::cdcOutTransactionCallback(EndpointState state) {
-//   PRINTF("cdc_out\n");
+//   console.writeln("cdc_out");
    if (state == EPDataOut) {
       uint8_t *buff = epCdcDataOut.getBuffer();
       for (int i=epCdcDataOut.getDataTransferredSize(); i>0; i--) {
@@ -372,7 +372,7 @@ void Usb0::cdcOutTransactionCallback(EndpointState state) {
    }
 }
 
-static Queue<100> inQueue;
+static Queue<uint8_t, 100> inQueue;
 
 /**
  * Call-back handling CDC-IN transaction complete\n
@@ -395,7 +395,7 @@ void Usb0::cdcInTransactionCallback(EndpointState state) {
          charCount++;
       }
       if (charCount>0) {
-//         PRINTF("Sending %d\n", charCount);
+//         console.write("Sending ").writeln(charCount);
          // Schedules transfer if data available
          epCdcDataIn.startTxTransaction(EPDataIn, charCount);
       }
@@ -506,7 +506,7 @@ void Usb0::sendBulkData(uint8_t size, const uint8_t *buffer) {
  * CDC Set line coding handler
  */
 void Usb0::handleSetLineCoding() {
-//   PRINTF("handleSetLineCoding()\n");
+//   console.writeln("handleSetLineCoding()");
 
    // Call-back to do after transaction complete
    static auto callback = []() {
@@ -525,7 +525,7 @@ void Usb0::handleSetLineCoding() {
  * CDC Get line coding handler
  */
 void Usb0::handleGetLineCoding() {
-//   PRINTF("handleGetLineCoding()\n");
+//   console.writeln("handleGetLineCoding()");
    // Send packet
    ep0StartTxTransaction( sizeof(LineCodingStructure), (const uint8_t*)Uart::getLineCoding());
 }
@@ -534,7 +534,7 @@ void Usb0::handleGetLineCoding() {
  * CDC Set line state handler
  */
 void Usb0::handleSetControlLineState() {
-//   PRINTF("handleSetControlLineState(%X)\n", ep0SetupBuffer.wValue.lo());
+//   console.write("handleSetControlLineState() ").writeln(ep0SetupBuffer.wValue.lo(), USBDM::Radix_16);
    Uart::setControlLineState(ep0SetupBuffer.wValue.lo());
    // Tx empty Status packet
    ep0StartTxTransaction( 0, nullptr );
@@ -544,7 +544,7 @@ void Usb0::handleSetControlLineState() {
  * CDC Send break handler
  */
 void Usb0::handleSendBreak() {
-//   PRINTF("handleSendBreak()\n");
+//   console.writeln("handleSendBreak()");
    Uart::sendBreak(ep0SetupBuffer.wValue);
    // Tx empty Status packet
    ep0StartTxTransaction( 0, nullptr );
@@ -559,7 +559,7 @@ void Usb0::handleSendBreak() {
  * @note Provides BDM extensions
  */
 void Usb0::handleUserEp0SetupRequests(const SetupPacket &setup) {
-   //PRINTF("handleUserEp0SetupRequests()\n");
+   //console.writeln("handleUserEp0SetupRequests()");
    switch(REQ_TYPE(setup.bmRequestType)) {
       case REQ_TYPE_CLASS :
          // Class requests
@@ -572,7 +572,7 @@ void Usb0::handleUserEp0SetupRequests(const SetupPacket &setup) {
          }
          break;
       case REQ_TYPE_VENDOR :
-         PRINTF("REQ_TYPE_VENDOR\n");
+         console.writeln("REQ_TYPE_VENDOR");
          switch (setup.bRequest) {
             case ICP_GET_VER : {
                // Tell command handler to re-initialise

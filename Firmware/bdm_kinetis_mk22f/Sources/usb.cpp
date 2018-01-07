@@ -1,4 +1,4 @@
-/** 
+/**
     @file usb.cpp
     @brief Simple USB Stack for Kinetis
 
@@ -202,30 +202,33 @@ void UsbBase::reportBdt(const char *name, BdtEntry *bdt) {
    (void)name;
    (void)bdt;
    if (bdt->u.setup.own) {
-      PRINTF("%s addr=0x%08lX, bc=%d, %s, %s, %s\n",
-            name,
-            bdt->addr, bdt->bc,
-            bdt->u.setup.data0_1?"DATA1":"DATA0",
-                  bdt->u.setup.bdt_stall?"STALL":"OK",
-                        "USB"
-      );
+      console.write(name).
+            write(" addr=0x").write(bdt->addr,Radix_16).
+            write(", bc=").write(bdt->bc).
+            write(", ").write(bdt->u.setup.data0_1?"DATA1":"DATA0").
+            write(", ").write(bdt->u.setup.bdt_stall?"STALL":"OK").
+            writeln("USB");
    }
    else {
-      PRINTF("%s addr=0x%08lX, bc=%d, %s, %s\n",
-            name,
-            bdt->addr, bdt->bc,
-            getTokenName(bdt->u.result.tok_pid),
-            "PROC"
-      );
+      console.write(name).
+            write(" addr=0x").write(bdt->addr,Radix_16).
+            write(", bc=").write(bdt->bc).
+            write(", ").write(getTokenName(bdt->u.result.tok_pid)).
+            writeln("PROC");
    }
 }
 
+/**
+ * Report line code structure values
+ *
+ * @param lineCodingStructure
+ */
 void reportLineCoding(const LineCodingStructure *lineCodingStructure) {
    (void)lineCodingStructure;
-   PRINTF("rate   = %ld bps\n", lineCodingStructure->dwDTERate);
-   PRINTF("format = %d\n", lineCodingStructure->bCharFormat);
-   PRINTF("parity = %d\n", lineCodingStructure->bParityType);
-   PRINTF("bits   = %d\n", lineCodingStructure->bDataBits);
+   console.write("rate   = ").writeln(lineCodingStructure->dwDTERate);
+   console.write("format = ").writeln(lineCodingStructure->bCharFormat);
+   console.write("parity = ").writeln(lineCodingStructure->bParityType);
+   console.write("bits   = ").writeln(lineCodingStructure->bDataBits);
 }
 
 /**
@@ -249,7 +252,9 @@ const char *UsbBase::reportSetupPacket(SetupPacket *p) {
 
 void reportLineState(uint8_t value) {
    (void)value;
-   PRINTF("Line state: RTS=%d, DTR=%d\n", (value&(1<<1))?1:0, (value&(1<<0))?1:0);
+   console.
+   writeln("Line state: RTS=").write((value&(1<<1))?1:0).
+   write("DTR=").writeln((value&(1<<0))?1:0);
 }
 
 /**

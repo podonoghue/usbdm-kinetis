@@ -138,6 +138,12 @@ uint32_t getSpeed();
 void initialise();
 
 /**
+ * Set the interface to idle level\n
+ * Does not communicate with target
+ */
+void interfaceIdle();
+
+/**
  * Disables interface
  *
  * Note: Reset is not affected

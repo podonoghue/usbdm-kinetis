@@ -24,3 +24,12 @@
 /usb_defs.h
 /usb_endpoint.h
 /vref.h
+/dma.h
+/flash.h
+/ftfa.h
+/formatted_io.h
+/pmc.h
+/rcm.h
+/USBDM_Documentation.h
+/gpio.h
+/KinetisPowerModes.png

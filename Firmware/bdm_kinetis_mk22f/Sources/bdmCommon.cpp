@@ -36,6 +36,7 @@
 #include "resetInterface.h"
 #include "cmdProcessing.h"
 #include "commands.h"
+#include "console.h"
 
 /** How long to wait for Target Vdd rise */
 static constexpr uint32_t VDD_RISE_TIMEms = 100;
@@ -53,22 +54,13 @@ static constexpr uint32_t BKGD_WAITus = 100;
 static constexpr uint32_t RESET_RECOVERYms = 10;
 
 /**
- *  Interrupt function servicing the interrupt from Vdd changes
+ *  Interrupt callback function servicing the interrupt from Vdd changes
  *  This routine has several purposes:
  *   - Triggers POR into Debug mode on RS08/HCS08/CFV1 targets \n
  */
 void targetVddSense() {
+   USBDM::console.writeln("Target Vdd Change");
    //TODO targetVddSense()
-}
-
-/*
- * Interrupt function servicing the IC interrupt from RESET_IN assertion
- */
-void resetSense(void) {
-   //TODO resetSense()
-   if (ResetInterface::isLow()) {
-      cable_status.reset = RESET_DETECTED;  // Record that reset was asserted
-   }
 }
 
 //=========================================================================
@@ -168,8 +160,8 @@ USBDM_ErrorCode setTargetVdd(TargetVddSelect_t targetVdd) {
          break;
    }
 #if (HW_CAPABILITY&CAP_VDDSENSE)
+   // Clear Vdd monitoring interrupt
    TargetVddInterface::clearVddChangeFlag();
-   TargetVddInterface::enableVddChangeSense(true);
 #endif
    TargetVddInterface::isVddOK();
    return (rc);
@@ -282,8 +274,6 @@ USBDM_ErrorCode cycleTargetVddOn(TargetMode_t mode) {
       }
    // Let processor start up
    USBDM::waitMS(RESET_RECOVERYms);
-
-   cable_status.reset  = RESET_DETECTED; // Cycling the power should have reset it!
 
    cleanUp:
 #if (HW_CAPABILITY&CAP_CFVx_HW)

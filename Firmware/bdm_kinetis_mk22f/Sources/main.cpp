@@ -17,6 +17,7 @@
 #include "targetVddInterface.h"
 #include "resetInterface.h"
 #include "delay.h"
+#include "console.h"
 #include "configure.h"
 #include "commands.h"
 #include "bdmCommon.h"
@@ -323,7 +324,14 @@ void initialise() {
 //char logBuffer[128] = {0};
 //char logIndex = 0;
 
+#include "utilities.h"
+
 int main() {
+   volatile uint32_t lockVar = 0;
+
+   lock(&lockVar);
+   unlock(&lockVar);
+
 //   hcs08Testing();
 
    // Need to initialise for debug UART0
@@ -335,11 +343,11 @@ int main() {
 //      PRINTF("ID  = %d\n", id);
 //   }
 
-   PRINTF("SystemBusClock  = %ld\n", SystemBusClock);
-   PRINTF("SystemCoreClock = %ld\n", SystemCoreClock);
-   PRINTF("SystemCoreClock = %d\n",  HardwareId::getId());
+   USBDM::console.write("SystemBusClock  = ").writeln(SystemBusClock);
+   USBDM::console.write("SystemCoreClock  = ").writeln(SystemCoreClock);
 
-   PRINTF("Target Vdd = %f\n", TargetVddInterface::readVoltage());
+   USBDM::console.write("HardwareId = ").writeln(HardwareId::getId());
+   USBDM::console.write("Target Vdd = ").writeln(TargetVddInterface::readVoltage());
 
    USBDM::UsbImplementation::initialise();
 

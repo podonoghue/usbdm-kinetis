@@ -633,9 +633,9 @@ enum CFVx_CRegisters_t {
 
 //! regNo Parameter for USBDM_ReadCReg() with SWD-ARM target
 //!
-//! The regNo is actually a AP bus address as follows: 
-//!   -  A[31:24]  => DP-AP-SELECT[31:24] (AP # Select)       
-//!   -  A[23:8]   => unused (0)                                
+//! The regNo is actually a AP bus address as follows:
+//!   -  A[31:24]  => DP-AP-SELECT[31:24] (AP # Select)
+//!   -  A[23:8]   => unused (0)
 //!   -  A[7:4]    => DP-AP-SELECT[7:4]   (Bank select within AP)
 //!   -  A[3:2]    => APACC[3:2]          (Register select within AP bank)
 //!   -  A[1:0]    => unused (0)
@@ -807,25 +807,25 @@ enum ICP_ErrorCode_t {
 //! \endverbatim
 enum StatusBitMasks_t {
    S_ACKN            = (1<<0),  //!< - Target supports BDM ACK (HCS08/12/CFV1)
-   
+
    S_RESET_DETECT    = (1<<1),  //!< - Target has been reset since status last polled
-   
+
    S_RESET_STATE     = (1<<2),  //!< - Current state of target reset pin (RESET or RSTO) (active low!)
-   
+
    S_NOT_CONNECTED   = (0<<3),  //!< - No connection with target
    S_SYNC_DONE       = (1<<3),  //!< - Target communication speed determined by BDM SYNC
    S_GUESS_DONE      = (2<<3),  //!< - Target communication speed guessed
    S_USER_DONE       = (3<<3),  //!< - Target communication speed specified by user
    S_COMM_MASK       = (3<<3),  //!< - Mask for communication state
-   
+
    S_HALT            = (1<<5),  //!< - Indicates target is halted (CF V2, V3 & V4)
-   
+
    S_POWER_NONE      = (0<<6),  //!< - Target power not present
    S_POWER_EXT       = (1<<6),  //!< - External target power present
    S_POWER_INT       = (2<<6),  //!< - Internal target power on
-   S_POWER_ERR       = (3<<6),  //!< - Internal target power error - overcurrent or similar
+   S_POWER_ERR       = (3<<6),  //!< - Internal target power error - over-current or similar
    S_POWER_MASK      = (3<<6),  //!< - Mask for Power
-   
+
    S_VPP_OFF         = (0<<8),  //!< - Vpp Off
    S_VPP_STANDBY     = (1<<8),  //!< - Vpp Standby (Inverter on)
    S_VPP_ON          = (2<<8),  //!< - Vpp On

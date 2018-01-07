@@ -289,7 +289,7 @@ USBDM_ErrorCode f_CMD_RESET(void) {
       cable_status.speed  = SPEED_NO_INFO;
    }
    // BDM resetting the target doesn't count as a reset!
-   cable_status.reset  = NO_RESET_ACTIVITY;
+//   cable_status.reset  = NO_RESET_ACTIVITY;
    // ACKN feature is disabled after reset
    cable_status.ackn   = WAIT;
 

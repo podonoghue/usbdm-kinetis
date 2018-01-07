@@ -20,9 +20,11 @@ private:
    using Direction = USBDM::GpioC<0>;
    using Data      = USBDM::GpioC<1>;
 
+   static bool  fResetActivity;
+
    static void callback(uint32_t status) {
-      if ((Data::MASK & status) != 0) {
-         Debug::toggle();
+      if ((Data::MASK & status) && isLow()) {
+         fResetActivity = true;
       }
    }
 
@@ -41,26 +43,13 @@ public:
       // Direction low => input
       Direction::low();
       Direction::setOutput();
-      Data::setIrq(USBDM::PinIrqFalling);
+
+      // IRQ on falling edge - reset detection
+      Data::setIrq(USBDM::PinIrq_Falling);
       Data::setCallback(callback);
       Data::enableNvicInterrupts(true);
-   }
-   /**
-    * Drive signal high\n
-    * Assumes series resistor for any I/O drive overlap
-    */
-   static void high() {
-      Data::high();
-      Data::setOut();
-      Direction::high();
-   }
-   /**
-    * Drive signal high
-    *
-    * @note Assumes driver already enabled
-    */
-   static void _high() {
-      Data::high();
+
+      fResetActivity = false;
    }
    /**
     * Drive signal low
@@ -89,27 +78,19 @@ public:
    /**
     * Read value from receiver
     *
-    * @return value on pin
+    * @return value on pin or driven value if output
+    *
+    * @note Assumes already set as input or returns driven value
     */
    static bool read() {
-      Direction::low();
-      Data::setIn();
-      return Data::read();
-   }
-   /**
-    * Read value from receiver
-    *
-    * @return value on pin
-    *
-    * @note Assumes already set as input
-    */
-   static bool _read() {
       return Data::read();
    }
    /**
     * Check if receiver input is low
     *
     * @return true if input is low
+    *
+    * @note Assumes already set as input or returns driven value
     */
    static bool isLow() {
       return !Data::read();
@@ -118,11 +99,24 @@ public:
     * Check if receiver input is high
     *
     * @return true if input is high
+    *
+    * @note Assumes already set as input or returns driven value
     */
    static bool isHigh() {
       return Data::read();
    }
 
+   /**
+    * Check and clear reset activity flag
+    *
+    * @return True  Reset has been active since last polled
+    * @return False Reset has not been active since last polled
+    */
+   static bool resetActivity() {
+      bool temp = fResetActivity;
+      fResetActivity = false;
+      return temp;
+   }
 };
 
 #endif /* SOURCES_RESETINTERFACE_H_ */

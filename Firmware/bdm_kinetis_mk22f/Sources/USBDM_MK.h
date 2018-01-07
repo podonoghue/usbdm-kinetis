@@ -81,7 +81,7 @@ class HardwareId : USBDM::Adc0Channel<12> {
 public:
    static int getId() {
       enable();
-      setResolution(USBDM::resolution_8bit_se);
+      setResolution(USBDM::AdcResolution_8bit_se);
       return round(Adc0Channel::readAnalogue()/17.0);
    }
 };

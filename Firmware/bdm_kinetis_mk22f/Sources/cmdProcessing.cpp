@@ -90,13 +90,14 @@ uint16_t makeStatusWord(void) {
    }
 #if (HW_CAPABILITY&CAP_RST_IN)
    if (ResetInterface::read()) {
-      status |= S_RESET_STATE;   // The RSTO pin is currently high
-   }
-   if (cable_status.reset==RESET_DETECTED) {
-      status |= S_RESET_DETECT;                    // The target was recently reset externally
-      if (!ResetInterface::read()) {
-         cable_status.reset = NO_RESET_ACTIVITY;   // Clear the flag if reset pin has returned high
+      status |= S_RESET_STATE;       // The RSTO pin is currently high (inactive)
+      if (ResetInterface::resetActivity()) {
+         status |= S_RESET_DETECT;  // The target was recently reset
       }
+   }
+   else {
+      // Reset currently  low (active)
+      status |= S_RESET_DETECT;  // The target was recently reset externally
    }
 #endif // (HW_CAPABILITY&CAP_RST_IN)
 #if (HW_CAPABILITY&CAP_VDDSENSE)
@@ -496,7 +497,7 @@ USBDM_ErrorCode f_CMD_CONTROL_PINS(void) {
 #endif
 #if (HW_CAPABILITY&CAP_SWD_HW)
          case T_ARM_SWD :
-            Swd::initialise();
+            Swd::interfaceIdle();
             break;
 #endif
          case T_OFF :

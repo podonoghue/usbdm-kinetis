@@ -42,7 +42,7 @@ extern USBDM_ErrorCode optionalReconnect(AutoConnect_t when);
 struct CableStatus_t {
    TargetType_t        target_type:8;  //!< Target type TargetType_t
    AcknMode_t          ackn:8;         //!< Target supports ACKN see AcknMode_t
-   ResetMode_t         reset:8;        //!< Target has been reset, see ResetMode_T
+   ResetMode_t         xxxxx:8;        //!< Not used
    SpeedMode_t         speed:8;        //!< Target speed determination method, see SpeedMode_t
    TargetVddState_t    power:8;        //!< Target Vdd state
    TargetVppSelect_t   flashState:8;   //!< State of RS08 Flash programming,  see FlashState_t

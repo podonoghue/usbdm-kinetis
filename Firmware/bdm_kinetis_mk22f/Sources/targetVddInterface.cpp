@@ -8,6 +8,3 @@
 #include "targetVddInterface.h"
 
 void (*TargetVddInterface::fCallback)() = TargetVddInterface::nullCallback;
-
-
-

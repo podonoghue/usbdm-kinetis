@@ -1,36 +1,36 @@
 /**
  * @file pit-example1.cpp
+ *
+ * Programmable Interrupt Timer (PIT) Example
+ *
+ * Toggles LED use PIT for delay.
+ * This example uses busy-waiting so it not a practical solution
  */
-#include <stdio.h>
-#include "system.h"
-#include "derivative.h"
 #include "hardware.h"
 #include "pit.h"
 
 using namespace USBDM;
 
-/**
- * Programmable Interrupt Timer (PIT) Example
- *
- * Toggles LED use PIT for delay
- */
-
 // Connection mapping - change as required
-using RED_LED   = USBDM::GpioB<0>;
+// Led is assumed active-low
+using LED   = gpio_LED_RED;
 
 int main() {
-   RED_LED::setOutput();
 
-   // Turn off LED initially
-   RED_LED::set();
+   LED::setOutput(PinDriveStrength_High);
 
+   // Enable PIT
    Pit::configure();
 
    // Check for errors so far
    checkError();
 
    for(;;) {
-      RED_LED::toggle();
-      Pit::delay(0, ::SystemBusClock/10);
+      LED::toggle();
+
+      // Delay in ticks using channel 0
+      // This is a busy-waiting loop!
+//      Pit::delayInTicks(0, ::SystemBusClock/10);
+      Pit::delay(0, 100*ms);
    }
 }

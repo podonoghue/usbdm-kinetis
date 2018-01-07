@@ -1,11 +1,13 @@
 /**
+ ============================================================================
  * @file digital-example1.cpp
+ * @brief Basic digital output example
+ *
+ *  Created on: 10/1/2016
+ *      Author: podonoghue
+ ============================================================================
  */
-#include <stdio.h>
-#include "system.h"
-#include "derivative.h"
 #include "hardware.h"
-#include "delay.h"
 
 using namespace USBDM;
 
@@ -18,10 +20,14 @@ using RED_LED   = gpio_LED_RED;
 using GREEN_LED = gpio_LED_GREEN;
 
 int main() {
-   RED_LED::setOutput();
-   GREEN_LED::setOutput();
-   RED_LED::set();
-   GREEN_LED::set();
+   RED_LED::setOutput(
+         PinDriveStrength_High,
+         PinDriveMode_PushPull,
+         PinSlewRate_Slow);
+   GREEN_LED::setOutput(
+         PinDriveStrength_High,
+         PinDriveMode_PushPull,
+         PinSlewRate_Slow);
    for(;;) {
       RED_LED::toggle();
       USBDM::waitMS(100);

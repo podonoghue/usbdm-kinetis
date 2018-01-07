@@ -43,16 +43,16 @@ namespace Swd {
 using SpiInfo = USBDM::Spi0Info;
 
 /** GPIO for SWD-CLK pin */
-using swdClk = USBDM::GpioTable_T<SpiInfo, 0>;
+using swdClk = USBDM::GpioTable_T<SpiInfo, 0, USBDM::ActiveHigh>;
 
 /** GPIO for SWD-DIN pin */
-using swdIn = USBDM::GpioTable_T<SpiInfo, 1>;
+using swdIn = USBDM::GpioTable_T<SpiInfo, 1, USBDM::ActiveHigh>;
 
 /** GPIO for SWD-DOUT pin */
-using swdOut = USBDM::GpioTable_T<SpiInfo, 2>;
+using swdOut = USBDM::GpioTable_T<SpiInfo, 2, USBDM::ActiveHigh>;
 
 /** GPIO for SWD enable pin */
-using swdDirection = USBDM::GpioTable_T<SpiInfo, 5>;
+using swdDirection = USBDM::GpioTable_T<SpiInfo, 5, USBDM::ActiveHigh>;
 
 // Make sure pins have been assigned to SPI
 USBDM::CheckSignal<SpiInfo, 0> sck_chk;
@@ -474,6 +474,21 @@ void initialise() {
          SPI_MCR_MTFE(0)|     // Don't use modified sample point
          SPI_MCR_SMPL_PT(0)|  // Modified sample point (N/A)
          SPI_MCR_PCSIS(0);    // All PCSes active-high
+}
+
+/**
+ * Initialise interface\n
+ * Does not communicate with target
+ */
+void interfaceIdle() {
+
+   PRINTF("Swd::interfaceIdle()\n");
+
+   // Configure RESET pins
+   ResetInterface::highZ();
+
+   // Configure SPI pins SIN,SOUT,SCK,CS (SWDIO, SWDCLK)
+   SpiInfo::initPCRs();
 }
 
 /**

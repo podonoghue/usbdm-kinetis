@@ -46,9 +46,9 @@ public:
    static void setInCallback(bool (*callback)(uint8_t)) {
       inCallback = callback;
    }
-   
+
    /** Queue of outgoing characters */
-   static Queue<100> outQueue;
+   static Queue<char, 100> outQueue;
 
    /**
     * Write character to output queue
@@ -114,9 +114,9 @@ public:
       uint8_t  UARTC3Value = 0x00;
 
       // Initialise UART and set baud rate
-      Uart_T<UartInfo> uart(leToNative32(lineCoding.dwDTERate));
-
-      USBDM::UartIrq_T<UartInfo>::setCallback(uartCallback);
+      Uart_brfa_T<UartInfo> uart;
+      uart.setBaudRate(leToNative32(lineCoding.dwDTERate));
+      USBDM::Uart_T<UartInfo>::setRxTxCallback(uartCallback);
 
       cdcStatus  = CDC_STATE_CHANGE_MASK;
       breakCount = 0; // Clear any current BREAKs
@@ -285,7 +285,7 @@ template<class UartInfo>
 LineCodingStructure CdcUart<UartInfo>::lineCoding = {leToNative32(9600UL),0,1,8};
 
 template<class UartInfo>
-Queue<100> CdcUart<UartInfo>::outQueue;
+Queue<char, 100> CdcUart<UartInfo>::outQueue;
 
 template<class UartInfo>
 bool (*CdcUart<UartInfo>::inCallback)(uint8_t ch);

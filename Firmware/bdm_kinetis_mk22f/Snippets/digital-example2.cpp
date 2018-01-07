@@ -1,9 +1,12 @@
 /**
- * @file digital-example2.cpp
+ ============================================================================
+ * @file digital-example1.cpp
+ * @brief Basic digital input/output example
+ *
+ *  Created on: 10/1/2016
+ *      Author: podonoghue
+ ============================================================================
  */
-#include <stdio.h>
-#include "system.h"
-#include "derivative.h"
 #include "hardware.h"
 
 using namespace USBDM;
@@ -25,8 +28,14 @@ using Switch =   gpio_A0;
 using Led    =   gpio_A1;
 
 int main(void) {
-   Led::setOutput();
-   Switch::setInput();
+   Led::setOutput(
+         PinDriveStrength_High,
+         PinDriveMode_PushPull,
+         PinSlewRate_Slow);
+   Switch::setInput(
+         PinPull_Up,
+         PinIrq_None,
+         PinFilter_Passive);
 
    for(;;) {
       Led::write(!Switch::read());
