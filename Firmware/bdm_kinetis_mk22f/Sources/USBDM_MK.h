@@ -53,10 +53,13 @@ public:
  * This uses the ADC to measure an external voltage divider
  */
 class HardwareId : USBDM::Adc0Channel<12> {
+public:
    /**
     * Get hardware ID
     *
     * @return Value in range 0-15 reflecting hardware ID strapping resistors
+    *
+    * @note Assumes ADC enabled elsewhere
     *
     * Resistor Ratios:
     * ID   R10/R13
@@ -78,9 +81,7 @@ class HardwareId : USBDM::Adc0Channel<12> {
     * 14 = 7.15R/100K
     * 15 = 0R/100K or 0R/open
     */
-public:
    static int getId() {
-      enable();
       setResolution(USBDM::AdcResolution_8bit_se);
       return round(Adc0Channel::readAnalogue()/17.0);
    }

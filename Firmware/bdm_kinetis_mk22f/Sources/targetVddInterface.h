@@ -14,6 +14,16 @@
 #include "console.h"
 
 /**
+ * State of VDD control interface
+ */
+enum VddState {
+   VddState_None,       //!< Vdd Off
+   VddState_Internal,   //!< Vdd Internal
+   VddState_External,   //!< Vdd External
+   VddState_Error,      //!< Vdd in Error (overloaded & off)
+};
+
+/**
  * Low-level interface to Target Vdd (Vbdm) control and sensing
  */
 class TargetVddInterface {
@@ -57,7 +67,7 @@ private:
    /**
     * GPIO for Target Vdd enable pin
     */
-   using Control = USBDM::GpioD<1>;
+   using Control = USBDM::GpioD<1, USBDM::ActiveHigh>;
 
    /**
     * GPIO for Target Vdd LED
@@ -82,12 +92,17 @@ private:
    /**
     * Callback for Vdd changes
     */
-   static void (*fCallback)();
+   static void (*fCallback)(VddState);
+
+   /**
+    * Target Vdd state
+    */
+   static VddState vddState;
 
    /**
     * Dummy routine used if callback is not set
     */
-   static void nullCallback() {
+   static void nullCallback(VddState) {
 #ifdef DEBUG_BUILD
       __BKPT();
 #endif
@@ -99,27 +114,58 @@ public:
     */
    static void vddMonitorCallback(USBDM::CmpEvent status) {
       if ((status & CMP_SCR_CFF_MASK) != 0) {
+         // Falling edge
+         switch(vddState) {
+            case VddState_Error:
+            case VddState_None:
+               break;
+            case VddState_External:
+               // External power removed
+               vddState = VddState_None;
+               break;
+            case VddState_Internal:
+               // Fault (overload) detected
+               vddState = VddState_Error;
+               break;
+         }
          // In case Vdd overload
-         vddOff();
+         Control::off();
+         Led::off();
+      }
+      if ((status & CMP_SCR_CFR_MASK) != 0) {
+         // Rising edge
+         switch(vddState) {
+            case VddState_Error:
+            case VddState_External:
+            case VddState_Internal:
+               break;
+            case VddState_None:
+               // External power supplied
+               vddState = VddState_External;
+               break;
+         }
+         Led::on();
       }
       // Notify callback
-      fCallback();
-      Led::write(VddMonitor::cmp->SCR&CMP_SCR_COUT_MASK);
-//      isVddOK();
+      fCallback(vddState);
    }
 
    /**
     * Monitors Target Vdd (Vbdm) power switch overload (IRQ pin)
     */
    static void powerFaultCallback(uint32_t status) {
+
       if ((VddPowerFaultMonitor::MASK & status) != 0) {
+
          // In case Vdd overload
-         vddOff();
+         Control::off();
+
+         // Fault (overload) detected
+         vddState = VddState_Error;
 
          // Notify callback
-         fCallback();
+         fCallback(vddState);
       }
-      isVddLow();
    }
 
    /**
@@ -127,7 +173,7 @@ public:
     *
     * @param[in] callback Callback to execute
     */
-   static void setCallback(void (*callback)()) {
+   static void setCallback(void (*callback)(VddState)) {
       if (callback == nullptr) {
          callback = nullCallback;
       }
@@ -146,11 +192,12 @@ public:
             USBDM::PinDriveMode_PushPull,
             USBDM::PinSlewRate_Slow);
 
-      VddMeasure::enable();
-      VddMeasure::setResolution(USBDM::AdcResolution_8bit_se);
+      // Do default calibration for 8-bits
+      VddMeasure::configure(USBDM::AdcResolution_8bit_se);
       VddMeasure::calibrate();
 
       fCallback = nullCallback;
+
       VddMonitor::setCallback(vddMonitorCallback);
       VddMonitor::configure(
             USBDM::CmpPower_HighSpeed,
@@ -168,18 +215,26 @@ public:
             USBDM::PinPull_Up,
             USBDM::PinIrq_Falling,
             USBDM::PinFilter_Passive);
+      VddPowerFaultMonitor::enableNvicInterrupts();
    }
 
    /**
     * Turn on Target Vdd
+    *
+    * @note This has no effect if in error state
     */
    static void vddOn() {
-      Control::high();
+      if (vddState == VddState_Error) {
+         return;
+      }
+      Control::on();
    }
 
    /**
     * Turn on Target Vdd @ 3.3V\n
     * Dummy routine as voltage level controlled by physical link
+    *
+    * @note This has no effect if in error state
     */
    static void vdd3V3On() {
       vddOn();
@@ -188,6 +243,8 @@ public:
    /**
     * Turn on Target Vdd @ 5V\n
     * Dummy routine as voltage level controlled by physical link
+    *
+    * @note This has no effect if in error state
     */
    static void vdd5VOn() {
       vddOn();
@@ -195,9 +252,12 @@ public:
 
    /**
     * Turn off Target Vdd
+    *
+    * @note - Will reset error state
     */
    static void vddOff() {
-      Control::low();
+      Control::off();
+      vddState  = VddState_None;
    }
 
    /**
@@ -206,6 +266,7 @@ public:
     * @return Target Vdd as an integer in the range 0-255 => 0-5V
     */
    static int readRawVoltage() {
+      VddMeasure::setResolution(USBDM::AdcResolution_8bit_se);
       return round(VddMeasure::readAnalogue()*externalDivider*5/vdd);
    }
 
@@ -215,6 +276,7 @@ public:
     * @return Target Vdd in volts as a float
     */
    static float readVoltage() {
+      VddMeasure::setResolution(USBDM::AdcResolution_8bit_se);
       return VddMeasure::readAnalogue()*vdd*externalDivider/((1<<8)-1);
    }
 
@@ -223,6 +285,10 @@ public:
     * Also updates Target Vdd LED
     */
    static bool isVddOK() {
+      if (vddState == VddState_Error) {
+         return false;
+      }
+      VddMeasure::setResolution(USBDM::AdcResolution_8bit_se);
       int value = VddMeasure::readAnalogue();
       if (value>onThresholdAdc) {
          Led::on();
@@ -239,6 +305,7 @@ public:
     * Also updates Target Vdd LED
     */
    static bool isVddLow() {
+      VddMeasure::setResolution(USBDM::AdcResolution_8bit_se);
       if (VddMeasure::readAnalogue()<powerOnResetThresholdAdc) {
          Led::off();
          return true;
@@ -256,12 +323,12 @@ public:
       VddMonitor::clearInterruptFlags();
    }
 
-   /**
-    * Enable/disable VDD change monitoring
-    */
-   static void enableVddChangeSense(bool enable) {
-      VddMonitor::enableInterrupts(enable?USBDM::CmpInterrupt_Both:USBDM::CmpInterrupt_None);
-   }
+//   /**
+//    * Enable/disable VDD change monitoring
+//    */
+//   static void enableVddChangeSense(bool enable) {
+//      VddMonitor::enableInterrupts(enable?USBDM::CmpInterrupt_Both:USBDM::CmpInterrupt_None);
+//   }
 };
 
 #endif /* PROJECT_HEADERS_TARGETVDDINTERFACE_H_ */

@@ -7,4 +7,6 @@
 
 #include "targetVddInterface.h"
 
-void (*TargetVddInterface::fCallback)() = TargetVddInterface::nullCallback;
+void (*TargetVddInterface::fCallback)(VddState) = TargetVddInterface::nullCallback;
+
+VddState TargetVddInterface::vddState = VddState_None;

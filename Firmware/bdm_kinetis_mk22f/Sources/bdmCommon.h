@@ -10,6 +10,8 @@
 
 #include <stdint.h>
 
+#include "targetVddInterface.h"
+
 USBDM_ErrorCode setTarget(TargetType_t target);
 USBDM_ErrorCode checkTargetVdd(void);
 void            suspend(void);
@@ -19,6 +21,6 @@ uint16_t        targetVddMeasure(void);
 USBDM_ErrorCode clearStatus(void);
 USBDM_ErrorCode enableTargetVdd();
 USBDM_ErrorCode setTargetVdd(TargetVddSelect_t targetVdd);
-void targetVddSense();
+void targetVddSense(VddState);
 
 #endif // _BDMCOMMON_H_

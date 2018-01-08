@@ -327,14 +327,9 @@ void initialise() {
 #include "utilities.h"
 
 int main() {
-   volatile uint32_t lockVar = 0;
-
-   lock(&lockVar);
-   unlock(&lockVar);
-
 //   hcs08Testing();
 
-   // Need to initialise for debug UART0
+   // Need to initialise for debug UART0, voltage monitoring etc
    ::initialise();
 
 //   for(;;) {
@@ -344,7 +339,7 @@ int main() {
 //   }
 
    USBDM::console.write("SystemBusClock  = ").writeln(SystemBusClock);
-   USBDM::console.write("SystemCoreClock  = ").writeln(SystemCoreClock);
+   USBDM::console.write("SystemCoreClock = ").writeln(SystemCoreClock);
 
    USBDM::console.write("HardwareId = ").writeln(HardwareId::getId());
    USBDM::console.write("Target Vdd = ").writeln(TargetVddInterface::readVoltage());

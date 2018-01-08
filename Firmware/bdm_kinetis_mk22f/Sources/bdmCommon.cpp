@@ -58,7 +58,7 @@ static constexpr uint32_t RESET_RECOVERYms = 10;
  *  This routine has several purposes:
  *   - Triggers POR into Debug mode on RS08/HCS08/CFV1 targets \n
  */
-void targetVddSense() {
+void targetVddSense(VddState) {
    USBDM::console.writeln("Target Vdd Change");
    //TODO targetVddSense()
 }
@@ -69,8 +69,7 @@ void targetVddSense() {
 //=========================================================================
 
 /*
- * Checks Target Vdd\n
- * Updates Target Vdd LED & status
+ * Checks Target Vdd
  *
  * Updates cable_status
  *
@@ -119,7 +118,7 @@ USBDM_ErrorCode checkTargetVdd(void) {
 USBDM_ErrorCode setTargetVdd(TargetVddSelect_t targetVdd) {
 
 #if (HW_CAPABILITY&CAP_VDDSENSE)
-   TargetVddInterface::enableVddChangeSense(false);
+//   TargetVddInterface::enableVddChangeSense(false);
 #endif
 
    if (targetVdd == BDM_TARGET_VDD_ENABLE) {
