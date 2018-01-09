@@ -40,10 +40,16 @@ private:
    static constexpr float vdd = 3.3f;
 
    /**
-    * Minimum working input voltage as an ADC reading \n
-    * 1.5 V as ADC reading i.e. 0-255
+    * Minimum working input 5V voltage as an ADC reading \n
+    * 5V-5% as ADC reading i.e. 0-255
     */
-   static constexpr int onThresholdAdc = (int)((1.5/(externalDivider*vdd))*((1<<8)-1));
+   static constexpr int onThreshold5VAdc = (int)((4.75/(externalDivider*vdd))*((1<<8)-1));
+
+   /**
+    * Minimum working input 3.3V voltage as an ADC reading \n
+    * 3.3-5% as ADC reading i.e. 0-255
+    */
+   static constexpr int onThreshold3V3Adc = (int)((3.15/(externalDivider*vdd))*((1<<8)-1));
 
    /**
     * Minimum working voltage as an DAC value. \n
@@ -87,7 +93,7 @@ private:
    /**
     * GPIO used to monitor power switch error indicator
     */
-   using VddPowerFaultMonitor = USBDM::GpioD<0>;
+   using VddPowerFaultMonitor = USBDM::GpioD<0, USBDM::ActiveHigh>;
 
    /**
     * Callback for Vdd changes
@@ -206,7 +212,7 @@ public:
       VddMonitor::configureDac(
             powerOnResetThresholdDac,
             USBDM::CmpDacSource_Vdd);
-      VddMonitor::selectInputs(1, 7);
+      VddMonitor::selectInputs(USBDM::Cmp0Input_CmpIn1, USBDM::Cmp1Input_DacRef);
       VddMonitor::enableInterrupts(USBDM::CmpInterrupt_Both);
       VddMonitor::enableNvicInterrupts(true);
 
@@ -227,6 +233,7 @@ public:
       if (vddState == VddState_Error) {
          return;
       }
+      vddState  = VddState_Internal;
       Control::on();
    }
 
@@ -281,16 +288,18 @@ public:
    }
 
    /**
-    * Check if target Vdd is present \n
+    * Check if target Vdd is present. \n
     * Also updates Target Vdd LED
+    *
+    * @param voltage Target voltage to check as ADC value
     */
-   static bool isVddOK() {
+   static bool isVddOK(int voltage) {
       if (vddState == VddState_Error) {
          return false;
       }
       VddMeasure::setResolution(USBDM::AdcResolution_8bit_se);
       int value = VddMeasure::readAnalogue();
-      if (value>onThresholdAdc) {
+      if (value>voltage) {
          Led::on();
          return true;
       }
@@ -298,6 +307,21 @@ public:
          Led::off();
          return false;
       }
+   }
+   /**
+    * Check if target Vdd is present \n
+    * Also updates Target Vdd LED
+    */
+   static bool isVddOK_3V3() {
+      return isVddOK(onThreshold3V3Adc);
+   }
+
+   /**
+    * Check if target Vdd is present \n
+    * Also updates Target Vdd LED
+    */
+   static bool isVddOK_5V() {
+      return isVddOK(onThreshold5VAdc);
    }
 
    /**
@@ -323,12 +347,14 @@ public:
       VddMonitor::clearInterruptFlags();
    }
 
-//   /**
-//    * Enable/disable VDD change monitoring
-//    */
-//   static void enableVddChangeSense(bool enable) {
-//      VddMonitor::enableInterrupts(enable?USBDM::CmpInterrupt_Both:USBDM::CmpInterrupt_None);
-//   }
+   /**
+    * Get Vdd state
+    *
+    * @return Vdd state as VddState_None, VddState_Internal, VddState_External or VddState_Error
+    */
+   static VddState getState() {
+      return vddState;
+   }
 };
 
 #endif /* PROJECT_HEADERS_TARGETVDDINTERFACE_H_ */

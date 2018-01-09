@@ -73,38 +73,25 @@ void targetVddSense(VddState) {
  *
  * Updates cable_status
  *
- * @return E_NO_ERROR on success
+ * @return BDM_RC_OK              Target Vdd present or no target Vdd sensing
+ * @return BDM_RC_VDD_NOT_PRESENT Target Vdd missing
  */
 USBDM_ErrorCode checkTargetVdd(void) {
 #if (HW_CAPABILITY&CAP_VDDSENSE)
-   if (TargetVddInterface::isVddOK()) {
-      if (bdm_option.targetVdd == BDM_TARGET_VDD_OFF) {
-         cable_status.power = BDM_TARGET_VDD_EXT;
-      }
-      else {
-         cable_status.power = BDM_TARGET_VDD_INT;
-      }
-   }
-   else {
-      if (bdm_option.targetVdd == BDM_TARGET_VDD_OFF) {
-         cable_status.power = BDM_TARGET_VDD_NONE;
-      }
-      else {
-         cable_status.power = BDM_TARGET_VDD_ERR;
-         // Possible overload
-         TargetVddInterface::vddOff();
-      }
+   switch(TargetVddInterface::getState()) {
+      case VddState_Error:
+      case VddState_None:
+         return BDM_RC_VDD_NOT_PRESENT;
+      case VddState_External:
+      case VddState_Internal:
+      default:
+         return BDM_RC_OK;
+         break;
    }
 #else
    // No target Vdd sensing - assume external Vdd is present
-   cable_status.power = BDM_TARGET_VDD_EXT;
-#endif // CAP_VDDSENSE
-
-   if ((cable_status.power == BDM_TARGET_VDD_NONE) ||
-         (cable_status.power == BDM_TARGET_VDD_ERR)) {
-      return BDM_RC_VDD_NOT_PRESENT;
-   }
    return BDM_RC_OK;
+#endif // CAP_VDDSENSE
 }
 
 #if (HW_CAPABILITY&CAP_VDDCONTROL)
@@ -112,14 +99,10 @@ USBDM_ErrorCode checkTargetVdd(void) {
  *  Sets Target Vdd
  *  Checks for Vdd present.
  *
- * @return BDM_RC_OK                => Target Vdd confirmed on target \n
+ * @return BDM_RC_OK                => Target Vdd confirmed on target
  * @return BDM_RC_VDD_NOT_PRESENT   => Target Vdd not present
  */
 USBDM_ErrorCode setTargetVdd(TargetVddSelect_t targetVdd) {
-
-#if (HW_CAPABILITY&CAP_VDDSENSE)
-//   TargetVddInterface::enableVddChangeSense(false);
-#endif
 
    if (targetVdd == BDM_TARGET_VDD_ENABLE) {
       // Enable at set level
@@ -127,9 +110,6 @@ USBDM_ErrorCode setTargetVdd(TargetVddSelect_t targetVdd) {
    }
    USBDM_ErrorCode rc = BDM_RC_OK;
    switch (targetVdd) {
-      case BDM_TARGET_VDD_ENABLE:
-         // Should be impossible
-         return BDM_RC_VDD_WRONG_MODE;
       case BDM_TARGET_VDD_DISABLE:
       case BDM_TARGET_VDD_OFF :
          TargetVddInterface::vddOff();
@@ -142,7 +122,7 @@ USBDM_ErrorCode setTargetVdd(TargetVddSelect_t targetVdd) {
       case BDM_TARGET_VDD_3V3 :
          TargetVddInterface::vdd3V3On();
          // Wait for Vdd to rise
-         if (!USBDM::waitMS(VDD_RISE_TIMEms, TargetVddInterface::isVddOK)) {
+         if (!USBDM::waitMS(VDD_RISE_TIMEms, TargetVddInterface::isVddOK_3V3)) {
             // In case of Vdd overload
             TargetVddInterface::vddOff();
             rc = BDM_RC_VDD_NOT_PRESENT;
@@ -151,18 +131,16 @@ USBDM_ErrorCode setTargetVdd(TargetVddSelect_t targetVdd) {
       case BDM_TARGET_VDD_5V  :
          TargetVddInterface::vdd5VOn();
          // Wait for Vdd to rise
-         if (!USBDM::waitMS(VDD_RISE_TIMEms, TargetVddInterface::isVddOK)) {
+         if (!USBDM::waitMS(VDD_RISE_TIMEms, TargetVddInterface::isVddOK_5V)) {
             // In case of Vdd overload
             TargetVddInterface::vddOff();
             rc = BDM_RC_VDD_NOT_PRESENT;
          }
          break;
+      case BDM_TARGET_VDD_ENABLE:
+         // Should be impossible
+         return BDM_RC_VDD_WRONG_MODE;
    }
-#if (HW_CAPABILITY&CAP_VDDSENSE)
-   // Clear Vdd monitoring interrupt
-   TargetVddInterface::clearVddChangeFlag();
-#endif
-   TargetVddInterface::isVddOK();
    return (rc);
 }
 
@@ -404,7 +382,6 @@ USBDM_ErrorCode cycleTargetVdd(TargetMode_t mode) {
  *   @note This routine is a dummy if no measurement hardware is available.
  */
 uint16_t targetVddMeasure(void) {
-   TargetVddInterface::isVddOK();
    return TargetVddInterface::readRawVoltage();
 }
 

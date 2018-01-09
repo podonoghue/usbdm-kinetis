@@ -101,11 +101,11 @@ uint16_t makeStatusWord(void) {
    }
 #endif // (HW_CAPABILITY&CAP_RST_IN)
 #if (HW_CAPABILITY&CAP_VDDSENSE)
-   switch (cable_status.power) {    // Target has power ?
-      case BDM_TARGET_VDD_NONE :  break;
-      case BDM_TARGET_VDD_ERR  : status |= S_POWER_ERR;  break;
-      case BDM_TARGET_VDD_INT  : status |= S_POWER_INT;  break;
-      case BDM_TARGET_VDD_EXT  : status |= S_POWER_EXT;  break;
+   switch (TargetVddInterface::getState()) {    // Target has power ?
+      case VddState_None     : break;
+      case VddState_Error    : status |= S_POWER_ERR;  break;
+      case VddState_Internal : status |= S_POWER_INT;  break;
+      case VddState_External : status |= S_POWER_EXT;  break;
    }
 #else
    // Assume power present
@@ -130,7 +130,7 @@ uint16_t makeStatusWord(void) {
  *        AUTOCONNECT_ALWAYS - being called before command execution
  *
  *  @return
- *     == \ref BDM_RC_OK => success       \n
+ *     == \ref BDM_RC_OK => success
  *     != \ref BDM_RC_OK => error
  */
 USBDM_ErrorCode optionalReconnect(AutoConnect_t when) {
