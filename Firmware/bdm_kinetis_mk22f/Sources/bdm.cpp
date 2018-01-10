@@ -258,6 +258,15 @@ static uint32_t convertTicksToMicroseconds(int time) {
 }
 
 /**
+ *  Interrupt callback function servicing the interrupt from Vdd changes
+ *  This routine has several purposes:
+ *   - Triggers POR into Debug mode on RS08/HCS08/CFV1 targets \n
+ */
+void targetVddSense(VddState) {
+   // TODO Bdm::targetVddSense()
+}
+
+/**
  * Initialise interface
  */
 void initialise() {

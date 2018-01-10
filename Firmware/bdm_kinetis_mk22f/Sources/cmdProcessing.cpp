@@ -422,10 +422,6 @@ USBDM_ErrorCode f_CMD_GET_CAPABILITIES(void) {
  */
 USBDM_ErrorCode f_CMD_GET_BDM_STATUS(void) {
    uint16_t word;
-
-   // Update power status
-   checkTargetVdd();
-
    word = makeStatusWord();
    unpack16BE(word, commandBuffer+1);
    returnSize  = 3;

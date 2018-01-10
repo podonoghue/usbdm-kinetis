@@ -303,6 +303,13 @@ void hcs08Testing () {
 }
 #endif
 
+/**
+ *  Dummy callback function servicing the interrupt from Vdd changes
+ */
+static void targetVddSense(VddState) {
+   USBDM::console.writeln("Target Vdd Change");
+}
+
 void initialise() {
    ResetInterface::initialise();
    UsbLed::initialise();
@@ -316,13 +323,8 @@ void initialise() {
    // Wait for Vbdm stable
    USBDM::wait(10*USBDM::ms);
 
-   // Update power status
-   checkTargetVdd();
+   USBDM::checkError();
 }
-
-//char debugBuffer[200] = {0};
-//char logBuffer[128] = {0};
-//char logIndex = 0;
 
 #include "utilities.h"
 
@@ -332,12 +334,6 @@ int main() {
    // Need to initialise for debug UART0, voltage monitoring etc
    ::initialise();
 
-//   for(;;) {
-//      TargetVddInterface::vdd5VOn();
-//      int id = targetVddMeasure();
-//      PRINTF("ID  = %d\n", id);
-//   }
-
    USBDM::console.write("SystemBusClock  = ").writeln(SystemBusClock);
    USBDM::console.write("SystemCoreClock = ").writeln(SystemCoreClock);
 
@@ -345,12 +341,8 @@ int main() {
    USBDM::console.write("Target Vdd = ").writeln(TargetVddInterface::readVoltage());
 
    USBDM::UsbImplementation::initialise();
+   USBDM::checkError();
 
-//   Bdm::initialise();
-//   for(;;) {
-//      FTM0->SWOCTRL = 0xFF;
-//      FTM0->SWOCTRL = 0xFFFF;
-//   }
    for(;;) {
       // Wait for USB connection
       while(!USBDM::UsbImplementation::isConfigured()) {

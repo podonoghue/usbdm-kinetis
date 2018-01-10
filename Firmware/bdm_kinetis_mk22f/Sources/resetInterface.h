@@ -22,7 +22,13 @@ private:
 
    static bool  fResetActivity;
 
+   /**
+    * Callback used to monitor reset events
+    *
+    * @param status
+    */
    static void callback(uint32_t status) {
+      // Check if RESET pin event and gone low
       if ((Data::MASK & status) && isLow()) {
          fResetActivity = true;
       }

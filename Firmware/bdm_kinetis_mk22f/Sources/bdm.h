@@ -13,8 +13,16 @@
 #include "derivative.h"
 #include "hardware.h"
 #include "delay.h"
+#include "targetVddInterface.h"
 
 namespace Bdm {
+/**
+ *  Interrupt callback function servicing the interrupt from Vdd changes
+ *  This routine has several purposes:
+ *   - Triggers POR into Debug mode on RS08/HCS08/CFV1 targets \n
+ */
+void targetVddSense(VddState);
+
 /**
  * Initialise interface
  */

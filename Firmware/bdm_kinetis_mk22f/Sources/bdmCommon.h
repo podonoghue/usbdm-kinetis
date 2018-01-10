@@ -21,6 +21,5 @@ uint16_t        targetVddMeasure(void);
 USBDM_ErrorCode clearStatus(void);
 USBDM_ErrorCode enableTargetVdd();
 USBDM_ErrorCode setTargetVdd(TargetVddSelect_t targetVdd);
-void targetVddSense(VddState);
 
 #endif // _BDMCOMMON_H_

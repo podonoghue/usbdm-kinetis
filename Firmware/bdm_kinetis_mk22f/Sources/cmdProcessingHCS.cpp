@@ -451,7 +451,7 @@ USBDM_ErrorCode f_CMD_READ_REGS(void) {
 /**
  *  HCS12 -  set BDMPPR register
  *
- *  @param memorySpace - used to determine if using Global address
+ *  @param memorySpace - Used to determine if using Global address
  *  @param addr23To16  - Global Page number address[23:16]
  *
  *  @return == BDM_RC_OK => success

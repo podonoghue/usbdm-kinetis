@@ -53,16 +53,6 @@ static constexpr uint32_t BKGD_WAITus = 100;
 /** How long to wait after RESET rise before continuing */
 static constexpr uint32_t RESET_RECOVERYms = 10;
 
-/**
- *  Interrupt callback function servicing the interrupt from Vdd changes
- *  This routine has several purposes:
- *   - Triggers POR into Debug mode on RS08/HCS08/CFV1 targets \n
- */
-void targetVddSense(VddState) {
-   USBDM::console.writeln("Target Vdd Change");
-   //TODO targetVddSense()
-}
-
 //=========================================================================
 // Target power control
 //
@@ -70,8 +60,6 @@ void targetVddSense(VddState) {
 
 /*
  * Checks Target Vdd
- *
- * Updates cable_status
  *
  * @return BDM_RC_OK              Target Vdd present or no target Vdd sensing
  * @return BDM_RC_VDD_NOT_PRESENT Target Vdd missing
@@ -115,7 +103,6 @@ USBDM_ErrorCode setTargetVdd(TargetVddSelect_t targetVdd) {
          TargetVddInterface::vddOff();
          // Wait for Vdd to fall
          if (!USBDM::waitMS(VDD_FALL_TIMEms, TargetVddInterface::isVddLow)) {
-            TargetVddInterface::vddOff();
             rc = BDM_RC_VDD_NOT_REMOVED;
          }
          break;
@@ -137,7 +124,7 @@ USBDM_ErrorCode setTargetVdd(TargetVddSelect_t targetVdd) {
             rc = BDM_RC_VDD_NOT_PRESENT;
          }
          break;
-      case BDM_TARGET_VDD_ENABLE:
+      default:
          // Should be impossible
          return BDM_RC_VDD_WRONG_MODE;
    }
@@ -147,8 +134,7 @@ USBDM_ErrorCode setTargetVdd(TargetVddSelect_t targetVdd) {
 #endif // CAP_VDDCONTROL
 
 /**
- *  Turns on Target Vdd (if internally controlled)
- *  Checks for Vdd present.
+ *  Turns on Target Vdd (if internally controlled).
  *
  * @return BDM_RC_OK                => Target Vdd confirmed on target \n
  * @return BDM_RC_VDD_NOT_PRESENT   => Target Vdd not present
@@ -164,8 +150,8 @@ USBDM_ErrorCode enableTargetVdd() {
  *     - \ref RESET_SPECIAL => Power on in special mode,
  *     - \ref RESET_NORMAL  => Power on in normal mode
  *
- *   BKGD/BKPT is held low when power is re-applied to start
- *   target with BDM active if RESET_SPECIAL
+ *   If RESET_SPECIAL, and HCS08 or CFV1 targets, BKGD/BKPT is held low when power
+ *   is re-applied to start target in BKGD active mode.
  *
  *   @return
  *    \ref BDM_RC_OK                	=> Target Vdd confirmed on target \n
@@ -247,7 +233,7 @@ USBDM_ErrorCode cycleTargetVddOn(TargetMode_t mode) {
 #endif
       if (hcsPowerOn) {
          // Release BKGD
-         Bdm::setPinState(PinLevelMasks_t::PIN_BKGD_LOW);
+         Bdm::setPinState(PinLevelMasks_t::PIN_BKGD_3STATE);
       }
    // Let processor start up
    USBDM::waitMS(RESET_RECOVERYms);
@@ -268,9 +254,6 @@ USBDM_ErrorCode cycleTargetVddOn(TargetMode_t mode) {
 
 #endif // CAP_VDDCONTROL
 
-   // Update Target Vdd LED & power status
-   (void)checkTargetVdd();
-
    return(rc);
 }
 
@@ -279,7 +262,7 @@ USBDM_ErrorCode cycleTargetVddOn(TargetMode_t mode) {
  *
  *   @return
  *    \ref BDM_RC_OK                => No error  \n
- *    \ref BDM_RC_VDD_WRONG_MODE    => Target Vdd not controlled by BDM interface \n
+ *    \ref BDM_RC_VDD_WRONG_MODE    => Target Vdd not provided by BDM interface \n
  *    \ref BDM_RC_VDD_NOT_REMOVED   => Target Vdd failed to fall \n
  */
 USBDM_ErrorCode cycleTargetVddOff(void) {
@@ -287,9 +270,7 @@ USBDM_ErrorCode cycleTargetVddOff(void) {
 
 #if (HW_CAPABILITY&CAP_VDDCONTROL)
 
-   (void)checkTargetVdd();
-
-   if (bdm_option.targetVdd == BDM_TARGET_VDD_OFF) {
+   if(TargetVddInterface::getState() != VddState_Internal) {
       return BDM_RC_VDD_WRONG_MODE;
    }
 
@@ -329,9 +310,6 @@ USBDM_ErrorCode cycleTargetVddOff(void) {
       rc = BDM_RC_VDD_NOT_REMOVED;
    }
 
-   // Update Target Status
-   (void)checkTargetVdd();
-
    // Wait a while with power off
    USBDM::waitUS(RESET_RECOVERYms);
 
@@ -355,7 +333,7 @@ USBDM_ErrorCode cycleTargetVddOff(void) {
  *
  *   @return
  *    \ref BDM_RC_OK                 => No error \n
- *    \ref BDM_RC_VDD_WRONG_MODE     => Target Vdd not controlled by BDM interface \n
+ *    \ref BDM_RC_VDD_WRONG_MODE     => Target Vdd not provided by BDM interface \n
  *    \ref BDM_RC_VDD_NOT_REMOVED    => Target Vdd failed to fall \n
  *    \ref BDM_RC_VDD_NOT_PRESENT    => Target Vdd failed to rise \n
  *    \ref BDM_RC_RESET_TIMEOUT_RISE => RESET signal failed to rise \n

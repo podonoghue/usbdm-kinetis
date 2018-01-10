@@ -325,7 +325,7 @@ public:
    }
 
    /**
-    * Check if target Vdd has reached POR level\n
+    * Check if target Vdd has fallen to POR level\n
     * Also updates Target Vdd LED
     */
    static bool isVddLow() {

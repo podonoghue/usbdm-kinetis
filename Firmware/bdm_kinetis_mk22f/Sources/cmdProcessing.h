@@ -44,7 +44,7 @@ struct CableStatus_t {
    AcknMode_t          ackn:8;         //!< Target supports ACKN see AcknMode_t
    ResetMode_t         xxxxx:8;        //!< Not used
    SpeedMode_t         speed:8;        //!< Target speed determination method, see SpeedMode_t
-   TargetVddState_t    yyyyy:8;        //!< Target Vdd state
+   TargetVddState_t    yyyyy:8;        //!< Not used
    TargetVppSelect_t   flashState:8;   //!< State of RS08 Flash programming,  see FlashState_t
    uint16_t            sync_length;    //!< Length of the target SYNC pulse in 60MHz ticks
    uint16_t            wait150_cnt;    //!< Time for 150 BDM cycles in bus cycles of the MCU divided by N
