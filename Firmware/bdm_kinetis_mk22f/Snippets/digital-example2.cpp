@@ -24,8 +24,8 @@ using namespace USBDM;
  */
 
 // Connection mapping - change as required
-using Switch =   gpio_A0;
-using Led    =   gpio_A1;
+using Switch =   USBDM::GpioB<0,ActiveLow>;
+using Led    =   USBDM::GpioB<1,ActiveLow>;
 
 int main(void) {
    Led::setOutput(

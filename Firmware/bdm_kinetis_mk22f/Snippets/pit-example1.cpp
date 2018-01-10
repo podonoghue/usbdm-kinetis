@@ -13,7 +13,7 @@ using namespace USBDM;
 
 // Connection mapping - change as required
 // Led is assumed active-low
-using LED   = gpio_LED_RED;
+using LED   = GpioA<2, ActiveLow>;
 
 int main() {
 

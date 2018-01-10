@@ -6,7 +6,7 @@
 
 <section name="USBDM">
    <item key="$$DeviceInfo_Device_Variant"                 value="MK22FN512VLH12" />
-   <item key="$$DeviceInfo_SubFamily"                      value="FRDM_K22F" />
+   <item key="$$DeviceInfo_SubFamily"                      value="MK22F51212" />
    <item key="$$Hardware_Source_Filename"                  value="MK22F51212.usbdmHardware" />
    <item key="$signal$ADC0_DM0_descriptionSetting"         value="Id" />
    <item key="$signal$ADC0_DP0_descriptionSetting"         value="N/C" />

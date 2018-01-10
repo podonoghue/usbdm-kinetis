@@ -25,8 +25,8 @@ using namespace USBDM;
 #define SET_HANDLERS_PROGRAMMATICALLY
 
 // Connection mapping - change as required
-using Led1 = gpio_LED_BLUE;
-using Led2 = gpio_LED_RED;
+using Led1 = GpioA<2, USBDM::ActiveLow>;
+using Led2 = GpioC<3, USBDM::ActiveLow>;
 
 using Timer         = Pit;
 using TimerChannelA = PitChannel<0>;

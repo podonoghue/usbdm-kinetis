@@ -8,6 +8,7 @@
 /SMT_OvenNew/
 /Test_USB_Bulk/
 /Test_USB_CDC/
+/Test_USB_Composite/
 /.recommenders/
 /TestMK20DX256M7/
 /Test_MK22FN_DIP/
@@ -17,4 +18,5 @@
 /StateMachine/
 /bdm_kinetis/
 /frdm_k22F/
-/bdm_kinetis_mk22f2_ref/
+/bdm_kinetis_mk22f_ref/
+/RemoteSystemsTempFiles/
