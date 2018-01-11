@@ -310,15 +310,23 @@ static void targetVddSense(VddState) {
    USBDM::console.writeln("Target Vdd Change");
 }
 
-void initialise() {
+void warmStart() {
    ResetInterface::initialise();
    UsbLed::initialise();
-   TargetVddInterface::initialise();
-   TargetVddInterface::setCallback(targetVddSense);
+
    Debug::initialise();
 
    InterfaceEnable::setOutput();
    InterfaceEnable::high();
+
+   USBDM::checkError();
+}
+
+void coldStart() {
+   warmStart();
+
+   TargetVddInterface::initialise();
+   TargetVddInterface::setCallback(targetVddSense);
 
    // Wait for Vbdm stable
    USBDM::wait(10*USBDM::ms);
@@ -331,8 +339,8 @@ void initialise() {
 int main() {
 //   hcs08Testing();
 
-   // Need to initialise for debug UART0, voltage monitoring etc
-   ::initialise();
+   // Need to coldStart for debug UART0, voltage monitoring etc
+   ::coldStart();
 
    USBDM::console.write("SystemBusClock  = ").writeln(SystemBusClock);
    USBDM::console.write("SystemCoreClock = ").writeln(SystemCoreClock);
@@ -351,6 +359,6 @@ int main() {
       // Process commands
       commandLoop();
       // Re-initialise
-      ::initialise();
+      ::warmStart();
    }
 }

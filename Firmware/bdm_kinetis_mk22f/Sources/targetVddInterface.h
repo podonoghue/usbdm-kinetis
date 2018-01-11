@@ -191,6 +191,7 @@ public:
     */
    static void initialise() {
       Control::setOutput();
+
       vddOff();
 
       Led::setOutput(
@@ -222,6 +223,10 @@ public:
             USBDM::PinIrq_Falling,
             USBDM::PinFilter_Passive);
       VddPowerFaultMonitor::enableNvicInterrupts();
+
+      if(isVddOK_3V3() && (vddState == VddState_None)) {
+         vddState = VddState_External;
+      }
    }
 
    /**
