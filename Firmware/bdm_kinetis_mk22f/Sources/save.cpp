@@ -100,10 +100,10 @@
 //   if (BackgroundDebugInterface::sync(syncLength)) {
 //      float syncPeriod = ((float)syncLength*1000000)/BackgroundDebugInterface::getTickRate();
 //      float frequency  = 128/syncPeriod;
-//      PRINTF("OK: Sync = %d ticks, %3.1f us, bus freq %3.2f MHz\n", syncLength, syncPeriod, frequency);
+//      console.WRITELN("OK: Sync = %d ticks, %3.1f us, bus freq %3.2f MHz\n", syncLength, syncPeriod, frequency);
 //   }
 //   else {
-//      PRINTF("Sync failed\n");
+//      console.WRITELN("Sync failed\n");
 //   }
 //   for(;;) {
 //      for(uint32_t i=0xE0; i<0xFF; i++) {
@@ -124,11 +124,11 @@
 //   //   for(;;) {
 //   //      if (BackgroundDebugInterface::sync(syncLength)) {
 //   //         float syncPeriod = ((float)syncLength*1000000)/BackgroundDebugInterface::getTickRate();
-//   //         PRINTF("OK: Sync = %d ticks, %3.1f us\n", syncLength, syncPeriod);
-//   ////         PRINTF("OK: Sync = %d ticks\n", syncLength);
+//   //         console.WRITELN("OK: Sync = %d ticks, %3.1f us\n", syncLength, syncPeriod);
+//   ////         console.WRITELN("OK: Sync = %d ticks\n", syncLength);
 //   //      }
 //   //      else {
-//   //         PRINTF("Sync failed\n");
+//   //         console.WRITELN("Sync failed\n");
 //   //      }
 //   ////      USBDM::waitMS(100);
 //   //   }

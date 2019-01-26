@@ -66,7 +66,7 @@ public:
       }
       outQueue.enQueue(ch);
       // Restart Transmit IRQ
-      UartInfo::uart->C2 |= UART_C2_TIE_MASK;
+      UartInfo::uart().C2 |= UART_C2_TIE_MASK;
       return true;
    }
 
@@ -130,7 +130,7 @@ public:
       UartInfo::initPCRs();
 
       // Disable the transmitter and receiver while changing settings.
-      UartInfo::uart->C2 &= ~(UART_C2_TE_MASK | UART_C2_RE_MASK );
+      UartInfo::uart().C2 &= ~(UART_C2_TE_MASK | UART_C2_RE_MASK );
 
       // Note: lineCoding.bCharFormat is ignored (always 1 stop bit)
       //   switch (lineCoding.bCharFormat) {
@@ -174,12 +174,12 @@ public:
          default :
             break;
       }
-      UartInfo::uart->C1 = UARTC1Value;
-      UartInfo::uart->C2 =
+      UartInfo::uart().C1 = UARTC1Value;
+      UartInfo::uart().C2 =
             UART_C2_RIE_MASK| // Receive interrupts (Transmit interrupts enabled when data written)
             UART_C2_RE_MASK|  // Receiver enable
             UART_C2_TE_MASK;  // Transmitter enable
-      UartInfo::uart->C3 = UARTC3Value|
+      UartInfo::uart().C3 = UARTC3Value|
             UART_C3_FEIE_MASK| // Framing error
             UART_C3_NEIE_MASK| // Noise error
             UART_C3_ORIE_MASK| // Overrun error
@@ -239,19 +239,19 @@ public:
    static void uartCallback(uint8_t status) {
       if (status&UART_S1_RDRF_MASK) {
          // Transfers a char from the UART_D to CDC-IN queue
-         if (!inCallback(UartInfo::uart->D)) {
+         if (!inCallback(UartInfo::uart().D)) {
             cdcStatus |= UART_S1_OR_MASK;
          }
       }
       else if (status&UART_S1_TDRE_MASK) {
          //  Transfer a char from the CDC-OUT queue to UART_D
          if (!outQueue.isEmpty()) {
-            UartInfo::uart->D = outQueue.deQueue(); // Send the char
+            UartInfo::uart().D = outQueue.deQueue(); // Send the char
          }
          else if (breakCount > 0) {
             // Send another BREAK 'char'
-            UartInfo::uart->C2 |=  UART_C2_SBK_MASK;
-            UartInfo::uart->C2 &= ~UART_C2_SBK_MASK;
+            UartInfo::uart().C2 |=  UART_C2_SBK_MASK;
+            UartInfo::uart().C2 &= ~UART_C2_SBK_MASK;
             if (breakCount != 0xFF) {
                breakCount--;
             }
@@ -259,7 +259,7 @@ public:
          else {
             // No characters available
             // Disable further UART transmit interrupts
-            UartInfo::uart->C2 &= ~UART_C2_TIE_MASK;
+            UartInfo::uart().C2 &= ~UART_C2_TIE_MASK;
          }
       }
       else {
@@ -267,11 +267,11 @@ public:
          cdcStatus |= status;
          if (UartInfo::statusNeedsWrite) {
             // Clear error flags
-            UartInfo::uart->S1 = 0xFF;
+            UartInfo::uart().S1 = 0xFF;
          }
          else {
             // Reading data clears flags
-            (void)UartInfo::uart->D;
+            (void)UartInfo::uart().D;
          }
       }
    }

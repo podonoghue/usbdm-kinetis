@@ -1,15 +1,15 @@
 /**
  * @file     usb_implementation_composite.h
- * @brief    USB Kinetis implementation
+ * @brief    USB Composite device implementation
  *
- * @version  V4.12.1.150
- * @date     13 Nov 2016
+ * @version  V4.12.1.170
+ * @date     2 April 2017
  *
  *  This file provides the implementation specific code for the USB interface.
  *  It will need to be modified to suit an application.
  */
-#ifndef PROJECT_HEADERS_USB_IMPLEMENTATION_H_
-#define PROJECT_HEADERS_USB_IMPLEMENTATION_H_
+#ifndef PROJECT_HEADERS_USB_IMPLEMENTATION_COMPOSITE_H_
+#define PROJECT_HEADERS_USB_IMPLEMENTATION_COMPOSITE_H_
 
 /*
  * Under Windows 8, or 10 there is no need to install a driver for
@@ -21,7 +21,7 @@
  *
  * Under Linux drivers for bulk and CDC are automatically loaded
  */
-#define MS_COMPATIBLE_ID_FEATURE
+#undef MS_COMPATIBLE_ID_FEATURE
 #include "usb_cdc_uart.h"
 
 #define UNIQUE_ID
@@ -65,14 +65,16 @@ namespace USBDM {
 //======================================================================
 // Maximum packet sizes for each endpoint
 //
-static constexpr uint  CONTROL_EP_MAXSIZE           = 64; //!< Control in/out    64
+static constexpr unsigned  CONTROL_EP_MAXSIZE           = 64; //!< Control in/out
+/*
+ *  TODO Define additional end-point sizes
+ */
+static constexpr unsigned  BULK_OUT_EP_MAXSIZE          = 64; //!< Bulk out
+static constexpr unsigned  BULK_IN_EP_MAXSIZE           = 64; //!< Bulk in
 
-static constexpr uint  BULK_OUT_EP_MAXSIZE          = 64; //!< Bulk out          64
-static constexpr uint  BULK_IN_EP_MAXSIZE           = 64; //!< Bulk in           64
-
-static constexpr uint  CDC_NOTIFICATION_EP_MAXSIZE  = 16; //!< CDC notification  16
-static constexpr uint  CDC_DATA_OUT_EP_MAXSIZE      = 16; //!< CDC data out      16
-static constexpr uint  CDC_DATA_IN_EP_MAXSIZE       = 16; //!< CDC data in       16
+static constexpr unsigned  CDC_NOTIFICATION_EP_MAXSIZE  = 16; //!< CDC notification
+static constexpr unsigned  CDC_DATA_OUT_EP_MAXSIZE      = 16; //!< CDC data out
+static constexpr unsigned  CDC_DATA_IN_EP_MAXSIZE       = 16; //!< CDC data in
 
 #ifdef USBDM_USB0_IS_DEFINED
 /**
@@ -87,6 +89,7 @@ class Usb0 : public UsbBase_T<Usb0Info, CONTROL_EP_MAXSIZE> {
    friend UsbBase_T<Usb0Info, CONTROL_EP_MAXSIZE>;
 
 public:
+
    /**
     * String indexes
     *
@@ -148,12 +151,12 @@ public:
     * Configuration numbers, consecutive from 1
     */
    enum Configurations {
-     CONFIGURATION_NUM = 1,
-     /*
-      * Assumes single configuration
-      */
-     /** Total number of configurations */
-     NUMBER_OF_CONFIGURATIONS = CONFIGURATION_NUM,
+      CONFIGURATION_NUM = 1,
+      /*
+       * Assumes single configuration
+       */
+      /** Total number of configurations */
+      NUMBER_OF_CONFIGURATIONS = CONFIGURATION_NUM,
    };
 
    /**
@@ -163,28 +166,40 @@ public:
 
 protected:
    /* end-points */
+
+   /** Out end-point for Bulk */
    static OutEndpoint <Usb0Info, Usb0::BULK_OUT_ENDPOINT, BULK_OUT_EP_MAXSIZE> epBulkOut;
+
+   /** In end-point for Bulk */
    static InEndpoint  <Usb0Info, Usb0::BULK_IN_ENDPOINT,  BULK_IN_EP_MAXSIZE>  epBulkIn;
 
+   /** In end-point for CDC notifications */
    static InEndpoint  <Usb0Info, Usb0::CDC_NOTIFICATION_ENDPOINT, CDC_NOTIFICATION_EP_MAXSIZE>  epCdcNotification;
-   static OutEndpoint <Usb0Info, Usb0::CDC_DATA_OUT_ENDPOINT,     CDC_DATA_OUT_EP_MAXSIZE>      epCdcDataOut;
-   static InEndpoint  <Usb0Info, Usb0::CDC_DATA_IN_ENDPOINT,      CDC_DATA_IN_EP_MAXSIZE>       epCdcDataIn;
 
-   /** Force command handler to exit and restart */
+   /** Out end-point for CDC data out */
+   static OutEndpoint <Usb0Info, Usb0::CDC_DATA_OUT_ENDPOINT,     CDC_DATA_OUT_EP_MAXSIZE>      epCdcDataOut;
+
+   /** In end-point for CDC data in */
+   static InEndpoint  <Usb0Info, Usb0::CDC_DATA_IN_ENDPOINT,      CDC_DATA_IN_EP_MAXSIZE>       epCdcDataIn;
+   /*
+    * TODO Add additional End-points here
+    */
    static bool forceCommandHandlerInitialise;
 
 public:
 
    /**
-    * Initialise the USB interface
+    * Initialise the USB0 interface
+    *
+    *  @note Assumes clock set up for USB operation (48MHz)
     */
    static void initialise();
 
    /**
     *  Blocking transmission of data over bulk IN end-point
     *
-    *  @param size   Number of bytes to send
-    *  @param buffer Pointer to bytes to send
+    *  @param[in] size   Number of bytes to send
+    *  @param[in] buffer Pointer to bytes to send
     *
     *  @note : Waits for idle BEFORE transmission but\n
     *  returns before data has been transmitted
@@ -194,8 +209,8 @@ public:
    /**
     *  Blocking reception of data over bulk OUT end-point
     *
-    *   @param maxSize Maximum number of bytes to receive
-    *   @param buffer  Pointer to buffer for bytes received
+    *   @param[in] maxSize Maximum number of bytes to receive
+    *   @param[in] buffer  Pointer to buffer for bytes received
     *
     *   @return Number of bytes received
     *
@@ -206,16 +221,16 @@ public:
    /**
     * CDC Transmit
     *
-    * @param data Pointer to data to transmit
-    * @param size Number of bytes to transmit
+    * @param[in] data Pointer to data to transmit
+    * @param[in] size Number of bytes to transmit
     */
    static void sendCdcData(const uint8_t *data, unsigned size);
 
    /**
     * CDC Receive
     *
-    * @param data    Pointer to data to receive
-    * @param maxSize Maximum number of bytes to receive
+    * @param[in] data    Pointer to data to receive
+    * @param[in] maxSize Maximum number of bytes to receive
     *
     * @return Number of bytes received
     */
@@ -285,15 +300,12 @@ protected:
 
       // Start CDC status transmission
       epCdcSendNotification();
-
-      static const uint8_t cdcInBuff[] = "Hello there\n";
-      epCdcDataIn.startTxTransaction(EPDataIn, sizeof(cdcInBuff), cdcInBuff);
    }
 
    /**
     * Callback for SOF tokens
     */
-   static void sofCallback();
+   static ErrorCode sofCallback();
 
    /**
     * Call-back handling BULK-OUT transaction complete
@@ -306,12 +318,19 @@ protected:
    static void bulkInTransactionCallback(EndpointState state);
 
    /**
-    * Call-back handling CDC-INtransaction complete
+    * Call-back handling CDC-IN transaction complete\n
+    * Checks for data and schedules transfer as necessary\n
+    * Each transfer will have a ZLP as necessary.
+    *
+    * @param[in] state Current end-point state
     */
    static void cdcInTransactionCallback(EndpointState state);
 
    /**
-    * Call-back handling CDC-OUT transaction complete
+    * Call-back handling CDC-OUT transaction complete\n
+    * Data received is passed to the cdcInterface
+    *
+    * @param[in] state Current end-point state
     */
    static void cdcOutTransactionCallback(EndpointState state);
 
@@ -335,12 +354,12 @@ protected:
    /**
     * Handle SETUP requests not handled by base handler
     *
-    * @param setup SETUP packet received from host
+    * @param[in] setup SETUP packet received from host
     *
     * @note Provides CDC extensions
     * @note Provides BDM extensions
     */
-   static void handleUserEp0SetupRequests(const SetupPacket &setup);
+   static ErrorCode handleUserEp0SetupRequests(const SetupPacket &setup);
 
    /**
     * CDC Set line coding handler
@@ -370,4 +389,4 @@ using UsbImplementation = Usb0;
 
 } // End namespace USBDM
 
-#endif /* PROJECT_HEADERS_USB_IMPLEMENTATION_H_ */
+#endif /* PROJECT_HEADERS_USB_IMPLEMENTATION_COMPOSITE_H_ */

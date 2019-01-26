@@ -51,7 +51,7 @@ public:
       Direction::setOutput();
 
       // IRQ on falling edge - reset detection
-      Data::setIrq(USBDM::PinIrq_Falling);
+      Data::setPinAction(USBDM::PinAction_IrqFalling);
       Data::setCallback(callback);
       Data::enableNvicInterrupts(true);
 

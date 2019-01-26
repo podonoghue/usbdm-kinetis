@@ -1,7 +1,7 @@
 /**
  ============================================================================
- * @file digital-example1.cpp
- * @brief Basic digital output example
+ * @file digital-example1.cpp (180.ARM_Peripherals/Snippets/)
+ * @brief Basic C++ GPIO output example
  *
  *  Created on: 10/1/2016
  *      Author: podonoghue
@@ -16,26 +16,27 @@ using namespace USBDM;
  */
 
 // Connection mapping - change as required
-using RED_LED   = USBDM::GpioB<0,ActiveLow>;
-using GREEN_LED = USBDM::GpioB<1,ActiveLow>;
+using RedLed   = GpioB<0,ActiveLow>;
+using GreenLed = GpioB<1,ActiveLow>;
 
 int main() {
-   RED_LED::setOutput(
+   RedLed::setOutput(
          PinDriveStrength_High,
          PinDriveMode_PushPull,
          PinSlewRate_Slow);
-   GREEN_LED::setOutput(
+   GreenLed::setOutput(
          PinDriveStrength_High,
          PinDriveMode_PushPull,
          PinSlewRate_Slow);
+
+   console.setEcho(EchoMode_Off);
+
    for(;;) {
-      RED_LED::toggle();
-      USBDM::waitMS(100);
-      RED_LED::toggle();
-      USBDM::waitMS(100);
-      GREEN_LED::toggle();
-      USBDM::waitMS(100);
-      GREEN_LED::toggle();
-      USBDM::waitMS(100);
+      console.write("\rPress (R)ed or (G)reen :");
+      switch(console.readChar()) {
+         case 'r': case 'R' : RedLed::toggle();   break;
+         case 'g': case 'G' : GreenLed::toggle(); break;
+         default: break;
+      }
    }
 }

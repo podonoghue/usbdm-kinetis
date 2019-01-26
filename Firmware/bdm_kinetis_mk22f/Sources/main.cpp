@@ -7,7 +7,6 @@
  *      Author: podonoghue
  ============================================================================
  */
-#include <stdio.h>
 #include <math.h>
 #include <string.h>
 #include <random>
@@ -25,6 +24,8 @@
 #include "cmdProcessingSWD.h"
 #include "cmdProcessingHCS.h"
 
+using namespace USBDM;
+
 #if 0
 /** Check error code from USBDM API function
  *
@@ -40,10 +41,10 @@ void check(USBDM_ErrorCode rc , const char *file = NULL, unsigned lineNum = 0 ) 
    (void)file;
    (void)lineNum;
    if (rc == BDM_RC_OK) {
-      //      PRINTF("OK,     [%s:#%4d]\n", file, lineNum);
+   //   console.WRITE("OK, [").WRITE(file).WRITE(":#").WRITE(lineNum).WRITELN("]");
       return;
    }
-   PRINTF("Failed, [%s:#%4d] Reason= %d\n", file, lineNum, rc);
+   console.WRITE("Failed, [").WRITE(file).WRITE(":#").WRITE(lineNum).WRITE("], Reason= ").WRITELN(rc);
    __BKPT();
 }
 /**
@@ -94,11 +95,11 @@ USBDM_ErrorCode memRead(uint32_t address, uint8_t opSize, uint8_t size, uint8_t 
  */
 USBDM_ErrorCode testmem(uint32_t addressStart, uint32_t addrRange) {
 
-//   PRINTF("Connection speed = %ld Hz\n", getSpeed());
+//   console.WRITE("Connection speed = %ld Hz\n", getSpeed());
 
    CHECK(f_CMD_CONNECT());
 //   CHECK(Swd::powerUp());
-   PRINTF("Connected\n");
+   console.WRITE("Connected\n");
 
    uint8_t randomData[sizeof(commandBuffer)];
    for (unsigned i=0; i<sizeof(randomData);i++) {
@@ -118,7 +119,7 @@ USBDM_ErrorCode testmem(uint32_t addressStart, uint32_t addrRange) {
       //                          SIZE     #BYTES   Address
       uint8_t operation[] = {0,0, opSize,   size,   (uint8_t)(address>>24), (uint8_t)(address>>16), (uint8_t)(address>>8), (uint8_t)address};
 
-      PRINTF("Testing [%08lX..%08lX]:%c\n", address, address+size-1, "-BW-L"[opSize]);
+      console.write("Testing [").WRITE(address,Radix_16).WRITE("..").WRITE(address+size-1,Radix_16).WRITE("]:").WRITELN("-BW-L"[opSize]);
 
       memcpy(commandBuffer, operation, sizeof(operation));
       memcpy(commandBuffer+sizeof(operation), randomData, size);
@@ -141,29 +142,30 @@ USBDM_ErrorCode recover() {
    Swd::initialise();
    USBDM_ErrorCode rc = Swd::lineReset();
    if (rc != BDM_RC_OK) {
-      PRINTF("Failed lineReset(), rc = %d\n", rc);
+      console.WRITE();
+      console.WRITE("Failed lineReset(), rc = %d\n", rc);
       rc = Swd::connect();
       if (rc != BDM_RC_OK) {
-         PRINTF("Failed connect(), rc = %d\n", rc);
+         console.WRITE("Failed connect(), rc = %d\n", rc);
       }
    }
    if (rc == BDM_RC_OK) {
-      PRINTF("lineReset()/connect() done\n");
+      console.WRITE("lineReset()/connect() done\n");
    }
    uint32_t status;
    rc = Swd::readReg(Swd::SWD_RD_DP_STATUS, status);
    if (rc != BDM_RC_OK) {
-      PRINTF("Failed SWD_RD_DP_STATUS, rc = %d\n", rc);
+      console.WRITE("Failed SWD_RD_DP_STATUS, rc = %d\n", rc);
    }
    else {
-      PRINTF("DP Status = 0x%08lX\n", status);
+      console.WRITE("DP Status = 0x%08lX\n", status);
    }
    rc = Swd::clearStickyBits();
    if (rc != BDM_RC_OK) {
-      PRINTF("Failed clearStickyBits(), rc = %d\n", rc);
+      console.WRITE("Failed clearStickyBits(), rc = %d\n", rc);
    }
    else {
-      PRINTF("Cleared sticky bits\n");
+      console.WRITE("Cleared sticky bits\n");
    }
    return rc;
 }
@@ -174,14 +176,14 @@ void testMassErase() {
    CHECK(Swd::f_CMD_CONNECT());
    CHECK(Swd::powerUp());
 
-   PRINTF("Connected\n");
+   console.WRITE("Connected\n");
 
    USBDM_ErrorCode rc = Swd::kinetisMassErase();
    if (rc != BDM_RC_OK) {
-      PRINTF("Failed massErase(), rc = %d\n", rc);
+      console.WRITE("Failed massErase(), rc = %d\n", rc);
    }
    else {
-      PRINTF("OK massErase()\n");
+      console.WRITE("OK massErase()\n");
    }
 }
 
@@ -192,11 +194,11 @@ USBDM_ErrorCode testmem() {
 
    Swd::initialise();
 
-   PRINTF("Connection speed = %ld Hz\n", Swd::getSpeed());
+   console.WRITE("Connection speed = %ld Hz\n", Swd::getSpeed());
 
    CHECK(Swd::f_CMD_CONNECT());
    CHECK(Swd::powerUp());
-   PRINTF("Connected\n");
+   console.WRITE("Connected\n");
 
    uint8_t randomData[sizeof(commandBuffer)];
    for (unsigned i=0; i<sizeof(randomData);i++) {
@@ -216,7 +218,7 @@ USBDM_ErrorCode testmem() {
       //                          SIZE     #BYTES   Address
       uint8_t operation[] = {0,0, opSize,   size,   (uint8_t)(address>>24), (uint8_t)(address>>16), (uint8_t)(address>>8), (uint8_t)address};
 
-      PRINTF("Testing [%08lX..%08lX]:%c\n", address, address+size-1, "-BW-L"[opSize]);
+      console.write("Testing [").WRITE(address,Radix_16).WRITE("..").WRITE(address+size-1,Radix_16).WRITE("]:").WRITELN("-BW-L"[opSize]);
 
       memcpy(commandBuffer, operation, sizeof(operation));
       memcpy(commandBuffer+sizeof(operation), randomData, size);
@@ -238,21 +240,21 @@ USBDM_ErrorCode checkIDcode() {
 
    CHECK(Swd::f_CMD_CONNECT());
    CHECK(Swd::powerUp());
-   PRINTF("Connected\n");
+   console.WRITE("Connected\n");
 
    uint32_t idcode;
    USBDM_ErrorCode rc = Swd::readReg(Swd::SWD_RD_DP_IDCODE, idcode);
    if (rc != BDM_RC_OK) {
-      PRINTF("Failed SWD_RD_DP_IDCODE, rc = %d\n", rc);
+      console.WRITE("Failed SWD_RD_DP_IDCODE, rc = ").writeln(rc);
       return rc;
    }
    else {
       if (idcode != 0x2BA01477) {
-         PRINTF("Wrong IDCODE = 0x%08lX\n", idcode);
+         console.WRITE("Wrong IDCODE = 0x").writeln(idcode, Radix_16);
          return rc;
       }
       else {
-         PRINTF("IDCODE = 0x%08lX\n", idcode);
+         console.WRITE("IDCODE = 0x").writeln(idcode, Radix_16);
       }
    }
    return BDM_RC_OK;
@@ -261,13 +263,13 @@ USBDM_ErrorCode checkIDcode() {
 void testReset() {
    for(;;) {
       ResetInterface::low();
-      USBDM::waitMS(100);
+      waitMS(100);
       ResetInterface::high();
-      USBDM::waitMS(100);
+      waitMS(100);
       ResetInterface::low();
-      USBDM::waitMS(100);
+      waitMS(100);
       ResetInterface::highZ();
-      USBDM::waitMS(100);
+      waitMS(100);
    }
 }
 
@@ -275,10 +277,9 @@ void hcs08Testing () {
    // Need to initialise for debug UART0
    ::initialise();
 
-   PRINTF("SystemBusClock  = %ld\n", SystemBusClock);
-   PRINTF("SystemCoreClock = %ld\n", SystemCoreClock);
-
-   PRINTF("Target Vdd = %f\n", TargetVdd::readVoltage());
+   console.WRITE("SystemBusClock  = ").writeln(::SystemBusClock);
+   console.WRITE("SystemCoreClock = ").writeln(::SystemCoreClock);
+   console.WRITE("Target Vdd = ").writeln(TargetVdd::readVoltage());
 
    USBDM_ErrorCode rc;
    do {
@@ -307,7 +308,7 @@ void hcs08Testing () {
  *  Dummy callback function servicing the interrupt from Vdd changes
  */
 static void targetVddSense(VddState) {
-   USBDM::console.writeln("Target Vdd Change");
+   console.WRITELN("Target Vdd Change");
 }
 
 void warmStart() {
@@ -319,7 +320,7 @@ void warmStart() {
    InterfaceEnable::setOutput();
    InterfaceEnable::high();
 
-   USBDM::checkError();
+   checkError();
 }
 
 void coldStart() {
@@ -329,12 +330,14 @@ void coldStart() {
    TargetVddInterface::setCallback(targetVddSense);
 
    // Wait for Vbdm stable
-   USBDM::wait(10*USBDM::ms);
+   wait(10*ms);
 
-   USBDM::checkError();
+   checkError();
 }
 
 #include "utilities.h"
+
+char buff[100];
 
 int main() {
 //   hcs08Testing();
@@ -342,18 +345,19 @@ int main() {
    // Need to coldStart for debug UART0, voltage monitoring etc
    ::coldStart();
 
-   USBDM::console.write("SystemBusClock  = ").writeln(SystemBusClock);
-   USBDM::console.write("SystemCoreClock = ").writeln(SystemCoreClock);
+//   console.write("SystemBusClock  = ").write(::SystemBusClock/1000000.0).writeln(" MHz");
+//   console.write("SystemCoreClock = ").write(::SystemCoreClock/1000000.0).writeln(" MHz");
+//
+//   console.write("HardwareId = ").writeln(HardwareId::getId());
+//   console.write("Target Vdd = ").write(TargetVddInterface::readVoltage()).writeln(" V");
 
-   USBDM::console.write("HardwareId = ").writeln(HardwareId::getId());
-   USBDM::console.write("Target Vdd = ").writeln(TargetVddInterface::readVoltage());
-
-   USBDM::UsbImplementation::initialise();
-   USBDM::checkError();
+   console.writeln("\n\nStarting");
+   UsbImplementation::initialise();
+   checkError();
 
    for(;;) {
       // Wait for USB connection
-      while(!USBDM::UsbImplementation::isConfigured()) {
+      while(!UsbImplementation::isConfigured()) {
          __WFI();
       }
       // Process commands

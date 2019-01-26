@@ -38,12 +38,11 @@ public:
 /**
  * GPIO for Debug pin
  */
-class Debug : public USBDM::GpioB<0> {
+class Debug : public USBDM::GpioB<0, USBDM::ActiveHigh> {
 public:
    /** Initialise debug pin */
    static void initialise() {
       setOutput();
-      low();
    }
 };
 
@@ -82,7 +81,7 @@ public:
     * 15 = 0R/100K or 0R/open
     */
    static int getId() {
-      setResolution(USBDM::AdcResolution_8bit_se);
+      Adc::setResolution(USBDM::AdcResolution_8bit_se);
       return round(Adc0Channel::readAnalogue()/17.0);
    }
 };
@@ -97,7 +96,7 @@ using InterfaceEnable = USBDM::GpioC<4>;
 //==========================================================================================
 // USB Serial Number
 #ifdef UNIQUE_ID
-#define SERIAL_NO           "USBDM-MK-%lu"
+#define SERIAL_NO           "USBDM-MK-"
 #else
 #define SERIAL_NO           "USBDM-MK-0001"
 #endif

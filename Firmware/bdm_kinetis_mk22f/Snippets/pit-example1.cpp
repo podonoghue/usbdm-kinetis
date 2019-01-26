@@ -1,10 +1,11 @@
 /**
- * @file pit-example1.cpp
- *
- * Programmable Interrupt Timer (PIT) Example
- *
+ ============================================================================
+ * @file  pit-example1.cpp (180.ARM_Peripherals/Snippets/)
+ * @brief Programmable Interrupt Timer (PIT) Example
+ * @author   podonoghue
  * Toggles LED use PIT for delay.
  * This example uses busy-waiting so it not a practical solution
+============================================================================
  */
 #include "hardware.h"
 #include "pit.h"
@@ -15,22 +16,24 @@ using namespace USBDM;
 // Led is assumed active-low
 using LED   = GpioA<2, ActiveLow>;
 
+using Timer        = Pit;
+using TimerChannel = Timer::Channel<0>;
+
 int main() {
 
    LED::setOutput(PinDriveStrength_High);
 
    // Enable PIT
-   Pit::configure();
+   Timer::configure();
 
    // Check for errors so far
    checkError();
 
    for(;;) {
-      LED::toggle();
-
       // Delay in ticks using channel 0
       // This is a busy-waiting loop!
-//      Pit::delayInTicks(0, ::SystemBusClock/10);
-      Pit::delay(0, 100*ms);
+      TimerChannel::delay(100*ms);
+      //console.writeln("Tick");
+      LED::toggle();
    }
 }

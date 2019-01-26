@@ -28,37 +28,38 @@
    +=========================================================================================================
    \endverbatim
  */
-
-#include <stdio.h>
 #include "delay.h"
 #include "resetInterface.h"
 #include "spi.h"
 #include "commands.h"
 #include "targetDefines.h"
 #include "configure.h"
+#include "console.h"
+
+using namespace USBDM;
 
 namespace Swd {
 
 /** Select SPI to use */
-using SpiInfo = USBDM::Spi0Info;
+using SpiInfo = Spi0Info;
 
 /** GPIO for SWD-CLK pin */
-using swdClk = USBDM::GpioTable_T<SpiInfo, 0, USBDM::ActiveHigh>;
+using swdClk = GpioTable_T<SpiInfo, 0, ActiveHigh>;
 
 /** GPIO for SWD-DIN pin */
-using swdIn = USBDM::GpioTable_T<SpiInfo, 1, USBDM::ActiveHigh>;
+using swdIn = GpioTable_T<SpiInfo, 1, ActiveHigh>;
 
 /** GPIO for SWD-DOUT pin */
-using swdOut = USBDM::GpioTable_T<SpiInfo, 2, USBDM::ActiveHigh>;
+using swdOut = GpioTable_T<SpiInfo, 2, ActiveHigh>;
 
 /** GPIO for SWD enable pin */
-using swdDirection = USBDM::GpioTable_T<SpiInfo, 5, USBDM::ActiveHigh>;
+using swdDirection = GpioTable_T<SpiInfo, 5, ActiveHigh>;
 
 // Make sure pins have been assigned to SPI
-USBDM::CheckSignal<SpiInfo, 0> sck_chk;
-USBDM::CheckSignal<SpiInfo, 1> sin_chk;
-USBDM::CheckSignal<SpiInfo, 2> sout_chk;
-USBDM::CheckSignal<SpiInfo, 5> enable_chk;
+CheckSignal<SpiInfo, 0> sck_chk;
+CheckSignal<SpiInfo, 1> sin_chk;
+CheckSignal<SpiInfo, 2> sout_chk;
+CheckSignal<SpiInfo, 5> enable_chk;
 
 //===========================================================================
 
@@ -163,7 +164,7 @@ static constexpr uint32_t  CTAR_RX =
 static constexpr uint32_t CTAR_MASK = ~(SPI_CTAR_BR_MASK|SPI_CTAR_PBR_MASK|SPI_CTAR_DBR_MASK);
 
 /** SPI Object */
-static constexpr SPI_Type volatile *spi = SpiInfo::spi;
+static SPI_Type volatile &spi() { return SpiInfo::spi(); };
 
 /** Current Baud Rate */
 static uint32_t spiBaudValue;
@@ -179,7 +180,7 @@ static uint32_t ahb_ap_csw_defaultValue;
  *     e.g. setCTAR0Value(SPI_CTAR_SLAVE_FMSZ(8-1)|SPI_CTAR_CPOL_MASK|SPI_CTAR_CPHA_MASK);
  */
 static void setCTAR0Value(uint32_t ctar) {
-   spi->CTAR[0] = spiBaudValue|(ctar&CTAR_MASK);
+   spi().CTAR[0] = spiBaudValue|(ctar&CTAR_MASK);
 }
 
 /**
@@ -190,7 +191,7 @@ static void setCTAR0Value(uint32_t ctar) {
  *     e.g. setCTAR1Value(SPI_CTAR_SLAVE_FMSZ(8-1)|SPI_CTAR_CPOL_MASK|SPI_CTAR_CPHA_MASK);
  */
 static void setCTAR1Value(uint32_t ctar) {
-   spi->CTAR[1] = spiBaudValue|(ctar&CTAR_MASK);
+   spi().CTAR[1] = spiBaudValue|(ctar&CTAR_MASK);
 }
 
 /**
@@ -221,7 +222,7 @@ static uint8_t calcParity(const uint32_t data) {
 // * @return Value on SWDIO pin
 // */
 //bool readSwdDin() {
-//   USBDM::GpioTable_T<SpiInfo, 1> SwdDin;
+//   GpioTable_T<SpiInfo, 1> SwdDin;
 //   return SwdDin.isHigh();
 //}
 
@@ -232,14 +233,14 @@ static void txIdle8() {
    setCTAR0Value(CTAR_TX|SPI_CTAR_FMSZ(8-1)); // 8-bit Transmit
 
    // Write data
-   spi->PUSHR = SPI_PUSHR_CTAS(0)|SPI_PUSHR_CONT(0)|SPI_PUSHR_EOQ_MASK|TX_MASK|SPI_PUSHR_TXDATA(0);
+   spi().PUSHR = SPI_PUSHR_CTAS(0)|SPI_PUSHR_CONT(0)|SPI_PUSHR_EOQ_MASK|TX_MASK|SPI_PUSHR_TXDATA(0);
    // Wait until complete
-   while ((spi->SR & SPI_SR_EOQF_MASK) == 0) {
+   while ((spi().SR & SPI_SR_EOQF_MASK) == 0) {
    }
    // Discard read data
-   (void)spi->POPR;
+   (void)spi().POPR;
    // Clear flags
-   spi->SR = SPI_SR_RFDF_MASK|SPI_SR_EOQF_MASK;
+   spi().SR = SPI_SR_RFDF_MASK|SPI_SR_EOQF_MASK;
 }
 
 /**
@@ -254,17 +255,17 @@ static SwdAck txMark_8_rxAck(uint32_t data) {
    setCTAR1Value(CTAR_RX|SPI_CTAR_FMSZ(3-1)); // 3-bit Receive
 
    // Write data
-   spi->PUSHR = SPI_PUSHR_CTAS(0)|TX_MASK|SPI_PUSHR_CONT(1)|SPI_PUSHR_TXDATA((data<<1)|1);
+   spi().PUSHR = SPI_PUSHR_CTAS(0)|TX_MASK|SPI_PUSHR_CONT(1)|SPI_PUSHR_TXDATA((data<<1)|1);
    // Read ACK
-   spi->PUSHR = SPI_PUSHR_CTAS(1)|RX_MASK|SPI_PUSHR_CONT(0)|SPI_PUSHR_TXDATA(0)|SPI_PUSHR_EOQ_MASK;
-   while ((spi->SR & SPI_SR_EOQF_MASK) == 0) {
+   spi().PUSHR = SPI_PUSHR_CTAS(1)|RX_MASK|SPI_PUSHR_CONT(0)|SPI_PUSHR_TXDATA(0)|SPI_PUSHR_EOQ_MASK;
+   while ((spi().SR & SPI_SR_EOQF_MASK) == 0) {
    }
    // Discard read data
-   (void)spi->POPR;
+   (void)spi().POPR;
    // Clear flags
-   spi->SR = SPI_SR_RFDF_MASK|SPI_SR_EOQF_MASK;
+   spi().SR = SPI_SR_RFDF_MASK|SPI_SR_EOQF_MASK;
    // Return ACK
-   return (SwdAck)(spi->POPR);
+   return (SwdAck)(spi().POPR);
 }
 
 /**
@@ -279,17 +280,17 @@ static SwdAck txMark_8_rxAck_Trn(uint32_t data) {
    setCTAR1Value(CTAR_RX|SPI_CTAR_FMSZ(3-1)); // 5-bit Receive
 
    // Write data
-   spi->PUSHR = SPI_PUSHR_CTAS(0)|TX_MASK|SPI_PUSHR_CONT(1)|SPI_PUSHR_TXDATA((data<<1)|1);
+   spi().PUSHR = SPI_PUSHR_CTAS(0)|TX_MASK|SPI_PUSHR_CONT(1)|SPI_PUSHR_TXDATA((data<<1)|1);
    // Read ACK & TURN
-   spi->PUSHR = SPI_PUSHR_CTAS(1)|RX_MASK|SPI_PUSHR_CONT(0)|SPI_PUSHR_TXDATA(0)|SPI_PUSHR_EOQ_MASK;
-   while ((spi->SR & SPI_SR_EOQF_MASK) == 0) {
+   spi().PUSHR = SPI_PUSHR_CTAS(1)|RX_MASK|SPI_PUSHR_CONT(0)|SPI_PUSHR_TXDATA(0)|SPI_PUSHR_EOQ_MASK;
+   while ((spi().SR & SPI_SR_EOQF_MASK) == 0) {
    }
    // Discard read data
-   (void)spi->POPR;
+   (void)spi().POPR;
    // Clear flags
-   spi->SR = SPI_SR_RFDF_MASK|SPI_SR_EOQF_MASK;
+   spi().SR = SPI_SR_RFDF_MASK|SPI_SR_EOQF_MASK;
    // Return ACK
-   return (SwdAck)(spi->POPR&0x3);
+   return (SwdAck)(spi().POPR&0x3);
 }
 
 /**
@@ -306,18 +307,18 @@ static SwdAck txCommand_rxAck(uint32_t command) {
 
 
    // Write data
-   spi->PUSHR = SPI_PUSHR_CTAS(0)|TX_MASK|SPI_PUSHR_CONT(1)|SPI_PUSHR_TXDATA(command);
+   spi().PUSHR = SPI_PUSHR_CTAS(0)|TX_MASK|SPI_PUSHR_CONT(1)|SPI_PUSHR_TXDATA(command);
    // Read ACK
-   spi->PUSHR = SPI_PUSHR_CTAS(1)|RX_MASK|SPI_PUSHR_CONT(0)|SPI_PUSHR_TXDATA(0)|SPI_PUSHR_EOQ_MASK;
+   spi().PUSHR = SPI_PUSHR_CTAS(1)|RX_MASK|SPI_PUSHR_CONT(0)|SPI_PUSHR_TXDATA(0)|SPI_PUSHR_EOQ_MASK;
    // Wait until complete
-   while ((spi->SR & SPI_SR_EOQF_MASK) == 0) {
+   while ((spi().SR & SPI_SR_EOQF_MASK) == 0) {
    }
    // Discard 1st byte read data
-   (void)spi->POPR;
+   (void)spi().POPR;
    // Clear flags
-   spi->SR = SPI_SR_RFDF_MASK|SPI_SR_EOQF_MASK;
+   spi().SR = SPI_SR_RFDF_MASK|SPI_SR_EOQF_MASK;
    // Return ACK value
-   return (SwdAck)(spi->POPR>>1);
+   return (SwdAck)(spi().POPR>>1);
 }
 
 /**
@@ -333,18 +334,18 @@ static SwdAck txCommand_rxAck_Trn(uint32_t command) {
    setCTAR1Value(CTAR_RX|SPI_CTAR_FMSZ(5-1)); // 5-bit Receive = [TURN,ACK,TURN]
 
    // Write data
-   spi->PUSHR = SPI_PUSHR_CTAS(0)|TX_MASK|SPI_PUSHR_CONT(1)|SPI_PUSHR_TXDATA(command);
+   spi().PUSHR = SPI_PUSHR_CTAS(0)|TX_MASK|SPI_PUSHR_CONT(1)|SPI_PUSHR_TXDATA(command);
    // Read ACK
-   spi->PUSHR = SPI_PUSHR_CTAS(1)|RX_MASK|SPI_PUSHR_CONT(0)|SPI_PUSHR_TXDATA(0)|SPI_PUSHR_EOQ_MASK;
+   spi().PUSHR = SPI_PUSHR_CTAS(1)|RX_MASK|SPI_PUSHR_CONT(0)|SPI_PUSHR_TXDATA(0)|SPI_PUSHR_EOQ_MASK;
    // Wait until complete
-   while ((spi->SR & SPI_SR_EOQF_MASK) == 0) {
+   while ((spi().SR & SPI_SR_EOQF_MASK) == 0) {
    }
    // Discard 1st byte read data
-   (void)spi->POPR;
+   (void)spi().POPR;
    // Clear flags
-   spi->SR = SPI_SR_RFDF_MASK|SPI_SR_EOQF_MASK;
+   spi().SR = SPI_SR_RFDF_MASK|SPI_SR_EOQF_MASK;
    // Return 1st 3 bits (1st TURN not captured, 3xACK, 2nd TURN)
-   return (SwdAck)((spi->POPR>>1)&0x7);
+   return (SwdAck)((spi().POPR>>1)&0x7);
 }
 
 /**
@@ -358,18 +359,18 @@ static void tx32_parity(const uint32_t data) {
    setCTAR1Value(CTAR_TX|SPI_CTAR_FMSZ(9-1)); // 9-bit Transmit
 
    // Write data with parity
-   spi->PUSHR = SPI_PUSHR_CTAS(0)|TX_MASK|SPI_PUSHR_CONT(1)|SPI_PUSHR_TXDATA(data);
-   spi->PUSHR = SPI_PUSHR_CTAS(0)|TX_MASK|SPI_PUSHR_CONT(1)|SPI_PUSHR_TXDATA(data>>8);
-   spi->PUSHR = SPI_PUSHR_CTAS(0)|TX_MASK|SPI_PUSHR_CONT(1)|SPI_PUSHR_TXDATA(data>>16);
-   spi->PUSHR = SPI_PUSHR_CTAS(1)|TX_MASK|SPI_PUSHR_CONT(1)|SPI_PUSHR_TXDATA((data>>24)|(parity<<8))|SPI_PUSHR_EOQ_MASK;
-   while ((spi->SR & SPI_SR_EOQF_MASK) == 0) {
+   spi().PUSHR = SPI_PUSHR_CTAS(0)|TX_MASK|SPI_PUSHR_CONT(1)|SPI_PUSHR_TXDATA(data);
+   spi().PUSHR = SPI_PUSHR_CTAS(0)|TX_MASK|SPI_PUSHR_CONT(1)|SPI_PUSHR_TXDATA(data>>8);
+   spi().PUSHR = SPI_PUSHR_CTAS(0)|TX_MASK|SPI_PUSHR_CONT(1)|SPI_PUSHR_TXDATA(data>>16);
+   spi().PUSHR = SPI_PUSHR_CTAS(1)|TX_MASK|SPI_PUSHR_CONT(1)|SPI_PUSHR_TXDATA((data>>24)|(parity<<8))|SPI_PUSHR_EOQ_MASK;
+   while ((spi().SR & SPI_SR_EOQF_MASK) == 0) {
    }
-   (void)spi->POPR; // Discard read data
-   (void)spi->POPR;
-   (void)spi->POPR;
-   (void)spi->POPR;
+   (void)spi().POPR; // Discard read data
+   (void)spi().POPR;
+   (void)spi().POPR;
+   (void)spi().POPR;
    // Clear flags
-   spi->SR = SPI_SR_RFDF_MASK|SPI_SR_EOQF_MASK;
+   spi().SR = SPI_SR_RFDF_MASK|SPI_SR_EOQF_MASK;
 }
 
 /**
@@ -381,14 +382,14 @@ static void tx32(const uint32_t data) {
    setCTAR0Value(CTAR_TX|SPI_CTAR_FMSZ(16-1)); // 16-bit Transmit
 
    // Write data
-   spi->PUSHR = SPI_PUSHR_CTAS(0)|TX_MASK|SPI_PUSHR_CONT(1)|SPI_PUSHR_TXDATA(data);
-   spi->PUSHR = SPI_PUSHR_CTAS(0)|TX_MASK|SPI_PUSHR_CONT(1)|SPI_PUSHR_TXDATA(data>>16)|SPI_PUSHR_EOQ_MASK;
-   while ((spi->SR & SPI_SR_EOQF_MASK) == 0) {
+   spi().PUSHR = SPI_PUSHR_CTAS(0)|TX_MASK|SPI_PUSHR_CONT(1)|SPI_PUSHR_TXDATA(data);
+   spi().PUSHR = SPI_PUSHR_CTAS(0)|TX_MASK|SPI_PUSHR_CONT(1)|SPI_PUSHR_TXDATA(data>>16)|SPI_PUSHR_EOQ_MASK;
+   while ((spi().SR & SPI_SR_EOQF_MASK) == 0) {
    }
-   (void)spi->POPR;  // Discard read data
-   (void)spi->POPR;
+   (void)spi().POPR;  // Discard read data
+   (void)spi().POPR;
    // Clear flags
-   spi->SR = SPI_SR_RFDF_MASK|SPI_SR_EOQF_MASK;
+   spi().SR = SPI_SR_RFDF_MASK|SPI_SR_EOQF_MASK;
 }
 
 /**
@@ -405,17 +406,17 @@ static USBDM_ErrorCode rx32_parity(uint32_t &receive) {
    setCTAR1Value(CTAR_RX|SPI_CTAR_FMSZ(9-1)); // 9-bit Receive
 
    // Read data & parity
-   spi->PUSHR = SPI_PUSHR_CTAS(0)|RX_MASK|SPI_PUSHR_CONT(0)|SPI_PUSHR_TXDATA(0);
-   spi->PUSHR = SPI_PUSHR_CTAS(0)|RX_MASK|SPI_PUSHR_CONT(0)|SPI_PUSHR_TXDATA(0);
-   spi->PUSHR = SPI_PUSHR_CTAS(0)|RX_MASK|SPI_PUSHR_CONT(0)|SPI_PUSHR_TXDATA(0);
-   spi->PUSHR = SPI_PUSHR_CTAS(1)|RX_MASK|SPI_PUSHR_CONT(0)|SPI_PUSHR_TXDATA(0)|SPI_PUSHR_EOQ_MASK;
-   while ((spi->SR & SPI_SR_EOQF_MASK) == 0) {
+   spi().PUSHR = SPI_PUSHR_CTAS(0)|RX_MASK|SPI_PUSHR_CONT(0)|SPI_PUSHR_TXDATA(0);
+   spi().PUSHR = SPI_PUSHR_CTAS(0)|RX_MASK|SPI_PUSHR_CONT(0)|SPI_PUSHR_TXDATA(0);
+   spi().PUSHR = SPI_PUSHR_CTAS(0)|RX_MASK|SPI_PUSHR_CONT(0)|SPI_PUSHR_TXDATA(0);
+   spi().PUSHR = SPI_PUSHR_CTAS(1)|RX_MASK|SPI_PUSHR_CONT(0)|SPI_PUSHR_TXDATA(0)|SPI_PUSHR_EOQ_MASK;
+   while ((spi().SR & SPI_SR_EOQF_MASK) == 0) {
    }
-   spi->SR = SPI_SR_EOQF_MASK;
-   receive           = spi->POPR;
-   receive          |= (spi->POPR<<8);
-   receive          |= (spi->POPR<<16);
-   byte_plus_parity  = spi->POPR;
+   spi().SR = SPI_SR_EOQF_MASK;
+   receive           = spi().POPR;
+   receive          |= (spi().POPR<<8);
+   receive          |= (spi().POPR<<16);
+   byte_plus_parity  = spi().POPR;
    receive          |= (byte_plus_parity<<24);
    return ((byte_plus_parity>>8)!=calcParity(receive))?BDM_RC_ARM_PARITY_ERROR:BDM_RC_OK;
 }
@@ -430,7 +431,7 @@ static USBDM_ErrorCode rx32_parity(uint32_t &receive) {
  * Note: Chooses the highest speed that is not greater than frequency.
  */
 USBDM_ErrorCode setSpeed(uint32_t frequency) {
-   spiBaudValue = USBDM::Spi::calculateDividers(SpiInfo::getClockFrequency(), frequency);
+   spiBaudValue = Spi::calculateDividers(SpiInfo::getClockFrequency(), frequency);
    return BDM_RC_OK;
 }
 
@@ -442,7 +443,7 @@ USBDM_ErrorCode setSpeed(uint32_t frequency) {
  * @note This may differ from set speed due to limited range of speeds available
  */
 uint32_t getSpeed() {
-   return USBDM::Spi::calculateSpeed(SpiInfo::getClockFrequency(), spiBaudValue);
+   return Spi::calculateSpeed(SpiInfo::getClockFrequency(), spiBaudValue);
 }
 
 /**
@@ -451,12 +452,12 @@ uint32_t getSpeed() {
  */
 void initialise() {
 
-   PRINTF("Swd::initialise()\n");
+   console.WRITELN("Swd::initialise()");
 
    // Configure SPI pins
    SpiInfo::initPCRs();
 
-   *SpiInfo::clockReg |= SpiInfo::clockMask;
+   SpiInfo::enableClock();
 
    setSpeed(15000000);
 
@@ -464,7 +465,7 @@ void initialise() {
    ResetInterface::highZ();
 
    // Set mode
-   spi->MCR =
+   spi().MCR =
          SPI_MCR_FRZ(1)|      // Freeze in debug mode
          SPI_MCR_CLR_RXF(1)|  // Clear Receive FIFO
          SPI_MCR_CLR_TXF(1)|  // Clear Transmit FIFO
@@ -482,7 +483,7 @@ void initialise() {
  */
 void interfaceIdle() {
 
-   PRINTF("Swd::interfaceIdle()\n");
+   console.WRITELN("Swd::interfaceIdle()");
 
    // Configure RESET pins
    ResetInterface::highZ();
@@ -894,7 +895,7 @@ USBDM_ErrorCode kinetisMassErase(void) {
       UsbLed::off();
       // Wait until complete
       for (int eraseWait=0; eraseWait<20; eraseWait++) {
-         USBDM::waitMS(100);
+         waitMS(100);
          rc = readAPReg(MDM_AP_CONTROL, valueRead);
          if (rc != BDM_RC_OK) {
             continue;

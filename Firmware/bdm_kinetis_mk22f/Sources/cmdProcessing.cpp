@@ -143,7 +143,8 @@ USBDM_ErrorCode optionalReconnect(AutoConnect_t when) {
             //   User has specified speed
             break;
          }
-         // No break
+         /* Falls through - for GCC */
+         // no break - for eclipse
       case T_RS08:
       case T_HCS08:
       case T_CFV1:
@@ -1084,7 +1085,7 @@ static void commandExec(void) {
    BDMCommands command    = (BDMCommands)commandBuffer[1];  // Command is 1st byte
    FunctionPtr commandPtr = f_CMD_ILLEGAL;     // Default to illegal command
 
-//   PRINTF("Command = %d\n", command);
+//   console.WRITE("Command = ).WRITELN(command);
 
    // Check if modeless command
    if ((uint8_t)command < sizeof(commonFunctionPtrs)/sizeof(FunctionPtr)) {

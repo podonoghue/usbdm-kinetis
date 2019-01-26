@@ -116,9 +116,8 @@
 //! Software Version Information
 //
 #define VERSION_MAJOR 5
-#define VERSION_MINOR 0
+#define VERSION_MINOR 1
 #define VERSION_MICRO 0
-#define VERSION_STR "5.0.0"
 #define VERSION_SW  ((VERSION_MAJOR<<4)+VERSION_MINOR)
 
 #define VENDOR_ID        (0x16D0)       // Vendor (actually MCS)
