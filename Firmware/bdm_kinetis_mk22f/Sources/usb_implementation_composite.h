@@ -21,7 +21,8 @@
  *
  * Under Linux drivers for bulk and CDC are automatically loaded
  */
-#undef MS_COMPATIBLE_ID_FEATURE
+
+#define MS_COMPATIBLE_ID_FEATURE
 #include "usb_cdc_uart.h"
 
 #define UNIQUE_ID
@@ -292,7 +293,7 @@ protected:
       epCdcDataOut.setCallback(cdcOutTransactionCallback);
 
       // Make sure epCdcDataOut is ready for polling (OUT)
-      epCdcDataOut.startRxTransaction(EPDataOut, epCdcDataOut.BUFFER_SIZE);
+      epCdcDataOut.startRxPhase(EPDataOut, epCdcDataOut.getMaximumTransferSize());
 
       epCdcDataIn.initialise();
       addEndpoint(&epCdcDataIn);
@@ -305,7 +306,7 @@ protected:
    /**
     * Callback for SOF tokens
     */
-   static ErrorCode sofCallback();
+   static ErrorCode sofCallback(uint16_t frameNumber);
 
    /**
     * Call-back handling BULK-OUT transaction complete
@@ -338,7 +339,7 @@ protected:
     * Handler for Token Complete USB interrupts for\n
     * end-points other than EP0
     */
-   static void handleTokenComplete(void);
+   static void handleTokenComplete(UsbStat   usbStat);
 
    /**
     * Start CDC IN transaction\n

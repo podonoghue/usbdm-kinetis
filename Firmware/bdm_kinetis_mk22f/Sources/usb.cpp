@@ -50,7 +50,14 @@ namespace USBDM {
 /** BDTs organised by endpoint, odd/even, tx/rx */
 EndpointBdtEntry endPointBdts[Usb0::NUMBER_OF_ENDPOINTS] __attribute__ ((aligned (512)));
 
+/** End-points in use */
+Endpoint *UsbBase::fEndPoints[UsbImplementation::NUMBER_OF_ENDPOINTS];
+
 #ifdef MS_COMPATIBLE_ID_FEATURE
+
+const uint8_t UsbBase::fMsOsStringDescriptor[] = {
+      18, DT_STRING, 'M',0,'S',0,'F',0,'T',0,'1',0,'0',0,'0',0,GET_MS_FEATURE_DESCRIPTOR,0x00
+};
 
 // See https://github.com/pbatard/libwdi/wiki/WCID-Devices
 //
@@ -84,9 +91,9 @@ const MS_PropertiesFeatureDescriptor msPropertiesFeatureDescriptor = {
       ),
       /* uint32_t ldataType0;       */ nativeToLe32(7UL), // 7 == REG_MULTI_SZ
       /* uint16_t wNameLength0;     */ nativeToLe16(sizeof(msPropertiesFeatureDescriptor.bName0)),
-      /* char16_t  bName0[42];       */ MS_DEVICE_INTERFACE_GUIDs,
+      /* char16_t  bName0[42];      */ MS_DEVICE_INTERFACE_GUIDs,
       /* uint32_t wPropertyLength0; */ nativeToLe32(sizeof(msPropertiesFeatureDescriptor.bData0)),
-      /* char16_t  bData0[78];       */ MS_DEVICE_GUID,
+      /* char16_t  bData0[78];      */ MS_DEVICE_GUID,
       /*---------------------- Section 2 -----------------------------*/
       /* uint32_t lPropertySize1;   */ nativeToLe32(
             sizeof(msPropertiesFeatureDescriptor.lPropertySize1)+
@@ -134,31 +141,6 @@ const char *UsbBase::getTokenName(unsigned token) {
    const char *rc = "Unknown";
    if (token<(sizeof(names)/sizeof(names[0]))) {
       rc = names[token];
-   }
-   return rc;
-}
-
-/**
- * Get name of USB state
- *
- * @param[in]  state USB state
- *
- * @return Pointer to static string
- */
-const char *UsbBase::getStateName(EndpointState state) {
-   static const char *names[] = {
-      "EPIdle",
-      "EPDataIn",
-      "EPDataOut,",
-      "EPStatusIn",
-      "EPStatusOut",
-      "EPThrottle",
-      "EPStall",
-      "EPComplete",
-   };
-   const char *rc = "Unknown";
-   if (state<(sizeof(names)/sizeof(names[0]))) {
-      rc = names[state];
    }
    return rc;
 }
@@ -238,11 +220,11 @@ void reportLineCoding(const LineCodingStructure *lineCodingStructure) {
 /**
  * Format SETUP packet as string
  *
- * @param[in] p SETUP packet
+ * @param[in]  p SETUP packet
  *
  * @return Pointer to static buffer
  */
-const char *UsbBase::reportSetupPacket(SetupPacket *p) {
+const char *UsbBase::getSetupPacketDescription(SetupPacket *p) {
 #ifdef DEBUG_BUILD
    static char buff[100];
    StringFormatter sf(buff, sizeof(buff));
@@ -281,8 +263,8 @@ void reportLineState(uint8_t value) {
  *
  *  @note Only handles UTF-8 characters that fit in a single UTF-16 value.
  */
-void UsbBase::utf8ToStringDescriptor(uint8_t *to, const uint8_t *from, unsigned maxSize) {
-   uint8_t *size = to; // 1st byte is where to place descriptor size
+void UsbBase::utf8ToStringDescriptor(volatile uint8_t *to, volatile const uint8_t *from, unsigned maxSize) {
+   volatile uint8_t *size = to; // 1st byte is where to place descriptor size
 
    *to++ = 2;         // 1st byte = descriptor size (2 bytes so far including DT_STRING)
    *to++ = DT_STRING; // 2nd byte = descriptor type, DT_STRING;

@@ -18,20 +18,11 @@
 /**
  * GPIO for Activity LED
  */
-class UsbLed : public USBDM::GpioD<7> {
+class UsbLed : public USBDM::GpioD<7, USBDM::ActiveHigh> {
 public:
    /** Initialise activity LED */
    static void initialise() {
       setOutput();
-      off();
-   }
-   /** Turn on activity LED */
-   static void on() {
-      high();
-   }
-   /** Turn off activity LED */
-   static void off() {
-      low();
    }
 };
 
@@ -89,7 +80,7 @@ public:
 /**
  * GPIO controlling some interface signals (SWD, UART-TX)
  */
-using InterfaceEnable = USBDM::GpioC<4>;
+using InterfaceEnable = USBDM::GpioC<4, USBDM::ActiveHigh>;
 
 #include <swd.h>
 

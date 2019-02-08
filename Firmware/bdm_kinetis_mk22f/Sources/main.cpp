@@ -351,7 +351,7 @@ int main() {
 //   console.write("HardwareId = ").writeln(HardwareId::getId());
 //   console.write("Target Vdd = ").write(TargetVddInterface::readVoltage()).writeln(" V");
 
-   console.writeln("\n\nStarting");
+   console.WRITELN("\n\nStarting");
    UsbImplementation::initialise();
    checkError();
 

@@ -34,9 +34,6 @@
  */
 #define DEBUG 0 //USB_PUTS_DEBUG // DEBUG_COMMANDS // (STACK_DEBUG)
 
-// Define for automatic WINUSB Driver loading
-//#define MS_COMPATIBLE_ID_FEATURE (1)
-
 //==========================================================================================
 // Capabilities of the hardware - used to enable/disable appropriate code in build
 // HW_CAPABILITY
@@ -117,11 +114,12 @@
 //
 #define VERSION_MAJOR 5
 #define VERSION_MINOR 1
-#define VERSION_MICRO 0
+#define VERSION_MICRO 1
 #define VERSION_SW  ((VERSION_MAJOR<<4)+VERSION_MINOR)
 
 #define VENDOR_ID        (0x16D0)       // Vendor (actually MCS)
 #if (HW_CAPABILITY&CAP_CDC)
+//#define PRODUCT_ID       (0xFF01)       // CDC versions
 #define PRODUCT_ID       (0x06A5)       // CDC versions
 #else
 #define PRODUCT_ID       (0x0567)       // Non-CDC versions

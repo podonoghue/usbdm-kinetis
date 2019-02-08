@@ -4,8 +4,8 @@
  * @version  V4.12.1.160
  * @date     13 May 2013
  */
-#ifndef UTILTIES_H_
-#define UTILTIES_H_
+#ifndef PROJECT_HEADERS_UTILTIES_H_
+#define PROJECT_HEADERS_UTILTIES_H_
 
 #include <stdint.h>
 
@@ -127,7 +127,7 @@
 #define CONCATE(MACRO, NUMBER) CONCATE_(MACRO, NUMBER)
 #define VA_MACRO(MACRO, ...) CONCATE(MACRO, NUM_ARGS(__VA_ARGS__))(__VA_ARGS__)
 
-// This is how user may define own set of variadic macros
+// Variadic macros for debug console
 #define WRITE(...)   VA_MACRO(WRITE, __VA_ARGS__)
 #define WRITELN(...) VA_MACRO(WRITELN, __VA_ARGS__)
 
@@ -338,4 +338,4 @@ void unpack16BE(uint32_t data, uint8_t ar[2]) {
 
 #endif /* __cplusplus */
 
-#endif /* UTILTIES_H_ */
+#endif /* PROJECT_HEADERS_UTILTIES_H_ */
