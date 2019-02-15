@@ -101,7 +101,7 @@ uint16_t makeStatusWord(void) {
    }
 #endif // (HW_CAPABILITY&CAP_RST_IN)
 #if (HW_CAPABILITY&CAP_VDDSENSE)
-   switch (TargetVddInterface::getState()) {    // Target has power ?
+   switch (TargetVddInterface::checkVddState()) {    // Target has power ?
       case VddState_None     : break;
       case VddState_Error    : status |= S_POWER_ERR;  break;
       case VddState_Internal : status |= S_POWER_INT;  break;
@@ -614,7 +614,6 @@ USBDM_ErrorCode f_CMD_CONTROL_PINS(void) {
  *      Exit:  none
  */
 USBDM_ErrorCode f_CMD_SET_VDD(void) {
-
 
 #if (HW_CAPABILITY&CAP_VDDCONTROL)
    TargetVddSelect_t vddSelect = (TargetVddSelect_t)commandBuffer[3];

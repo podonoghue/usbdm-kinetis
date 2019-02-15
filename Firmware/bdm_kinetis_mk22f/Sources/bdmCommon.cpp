@@ -66,7 +66,7 @@ static constexpr uint32_t RESET_RECOVERYms = 10;
  */
 USBDM_ErrorCode checkTargetVdd(void) {
 #if (HW_CAPABILITY&CAP_VDDSENSE)
-   switch(TargetVddInterface::getState()) {
+   switch(TargetVddInterface::checkVddState()) {
       case VddState_Error:
       case VddState_None:
          return BDM_RC_VDD_NOT_PRESENT;
@@ -270,7 +270,7 @@ USBDM_ErrorCode cycleTargetVddOff(void) {
 
 #if (HW_CAPABILITY&CAP_VDDCONTROL)
 
-   if(TargetVddInterface::getState() != VddState_Internal) {
+   if(TargetVddInterface::checkVddState() != VddState_Internal) {
       return BDM_RC_VDD_WRONG_MODE;
    }
 

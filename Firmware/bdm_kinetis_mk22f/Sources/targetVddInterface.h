@@ -35,40 +35,40 @@ private:
    static constexpr int externalDivider = 2;
 
    /**
-    * Represents the 2:1 voltage divider on input
+    * Vref of Comparator and ADC
     */
-   static constexpr float vdd = 3.3f;
+   static constexpr float Vref = 3.3f;
 
    /**
     * Minimum working input 5V voltage as an ADC reading \n
     * 5V-5% as ADC reading i.e. 0-255
     */
-   static constexpr int onThreshold5VAdc = (int)((4.75/(externalDivider*vdd))*((1<<8)-1));
+   static constexpr int onThreshold5VAdc = (int)((4.75/(externalDivider*Vref))*((1<<8)-1));
 
    /**
     * Minimum working input 3.3V voltage as an ADC reading \n
     * 3.3-5% as ADC reading i.e. 0-255
     */
-   static constexpr int onThreshold3V3Adc = (int)((3.15/(externalDivider*vdd))*((1<<8)-1));
+   static constexpr int onThreshold3V3Adc = (int)((3.15/(externalDivider*Vref))*((1<<8)-1));
 
    /**
     * Minimum working voltage as an DAC value. \n
     * 1.5V as DAC value i.e. 0-63
     */
-   static constexpr int onThresholdDac = (int)((1.5/(externalDivider*vdd))*((1<<6)-1));
+   static constexpr int onThresholdDac = (int)((1.5/(externalDivider*Vref))*((1<<6)-1));
 
    /**
     * Minimum working voltage as an DAC value. \n
     * 0.8V as DAC value i.e. 0-63
     */
-   static constexpr int powerOnResetThresholdDac = (int)((0.8/(externalDivider*vdd))*((1<<6)-1));
+   static constexpr int powerOnResetThresholdDac = (int)((0.8/(externalDivider*Vref))*((1<<6)-1));
 
    /**
     * Minimum POR input voltage as an ADC reading. \n
     * This is the voltage needed to ensure a power-on-reset of the target. \n
     * 0.8 V as ADC reading
     */
-   static constexpr int powerOnResetThresholdAdc = (int)((0.8/(externalDivider*vdd))*((1<<8)-1));
+   static constexpr int powerOnResetThresholdAdc = (int)((0.8/(externalDivider*Vref))*((1<<8)-1));
 
    /**
     * GPIO for Target Vdd enable pin
@@ -192,16 +192,14 @@ public:
    static void initialise() {
       Control::setOutput();
 
-      vddOff();
+      // Do default calibration for 8-bits
+      VddMeasure::Adc::configure(USBDM::AdcResolution_8bit_se);
+      VddMeasure::Adc::calibrate();
 
       Led::setOutput(
             USBDM::PinDriveStrength_High,
             USBDM::PinDriveMode_PushPull,
             USBDM::PinSlewRate_Slow);
-
-      // Do default calibration for 8-bits
-      VddMeasure::Adc::configure(USBDM::AdcResolution_8bit_se);
-      VddMeasure::Adc::calibrate();
 
       fCallback = nullCallback;
 
@@ -224,7 +222,8 @@ public:
             USBDM::PinFilter_Passive);
       VddPowerFaultMonitor::enableNvicInterrupts();
 
-      if(isVddOK_3V3() && (vddState == VddState_None)) {
+      vddState = VddState_None;
+      if (isVddOK_3V3()) {
          vddState = VddState_External;
       }
    }
@@ -270,6 +269,9 @@ public:
    static void vddOff() {
       Control::off();
       vddState  = VddState_None;
+      if (isVddOK_3V3()) {
+         vddState = VddState_External;
+      }
    }
 
    /**
@@ -279,7 +281,7 @@ public:
     */
    static int readRawVoltage() {
       VddMeasure::Adc::setResolution(USBDM::AdcResolution_8bit_se);
-      return round(VddMeasure::readAnalogue()*externalDivider*5/vdd);
+      return round(VddMeasure::readAnalogue()*externalDivider*5/Vref);
    }
 
    /**
@@ -289,14 +291,17 @@ public:
     */
    static float readVoltage() {
       VddMeasure::Adc::setResolution(USBDM::AdcResolution_8bit_se);
-      return VddMeasure::readAnalogue()*vdd*externalDivider/((1<<8)-1);
+      return VddMeasure::readAnalogue()*Vref*externalDivider/((1<<8)-1);
    }
 
    /**
     * Check if target Vdd is present. \n
     * Also updates Target Vdd LED
     *
-    * @param voltage Target voltage to check as ADC value
+    * @param voltage Target voltage to check as ADC value (8-resolution)
+    *
+    * @return true  => Target Vdd >= voltage
+    * @return false => Target Vdd < voltage
     */
    static bool isVddOK(int voltage) {
       if (vddState == VddState_Error) {
@@ -316,6 +321,9 @@ public:
    /**
     * Check if target Vdd is present \n
     * Also updates Target Vdd LED
+    *
+    * @return true  => Target Vdd >= 3V3
+    * @return false => Target Vdd < 3V3
     */
    static bool isVddOK_3V3() {
       return isVddOK(onThreshold3V3Adc);
@@ -324,6 +332,9 @@ public:
    /**
     * Check if target Vdd is present \n
     * Also updates Target Vdd LED
+    *
+    * @return true  => Target Vdd >= 5V
+    * @return false => Target Vdd < 5V
     */
    static bool isVddOK_5V() {
       return isVddOK(onThreshold5VAdc);
@@ -352,12 +363,42 @@ public:
       VddMonitor::clearInterruptFlags();
    }
 
+//   /**
+//    * Get Vdd state
+//    *
+//    * @return Vdd state as VddState_None, VddState_Internal, VddState_External or VddState_Error
+//    */
+//   static VddState getState() {
+//      return vddState;
+//   }
+
    /**
-    * Get Vdd state
+    * Update Vdd state
     *
     * @return Vdd state as VddState_None, VddState_Internal, VddState_External or VddState_Error
     */
-   static VddState getState() {
+   static VddState checkVddState() {
+      switch(vddState) {
+         case VddState_Error    :
+            // No change - requires Vdd to be turned off to clear
+            break;
+
+         case VddState_Internal :
+            if (!isVddOK_3V3()) {
+               vddState = VddState_Error;
+            }
+            break;
+
+         case VddState_External :
+         case VddState_None     :
+            if (isVddOK_3V3()) {
+               vddState = VddState_External;
+            }
+            else {
+               vddState = VddState_None;
+            }
+            break;
+      }
       return vddState;
    }
 };
