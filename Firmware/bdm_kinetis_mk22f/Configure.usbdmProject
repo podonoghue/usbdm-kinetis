@@ -159,6 +159,5 @@
    <item key="/USB0/clk_recovery_ctrl_reset_resume_rough_en" value="true" />
    <item key="/USB0/clk_recovery_ctrl_restart_ifttrim_en"  value="true" />
    <item key="/USB0/irqHandlingMethod"                     value="$ClassMethod" />
-   <item key="/USB0/irqLevel"                              value="1" />
    <item key="/USB0/usb_clk_recovery_irc_en_en"            value="true" />
 </section>
