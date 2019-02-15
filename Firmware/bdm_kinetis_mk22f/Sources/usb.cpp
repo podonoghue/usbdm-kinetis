@@ -48,7 +48,7 @@ Change History
 namespace USBDM {
 
 /** BDTs organised by endpoint, odd/even, tx/rx */
-EndpointBdtEntry endPointBdts[Usb0::NUMBER_OF_ENDPOINTS] __attribute__ ((aligned (512)));
+volatile EndpointBdtEntry endPointBdts[Usb0::NUMBER_OF_ENDPOINTS] __attribute__ ((aligned (512)));
 
 /** End-points in use */
 Endpoint *UsbBase::fEndPoints[UsbImplementation::NUMBER_OF_ENDPOINTS];

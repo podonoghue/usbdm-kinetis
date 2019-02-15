@@ -19,8 +19,8 @@
 template<class T, int QUEUE_SIZE>
 class Queue {
    T        fBuff[QUEUE_SIZE];
-   T        *fHead, *fTail;
-   int      fNumberOfElements;
+   volatile T    *fHead, *fTail;
+   volatile int  fNumberOfElements;
 //   uint32_t fLock;
 
 public:
@@ -44,7 +44,7 @@ public:
     *
     * @return true => empty
     */
-   bool isEmpty() {
+   bool isEmpty() volatile  {
       return fNumberOfElements == 0;
    }
    /*
@@ -52,7 +52,7 @@ public:
     *
     * @return true => full
     */
-   bool isFull() {
+   bool isFull() volatile {
       return fNumberOfElements == QUEUE_SIZE;
    }
    /*

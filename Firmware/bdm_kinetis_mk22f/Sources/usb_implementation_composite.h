@@ -279,11 +279,11 @@ protected:
    static void initialiseEndpoints(void) {
       epBulkOut.initialise();
       addEndpoint(&epBulkOut);
-      epBulkOut.setCallback(bulkOutTransactionCallback);
+//      epBulkOut.setCallback(bulkOutTransactionCallback);
 
       epBulkIn.initialise();
       addEndpoint(&epBulkIn);
-      epBulkIn.setCallback(bulkInTransactionCallback);
+//      epBulkIn.setCallback(bulkInTransactionCallback);
 
       epCdcNotification.initialise();
       addEndpoint(&epCdcNotification);
@@ -292,8 +292,8 @@ protected:
       addEndpoint(&epCdcDataOut);
       epCdcDataOut.setCallback(cdcOutTransactionCallback);
 
-      // Make sure epCdcDataOut is ready for polling (OUT)
-      epCdcDataOut.startRxPhase(EPDataOut, epCdcDataOut.getMaximumTransferSize());
+      // Make sure epCdcDataOut is ready for polling (interrupt OUT)
+      epCdcDataOut.startRxStage(EPDataOut, epCdcDataOut.getMaximumTransferSize());
 
       epCdcDataIn.initialise();
       addEndpoint(&epCdcDataIn);
@@ -305,18 +305,30 @@ protected:
 
    /**
     * Callback for SOF tokens
+    *
+    * @param frameNumber Frame number from SOF token
+    *
+    * @return  Error code
     */
    static ErrorCode sofCallback(uint16_t frameNumber);
 
    /**
     * Call-back handling BULK-OUT transaction complete
+    *
+    * @param[in] state Current end-point state
+    *
+    * @return The endpoint state to set after call-back (EPIdle)
     */
-   static void bulkOutTransactionCallback(EndpointState state);
+   static EndpointState bulkOutTransactionCallback(EndpointState state);
 
    /**
     * Call-back handling BULK-IN transaction complete
+    *
+    * @param[in] state Current end-point state
+    *
+    * @return The endpoint state to set after call-back (EPIdle)
     */
-   static void bulkInTransactionCallback(EndpointState state);
+   static EndpointState bulkInTransactionCallback(EndpointState state);
 
    /**
     * Call-back handling CDC-IN transaction complete\n
@@ -324,16 +336,20 @@ protected:
     * Each transfer will have a ZLP as necessary.
     *
     * @param[in] state Current end-point state
+    *
+    * @return The endpoint state to set after call-back (EPIdle)
     */
-   static void cdcInTransactionCallback(EndpointState state);
+   static EndpointState cdcInTransactionCallback(EndpointState state);
 
    /**
     * Call-back handling CDC-OUT transaction complete\n
     * Data received is passed to the cdcInterface
     *
     * @param[in] state Current end-point state
+    *
+    * @return The endpoint state to set after call-back (EPIdle)
     */
-   static void cdcOutTransactionCallback(EndpointState state);
+   static EndpointState cdcOutTransactionCallback(EndpointState state);
 
    /**
     * Handler for Token Complete USB interrupts for\n

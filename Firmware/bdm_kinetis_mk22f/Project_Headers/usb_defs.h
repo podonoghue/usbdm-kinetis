@@ -267,7 +267,7 @@ typedef struct {
    uint8_t           bDescriptorType;     //!<  Descriptor Type (=6)
    uint16_t          bcdUSB;              //!<  USB Spec Release Number in BCD
    uint8_t           bDeviceClass;        //!<  Device Class Code
-   uint8_t           bDeviceSubClass;     //!<  Device Subclass Code      
+   uint8_t           bDeviceSubClass;     //!<  Device Subclass Code
    uint8_t           bDeviceProtocol;     //!<  Device Protocol Code
    uint8_t           bMaxPacketSize0;     //!<  Maximum Packet Size for EP0
    uint8_t           bNumConfigurations;  //!<  Number of possible Configurations
@@ -327,7 +327,7 @@ typedef struct {
 #define CS_INTERFACE  (0x24)
 #define CS_ENDPOINT   (0x25)
 
-// 
+//
 #define ST_HEADER     (0x00)
 #define ST_INTERFACE  (0x01)
 
@@ -483,15 +483,15 @@ struct BdtEntry {
    constexpr BdtEntry(uint8_t value, uint16_t byteCount, uint32_t address) :
       raw(value), bc(byteCount), addr(address) {};
 
-   void setByteCount(uint16_t byteCount) {
+   void setByteCount(uint16_t byteCount) volatile {
       bc = byteCount;
    }
 
-   void setAddress(uint32_t address) {
+   void setAddress(uint32_t address) volatile {
       addr = address;
    }
 
-   void setControl(uint8_t value) {
+   void setControl(uint8_t value) volatile {
       raw = value;
    }
 };
