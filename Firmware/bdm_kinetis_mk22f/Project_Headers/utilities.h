@@ -127,7 +127,7 @@
 #define CONCATE(MACRO, NUMBER) CONCATE_(MACRO, NUMBER)
 #define VA_MACRO(MACRO, ...) CONCATE(MACRO, NUM_ARGS(__VA_ARGS__))(__VA_ARGS__)
 
-// Variadic macros for debug console
+// This is how user may define own set of variadic macros
 #define WRITE(...)   VA_MACRO(WRITE, __VA_ARGS__)
 #define WRITELN(...) VA_MACRO(WRITELN, __VA_ARGS__)
 

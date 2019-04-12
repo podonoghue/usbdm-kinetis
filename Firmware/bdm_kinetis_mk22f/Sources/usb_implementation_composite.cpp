@@ -264,6 +264,7 @@ ErrorCode Usb0::sofCallback(uint16_t frameNumber) {
       // Every ~256 ms
       switch ((frameNumber>>8)&0x3) {
          case 0:
+            // LED on if configured, off if not
             UsbLed::write(fConnectionState == USBconfigured);
             break;
          case 1:
@@ -274,7 +275,7 @@ ErrorCode Usb0::sofCallback(uint16_t frameNumber) {
             if (fActivityFlag) {
                // Activity LED flashes
                UsbLed::toggle();
-               setActive(false);
+               fActivityFlag = false;
             }
             break;
       }
@@ -408,8 +409,8 @@ static Queue<uint8_t, 100> inQueue;
  * @return The endpoint state to set after call-back (EPIdle/EPDataIn)
  */
 EndpointState Usb0::cdcInTransactionCallback(EndpointState state) {
-   (void)state;
    usbdm_assert(state == EPDataIn, "Incorrect endpoint state");
+   (void)state;
 
    unsigned charCount     = 0;
    volatile uint8_t *buff = epCdcDataIn.getBuffer();
@@ -487,10 +488,11 @@ void Usb0::initialise() {
 
    forceCommandHandlerInitialise = false;
 
-   // Add extra handling of CDC packets directed to EP0
+   // Add extra handling of CDC requests directed to EP0
    setUnhandledSetupCallback(handleUserEp0SetupRequests);
 
    setSOFCallback(sofCallback);
+
    setUserCallback(userCallbackFunction);
 
    Uart::setInCallback(putCdcChar);

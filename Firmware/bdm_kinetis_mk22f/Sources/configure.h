@@ -11,8 +11,8 @@
          -  Modify the \b Linker options for this target so that the Application Filename is unique (change  \b USBDM_JB16 appropriately)
  */
 
-#ifndef _CONFIGURE_H_
-#define _CONFIGURE_H_
+#ifndef SOURCES_CONFIGURE_H_
+#define SOURCES_CONFIGURE_H_
 
 //=================================================================================
 // Debugging options
@@ -128,4 +128,4 @@
 #define VERSION_ID       (VERSION_SW)   // Reported version (via USB)
 
 
-#endif // _CONFIGURE_H_
+#endif /* SOURCES_CONFIGURE_H_ */
