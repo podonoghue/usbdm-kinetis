@@ -70,6 +70,7 @@ static inline void lock(volatile uint32_t *lockVar) {
          if (__STREXW(1, lockVar) == 0) {
             // Succeeded
             // Do not start any other memory access
+            // until memory barrier is completed
             __DMB();
             return;
          }
@@ -151,8 +152,11 @@ namespace USBDM {
  *       ...
  *    }
  * @endcode
+ *
+ * @note uses PRIMASK
  */
 class CriticalSection {
+
 private:
    /** Used to record interrupt state on entry */
    volatile uint32_t cpuSR;
