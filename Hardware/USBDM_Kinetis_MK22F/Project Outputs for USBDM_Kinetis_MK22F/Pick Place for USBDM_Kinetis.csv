@@ -5,20 +5,20 @@ C:\Users\podonoghue\Documents\Development\usbdm-kinetis\Hardware\USBDM_Kinetis_M
 File Design Information:
 
 Date:       18/10/19
-Time:       16:54
-Revision:   787fab483edd5d9524073f087aa8e9286428a028
+Time:       21:11
+Revision:   5d341cfe4b1cd6f3d2c2bdc5005f6895c2bf7d6a
 Variant:    No variations
 Units used: mil
 
 "Designator","Comment","Layer","Footprint","Center-X(mil)","Center-Y(mil)","Rotation","Description"
-"S1","SW_PB","TopLayer","SW-SMD-4_5.1x5.1x2","1839.000","281.000","360","Tactile Switch, Top Actuated, Surface Mount, Round Button"
+"U3","MCP1703T-3302E/CB","TopLayer","SOT23_N","310.000","-300.000","90","3V3 250mA LDO regulator"
+"S1","SW_PB","TopLayer","SW-SMD-4_5.1X5.1X2","1839.000","281.000","360","Tactile Switch, Top Actuated, Surface Mount, Round Button"
 "C4","100nF","TopLayer","CCNP1608-0603","197.008","-278.000","90","Capacitor SMT 0603"
 "R9","100K","TopLayer","CR1608-0603","1521.370","-240.000","360","Resistor SMT 0603"
 "R21","330R","TopLayer","CR1608-0603","1943.000","-234.370","360","Resistor SMT 0603"
 "D2","LED Red","TopLayer","LED1608-0603-RED","1943.000","-294.370","360","LED 0603 Red (HSMS-C170, 1.25mm x 1.4mm, 20 mA, 2.1 V, 626 nm)"
 "C3","4.7uF/6V","TopLayer","CCNP1608-0603","270.370","-65.000","90","Capacitor SMT 0603"
 "C5","4.7uF/6V","TopLayer","CCNP1608-0603","431.008","-319.189","90","Capacitor SMT 0603"
-"U3","MCP1703T-3302E/CB","TopLayer","SOT23","316.370","-300.000","180","3V3 LDO regulator"
 "D1","LED Green","TopLayer","LED1608-0603-GREEN","736.000","359.000","360","LED 0603 Green (HSMG-C170  1.25mm x 1.4mm, 20 mA, 2.2 V, 572 nm)"
 "R20","1K","TopLayer","CR1608-0603","1171.008","70.000","360","Resistor SMT 0603"
 "R22","10K","TopLayer","CR1608-0603","1171.008","2.000","360","Resistor SMT 0603"
@@ -52,7 +52,7 @@ Units used: mil
 "R1","1K","TopLayer","CR1608-0603","1019.000","358.000","360","Resistor SMT 0603"
 "R4","10K","TopLayer","CR1608-0603","1144.559","162.000","360","Resistor SMT 0603"
 "R17","10K","TopLayer","CR1608-0603","1144.559","234.000","360","Resistor SMT 0603"
-"U5","MK22FN512VLH12","TopLayer","TSQFP50P1200X1200-64L","752.008","22.000","0","Arm Cortex M4F"
+"U5","MK22FN512VLH12","TopLayer","TSQFP50P1200X1200-64N","752.008","22.000","0","Arm Cortex M4F"
 "C9","100nF","TopLayer","CCNP1608-0603","365.181","102.000","360","Capacitor SMT 0603"
 "C11","100nF","TopLayer","CCNP1608-0603","1376.370","360.000","360","Capacitor SMT 0603"
 "C1","100nF","TopLayer","CCNP1608-0603","1391.181","-15.000","0","Capacitor SMT 0603"
@@ -63,8 +63,8 @@ Units used: mil
 "L2","Ferrite Bead","TopLayer","FB1608-0603","111.370","226.000","360","Ferrite Bead (0603) 0.15OHM, 1A, 0603"
 "R10","100K","TopLayer","CR1608-0603","380.370","-65.000","90","Resistor SMT 0603"
 "R13","0R","TopLayer","CR1608-0603","325.370","-65.000","90","Resistor SMT 0603"
-"U1","MIC2005-0.5YM6-TR","TopLayer","SOT23-6-POWER","102.008","-288.000","180","Power Switch"
+"U1","MIC2005-0.5YM6-TR","TopLayer","SOT23-6-POWER","102.008","-288.000","270","Power Switch"
 "Z1","SMF05CT1G","TopLayer","SC70_N","1960.000","-80.000","360","TVS DIODE ARRAY, 100W, 5V, SC-88"
-"JP1","Header 1x3 2mm","TopLayer","Header_1x3_(2mm)","352.370","-171.000","270","Header, 1x3, 2mm"
+"JP1","Header 1x3 2mm","TopLayer","HEADER_1X3_(2MM)","352.370","-171.000","270","Header, 1x3, 2mm"
 "C16","100nF","TopLayer","CCNP1608-0603","1014.370","234.000","360","Capacitor SMT 0603"
 "R23","10K","TopLayer","CR1608-0603","883.000","359.000","360","Resistor SMT 0603"
