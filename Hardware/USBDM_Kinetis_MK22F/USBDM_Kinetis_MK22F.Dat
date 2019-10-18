@@ -1,26 +1,26 @@
-Field=Comment~String~Comment~100|Field=Description~String~Description~100|Field=Designator~String~Designator~100|Field=Footprint~String~Footprint~100|Field=LibRef~String~LibRef~100|Field=Quantity~Integer~Quantity~100|Field=Farnell PN~String~Farnell PN~100|Field=Digikey~String~Digikey~100|ReportField=Currency~<none>|ReportField=ProductionQuantity~1|ReportField=ProjectFileName~USBDM_Kinetis_MK22F.PrjPcb|ReportField=ProjectFullPath~C:\Users\podonoghue\Documents\Development\usbdm-kinetis\Hardware\USBDM_Kinetis_MK22F\USBDM_Kinetis_MK22F.PrjPcb|ReportField=Title~Bill of Materials For Project [USBDM_Kinetis_MK22F.PrjPcb] (No PCB Document Selected)|ReportField=TotalQuantity~57|ReportField=ReportTime~12:34:40 PM|ReportField=ReportDate~19/04/2017|ReportField=ReportDateTime~19/04/2017 12:34:40 PM|ReportField=OutputName~Bill of Materials|ReportField=OutputType~BOM_PartType|ReportField=GeneratorName~BOM|ReportField=GeneratorDescription~Bill of Materials|ReportField=VariantName~None|ReportField=ProjectRevision~V3.3|ReportField=Address1~|ReportField=Address2~|ReportField=Address3~|ReportField=Address4~|ReportField=Application_BuildNumber~|ReportField=ApprovedBy~|ReportField=Author~|ReportField=CheckedBy~|ReportField=CompanyName~|ReportField=CurrentDate~|ReportField=CurrentTime~|ReportField=Date~|ReportField=DocumentFullPathAndName~|ReportField=DocumentName~|ReportField=DocumentNumber~|ReportField=DrawnBy~|ReportField=Engineer~|ReportField=ImagePath~|ReportField=ModifiedDate~|ReportField=Organization~|ReportField=ProjectName~|ReportField=Revision~|ReportField=Rule~|ReportField=SheetNumber~|ReportField=SheetTotal~|ReportField=Time~|ReportField=Title~USBDM-Kinetis|ReportField=DataSourceFileName~USBDM_Kinetis_MK22F.PrjPcb|ReportField=DataSourceFullPath~C:\Users\podonoghue\Documents\Development\usbdm-kinetis\Hardware\USBDM_Kinetis_MK22F\USBDM_Kinetis_MK22F.PrjPcb
-100nF|Capacitor SMT 0603|C1, C4, C6, C8, C9, C10, C11, C12, C14, C15, C16|CCNP1608-0603|Cap|11|1709957|
-10uF/16V|Capacitor SMT 0805|C2|CCNP2012-0805|Cap_CCNP_0805|1|2497049|
-4u7F/6V|Capacitor SMT 0603|C3, C5, C7, C13|CCNP1608-0603|Cap_CCNP_0603|4|2496930|
-LED Green|LED 0603 Green (HSMG-C170  1.25mm x 1.4mm, 20 mA, 2.2 V, 572 nm)|D1|LED1608-0603-GREEN|LED-0603-Green|1|1581242|
-LED Red|LED 0603 Red (HSMS-C170, 1.25mm x 1.4mm, 20 mA, 2.1 V, 626 nm)|D2|LED1608-0603-RED|LED-0603-Red|1|5790839|
-USB Micro-B Connector|USB Micro-B (MOLEX - 47346-0001)|J1|MOLEX - 47346-0001|USB_MICRO_B_CONNECTOR|1|1568026|
-Header 1x3 2mm|Header, 1x3, 2mm|JP1|Header 1x3 (2mm)|Header 1x3 2mm|1||
-Ferrite Bead|Ferrite Bead SMT 0805, TDK MPZ2012S102AT, 0.15OHM, 1.5A|L1, L2|FB2012-0805|Ferrite Bead 0805|2|1669733|
-BDM Connector|HCS BDM connector (2x3 0.1")|P1|BDM|BDM2X3|1||
-SWD-2x10 (reduced pins)|SWD Connector 2x10-Pin (reduced pins)|P2|SWD-2x10 - reduced|SWD2X10-Reduced|1|1865289|
-SWD2X5|SWD Connector 2x5-Pin|P3|SWD-2x5|SWD2X5|1|1865285|
-1K|Resistor SMT 0603|R1, R20|CR1608-0603|Res|2|2331727|
-33R|Resistor SMT 0603|R2, R3|CR1608-0603|Res|2|1632431|
-10K|Resistor SMT 0603|R4, R11, R12, R17, R22, R23|CR1608-0603|Res|6|1799366|
-330R|Resistor SMT 0603|R5, R21|CR1608-0603|Res|2|2502447|
-100K|Resistor SMT 0603|R6, R9, R10, R15, R18|CR1608-0603|Res, Res, Res_CR0603, Res, Res|5|9238727|
-47R|Resistor SMT 0603|R7, R8, R14, R16, R19|CR1608-0603|Res|5|1646283|
-0R|Resistor SMT 0603|R13|CR1608-0603|Res_CR0603|1|2668260|
-SW_PB-SMT-FSMSM|SWITCH, TACTILE SPST 50mA, SMD GULL WING|S1|SW_MIN_PB-FSMSM|SW_PB-SMT-FSMSM|1|1703878|450-1758-2-ND
-MIC2005-0.5YM6-TR|Power Switch|U1|SOT23-6-Power|MIC2005-0.5YM6-TR|1|2509880|
-74LVC1T45DCK|Dual voltage bidirection buffer|U2, U7|SC70_N|74LVC1T45DCK|2|2395603|
-MCP1703T-3302E/CB|3V3 LDO regulator|U3|SOT23|MCP1703T-3302E/CB|1|2136813|
-74LVC2T45DCT|Dual voltage bidirection buffer|U4, U6|SSOP8_N|74LVC2T45DCT|2|2444915|
-MK22FN512VLH12|Arm Cortex M4F|U5|TSQFP50P1200X1200-64L|MK22FN1M0VLH12|1|2434224|
-82402305|Quintuple Unipolar Protection Device (5V)|Z1|SOT23-6|82402305|1|1825866|
+﻿Field=#~Integer~#~50|Field=Comment~String~Comment~200|Field=Description~String~Description~200|Field=Designator~String~Designator~200|Field=Footprint~String~Footprint~200|Field=LibRef~String~LibRef~200|Field=Quantity~Integer~Quantity~200|Field=Farnell PN~String~Farnell PN~200|Field=Digikey~String~Digikey~200|ReportField=Currency~<none>|ReportField=ProductionQuantity~1|ReportField=ProjectFileName~USBDM_Kinetis_MK22F.PrjPcb|ReportField=ProjectFullPath~C:\Users\podonoghue\Documents\Development\usbdm-kinetis\Hardware\USBDM_Kinetis_MK22F\USBDM_Kinetis_MK22F.PrjPcb|ReportField=Title~Bill of Materials For Project [USBDM_Kinetis_MK22F.PrjPcb] (No PCB Document Selected)|ReportField=ReportTime~4:54:33 PM|ReportField=ReportDate~18/10/2019|ReportField=ReportDateTime~18/10/2019 4:54:33 PM|ReportField=OutputName~Bill of Materials|ReportField=OutputType~BOM_PartType|ReportField=GeneratorName~BOM|ReportField=GeneratorDescription~Bill of Materials|ReportField=VariantName~None|ReportField=TotalQuantity~57|ReportField=TotalActualPrice~0|ReportField=TotalTargetPrice~0|ReportField=VersionControl_RevNumber~|ReportField=VersionControl_ProjFolderRevNumber~787fab483edd5d9524073f087aa8e9286428a028|ReportField=ProjectRevision~V3.3|ReportField=Address1~|ReportField=Address2~|ReportField=Address3~|ReportField=Address4~|ReportField=Application_BuildNumber~|ReportField=ApprovedBy~|ReportField=Author~|ReportField=CheckedBy~|ReportField=CompanyName~|ReportField=CurrentDate~18/10/2019|ReportField=CurrentTime~4:28:08 PM|ReportField=Date~|ReportField=DocumentFullPathAndName~C:\Users\podonoghue\Documents\Development\usbdm-kinetis\Hardware\USBDM_Kinetis_MK22F\USBDM_Kinetis.SchDoc|ReportField=DocumentName~USBDM_Kinetis.SchDoc|ReportField=DocumentNumber~|ReportField=DrawnBy~|ReportField=Engineer~|ReportField=ImagePath~|ReportField=ModifiedDate~18/10/2019|ReportField=Organization~|ReportField=ProjectName~USBDM_Kinetis_MK22F.PrjPcb|ReportField=Revision~|ReportField=Rule~|ReportField=SheetNumber~|ReportField=SheetTotal~|ReportField=Time~|ReportField=Title~USBDM-Kinetis|ReportField=DataSourceFileName~USBDM_Kinetis_MK22F.PrjPcb|ReportField=DataSourceFullPath~C:\Users\podonoghue\Documents\Development\usbdm-kinetis\Hardware\USBDM_Kinetis_MK22F\USBDM_Kinetis_MK22F.PrjPcb|ReportField=PCBConfigurationName~Default Configuration|ReportField=Item~|ReportField=ItemRevision~|ReportField=ItemAndRevision~|ReportField=ItemRevisionBase~|ReportField=ItemRevisionLevel1~|ReportField=ItemRevisionLevel2~|ReportField=ItemRevisionLevel1AndBase~|ReportField=ItemRevisionLevel2AndLevel1~
+1|100nF|Capacitor SMT 0603|C1, C4, C6, C8, C9, C10, C11, C12, C14, C15, C16|CCNP1608-0603|Cap|11|1709957|
+2|10uF/16V|Capacitor SMT 0805|C2|CCNP2012-0805|Cap_CCNP_0805|1|2497049|
+3|4.7uF/6V|Capacitor SMT 0603|C3, C5, C7, C13|CCNP1608-0603|Cap_CCNP_0603|4|2496930|
+4|LED Green|LED 0603 Green (HSMG-C170  1.25mm x 1.4mm, 20 mA, 2.2 V, 572 nm)|D1|LED1608-0603-GREEN|LED-0603-Green|1|1581242|
+5|LED Red|LED 0603 Red (HSMS-C170, 1.25mm x 1.4mm, 20 mA, 2.1 V, 626 nm)|D2|LED1608-0603-RED|LED-0603-Red|1|5790839|
+6|USB Micro-B Connector|USB Micro-B (MOLEX - 47346-0001)|J1|MOLEX - 47346-0001|USB_MICRO_B_CONNECTOR|1|1568026|
+7|Header 1x3 2mm|Header, 1x3, 2mm|JP1|Header 1x3 (2mm)|Header 1x3 2mm|1||
+8|Ferrite Bead|Ferrite Bead (0603) 0.15OHM, 1A, 0603|L1, L2|FB1608-0603|Ferrite Bead_0603|2|1515738|
+9|BDM Connector|HCS BDM connector (2x3 0.1")|P1|BDM|BDM2X3|1||
+10|SWD-2x10 (reduced pins)|SWD Connector 2x10-Pin (reduced pins)|P2|SWD-2x10 - reduced|SWD2X10-Reduced|1|1865289|
+11|SWD2X5|SWD Connector 2x5-Pin|P3|SWD-2x5|SWD2X5|1|1865285|
+12|1K|Resistor SMT 0603|R1, R20|CR1608-0603|Res|2|2331727|
+13|33R|Resistor SMT 0603|R2, R3|CR1608-0603|Res|2|1632431|
+14|10K|Resistor SMT 0603|R4, R11, R12, R17, R22, R23|CR1608-0603|Res|6|1799366|
+15|330R|Resistor SMT 0603|R5, R21|CR1608-0603|Res|2|2502447|
+16|100K|Resistor SMT 0603|R6, R9, R10, R15, R18|CR1608-0603|Res, Res_CR0603|5|9238727|
+17|47R|Resistor SMT 0603|R7, R8, R14, R16, R19|CR1608-0603|Res|5|1646283|
+18|0R|Resistor SMT 0603|R13|CR1608-0603|Res_CR0603|1|2668260|
+19|SW_PB|Tactile Switch, Top Actuated, Surface Mount, Round Button|S1|SW-SMD-4_5.1x5.1x2|SW_PB-ALPS-SKQGAFE010|1|9471880|
+20|MIC2005-0.5YM6-TR|Power Switch|U1|SOT23-6-Power|MIC2005-0.5YM6-TR|1|2509880|
+21|SN74LVC1T45DCKT|Dual voltage bidirection buffer|U2, U7|SC70_N|SN74LVC1T45DCKT|2|9592733|
+22|MCP1703T-3302E/CB|3V3 LDO regulator|U3|SOT23|MCP1703T-3302E/CB|1|1439518|
+23|74LVC2T45DCT|Dual voltage bidirection buffer|U4, U6|SSOP8_N|74LVC2T45DCT|2|2444915|
+24|MK22FN512VLH12|Arm Cortex M4F|U5|TSQFP50P1200X1200-64L|MK22FN1M0VLH12|1|2434224|
+25|SMF05CT1G|TVS DIODE ARRAY, 100W, 5V, SC-88|Z1|SC70_N|SMF05CT1G|1|2533147|

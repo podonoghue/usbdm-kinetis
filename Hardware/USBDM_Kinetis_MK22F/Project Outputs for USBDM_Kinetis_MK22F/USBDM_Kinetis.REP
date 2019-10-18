@@ -2,8 +2,10 @@
 FileName = USBDM_Kinetis.GBR
 AutoAperture = True
 *************************************************************
-Generating : Top Layer
-      File : USBDM_Kinetis.GTL
+Generating : Top Solder
+      File : USBDM_Kinetis.GTS
+
+    Adding Layer      : Top Solder
 
     Adding Layer      : Top Layer
 
@@ -11,29 +13,6 @@ Generating : Top Layer
 
 
 Used DCodes :
-    D10
-    D11
-    D12
-    D13
-    D14
-    D15
-    D16
-    D17
-    D18
-    D19
-    D20
-    D21
-    D22
-    D23
-    D24
-    D25
-    D26
-    D27
-    D28
-    D29
-    D30
-    D31
-    D32
     D33
     D34
     D35
@@ -43,42 +22,6 @@ Used DCodes :
     D39
     D40
     D41
-*************************************************************
-
-*************************************************************
-Generating : Bottom Layer
-      File : USBDM_Kinetis.GBL
-
-    Adding Layer      : Bottom Layer
-
-    Adding Layer      : Multi-Layer
-
-
-Used DCodes :
-    D24
-    D26
-    D32
-    D33
-    D34
-    D35
-    D36
-    D37
-    D38
-    D39
-    D40
-    D41
-*************************************************************
-
-*************************************************************
-Generating : Top Overlay
-      File : USBDM_Kinetis.GTO
-
-    Adding Layer      : Top Overlay
-
-
-Used DCodes :
-    D26
-    D28
     D42
     D43
     D44
@@ -86,6 +29,13 @@ Used DCodes :
     D46
     D47
     D48
+    D49
+    D50
+    D51
+    D52
+    D53
+    D54
+    D55
 *************************************************************
 
 *************************************************************
@@ -100,6 +50,30 @@ Generating : Top Paste
 
 
 Used DCodes :
+    D19
+    D20
+    D21
+    D22
+    D23
+    D24
+    D25
+    D26
+    D27
+    D28
+    D29
+    D30
+    D31
+    D32
+*************************************************************
+
+*************************************************************
+Generating : Top Overlay
+      File : USBDM_Kinetis.GTO
+
+    Adding Layer      : Top Overlay
+
+
+Used DCodes :
     D10
     D11
     D12
@@ -109,18 +83,35 @@ Used DCodes :
     D16
     D17
     D18
-    D19
-    D20
-    D21
-    D22
-    D23
 *************************************************************
 
 *************************************************************
-Generating : Top Solder
-      File : USBDM_Kinetis.GTS
+Generating : Bottom Layer
+      File : USBDM_Kinetis.GBL
 
-    Adding Layer      : Top Solder
+    Adding Layer      : Bottom Layer
+
+    Adding Layer      : Multi-Layer
+
+
+Used DCodes :
+    D11
+    D56
+    D62
+    D63
+    D64
+    D65
+    D66
+    D67
+    D68
+    D69
+    D70
+    D71
+*************************************************************
+
+*************************************************************
+Generating : Top Layer
+      File : USBDM_Kinetis.GTL
 
     Adding Layer      : Top Layer
 
@@ -128,13 +119,22 @@ Generating : Top Solder
 
 
 Used DCodes :
-    D49
-    D50
-    D51
-    D52
-    D53
-    D54
-    D55
+    D11
+    D16
+    D19
+    D20
+    D21
+    D22
+    D23
+    D24
+    D25
+    D26
+    D27
+    D28
+    D29
+    D30
+    D31
+    D32
     D56
     D57
     D58
@@ -154,25 +154,16 @@ Used DCodes :
 *************************************************************
 
 *************************************************************
-Generating : Bottom Solder
-      File : USBDM_Kinetis.GBS
+Generating : Bottom Overlay
+      File : USBDM_Kinetis.GBO
 
-    Adding Layer      : Bottom Solder
-
-    Adding Layer      : Bottom Layer
-
-    Adding Layer      : Multi-Layer
+    Adding Layer      : Bottom Overlay
 
 
 Used DCodes :
-    D64
-    D65
-    D66
-    D67
-    D68
-    D69
-    D70
-    D71
+    D15
+    D18
+    D72
 *************************************************************
 
 *************************************************************
@@ -190,19 +181,6 @@ Used DCodes :
 *************************************************************
 
 *************************************************************
-Generating : Bottom Overlay
-      File : USBDM_Kinetis.GBO
-
-    Adding Layer      : Bottom Overlay
-
-
-Used DCodes :
-    D47
-    D48
-    D72
-*************************************************************
-
-*************************************************************
 Generating : Keep-Out Layer
       File : USBDM_Kinetis.GKO
 
@@ -210,6 +188,28 @@ Generating : Keep-Out Layer
 
 
 Used DCodes :
-    D44
+    D14
+*************************************************************
+
+*************************************************************
+Generating : Bottom Solder
+      File : USBDM_Kinetis.GBS
+
+    Adding Layer      : Bottom Solder
+
+    Adding Layer      : Bottom Layer
+
+    Adding Layer      : Multi-Layer
+
+
+Used DCodes :
+    D48
+    D49
+    D50
+    D51
+    D52
+    D53
+    D54
+    D55
 *************************************************************
 
