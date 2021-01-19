@@ -163,7 +163,7 @@ enum AdcMuxsel {
  */
 enum AdcPower {
    AdcPower_Normal  = ADC_CFG1_ADLPC(0), //!< Normal power operation
-   AdcPower_Lowl    = ADC_CFG1_ADLPC(1), //!< Low power operation
+   AdcPower_Low     = ADC_CFG1_ADLPC(1), //!< Low power operation
 };
 
 /**
@@ -281,6 +281,9 @@ public:
    static volatile ADC_Type &adc() { return Info::adc(); }
 
 public:
+   /** Default ADC resolution */
+   static constexpr AdcResolution defaultAdcResolution = static_cast<AdcResolution>(Info::defaultAdcResolution);
+
    /** Get reference to ADC hardware as struct */
    static volatile ADC_Type &adcPtr() { return Info::adc(); }
 
@@ -339,8 +342,10 @@ public:
    static void configureAllPins() {
       // Configure pins
       Info::initPCRs();
+#ifdef ADC_SC1_DIFF_MASK
       Info::InfoDP::initPCRs();
       Info::InfoDM::initPCRs();
+#endif
    }
 
    /**

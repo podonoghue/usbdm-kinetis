@@ -356,12 +356,11 @@ public:
 
       configureAllPins();
 
-      enableNvicInterrupts();
+      enableNvicInterrupts(Info::irqLevel);
    }
 
    /**
     * Enable interrupts in NVIC
-    * Any pending NVIC interrupts are first cleared.
     */
    static void enableNvicInterrupts() {
       NVIC_EnableIRQ(Info::irqNums[0]);
@@ -369,9 +368,10 @@ public:
 
    /**
     * Enable and set priority of interrupts in NVIC
-    * Any pending NVIC interrupts are first cleared.
     *
     * @param[in]  nvicPriority  Interrupt priority
+    *
+    * @note Any pending interrupts are cleared before enabling.
     */
    static void enableNvicInterrupts(uint32_t nvicPriority) {
       enableNvicInterrupt(Info::irqNums[0], nvicPriority);
@@ -625,7 +625,7 @@ protected:
     */
    static void handleUnexpectedSetup() {
       if (fUnhandledSetupCallback(fEp0SetupBuffer) != E_NO_ERROR) {
-         console.WRITE("handleUnexpectedSetup(").WRITE(getSetupPacketDescription(&fEp0SetupBuffer)).WRITELN(")");
+//         console.WRITE("handleUnexpectedSetup(").WRITE(getSetupPacketDescription(&fEp0SetupBuffer)).WRITELN(")");
          fControlEndpoint.stall();
       }
    }
