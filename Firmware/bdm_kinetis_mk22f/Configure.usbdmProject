@@ -151,11 +151,9 @@
    <item key="/SPI0/spi_mode"                              value="1" />
    <item key="/SPI1/speed"                                 value="100000" />
    <item key="/SPI1/spi_mode"                              value="1" />
-   <item key="/UART0/irqHandlers"                          value="$ClassMethod" />
    <item key="/UART0/receiveBufferSize"                    value="20" />
    <item key="/UART0/transmitBufferSize"                   value="100" />
-   <item key="/UART0/uartClass"                            value="true" />
-   <item key="/UART1/irqHandlers"                          value="$ClassMethod" />
+   <item key="/UART1/irqHandlingMethod"                    value="$ClassMethod" />
    <item key="/USB0/clk_recovery_ctrl_reset_resume_rough_en" value="true" />
    <item key="/USB0/clk_recovery_ctrl_restart_ifttrim_en"  value="true" />
    <item key="/USB0/irqHandlingMethod"                     value="$ClassMethod" />

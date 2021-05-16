@@ -42,7 +42,7 @@ public:
  *
  * This uses the ADC to measure an external voltage divider
  */
-class HardwareId : USBDM::Adc0Channel<12> {
+class HardwareId : USBDM::Adc0::Channel<12> {
 public:
    /**
     * Get hardware ID
@@ -73,14 +73,20 @@ public:
     */
    static int getId() {
       Adc::setResolution(USBDM::AdcResolution_8bit_se);
-      return round(Adc0Channel::readAnalogue()/17.0);
+      return round(readAnalogue()/17.0);
    }
 };
 
 /**
  * GPIO controlling some interface signals (SWD, UART-TX)
  */
-using InterfaceEnable = USBDM::GpioC<4, USBDM::ActiveHigh>;
+class InterfaceEnable : public USBDM::GpioC<4, USBDM::ActiveHigh> {
+public:
+   /** Initialise activity LED */
+   static void initialise() {
+      setOutput();
+   }
+};
 
 #include <swd.h>
 

@@ -186,8 +186,8 @@ USBDM_ErrorCode f_CMD_SET_SPEED(void) {
  *  @return != BDM_RC_OK => error
  */
 USBDM_ErrorCode f_CMD_GET_SPEED(void) {
-   // Have to scale Timer ticks to "60MHz" standard 48MHz => 60MHz
-   unpack16BE((5*cable_status.sync_length)/4, commandBuffer+1);
+   // Standard uses 60MHz tick which happens to be the same as the internal FTM ticks.
+   unpack16BE(cable_status.sync_length, commandBuffer+1);
    returnSize = 3;
    return BDM_RC_OK;
 }
@@ -508,12 +508,12 @@ USBDM_ErrorCode f_CMD_WRITE_MEM(void) {
       count    -=1;  // decrement count of bytes
    }
    if (commandBuffer[2]&MS_Fast) {
-      // Fast word writes - corrupts X
+      // Fast word writes - modifies X
       // Write address to X
       rc = BDM12_CMD_WRITE_X(addr-2);
       // Exclude 0xFF00-0xFFFF as BDM code in Memory map
       while ((count > 1) && (rc == BDM_RC_OK) && ((addr&0xFF00) != 0xFF00)) {
-         rc = BDM12_CMD_WRITE_NEXT(*((uint16_t *)data_ptr)); // write word
+         rc = BDM12_CMD_WRITE_NEXT(pack16BE(data_ptr)); // write word
          addr     +=2; // increment memory address
          data_ptr +=2; // increment buffer pointer
          count    -=2; // decrement count of bytes
@@ -521,7 +521,9 @@ USBDM_ErrorCode f_CMD_WRITE_MEM(void) {
    }
    while ((count > 1) && (rc == BDM_RC_OK)) {
       // Slow Word writes
-      rc = BDM12_CMD_WRITEW(addr,*((uint16_t *)data_ptr));  // write a word
+//      USBDM::console.write("cmd_2W_0").write(addr).writeln(*(uint16_t *)data_ptr);
+
+      rc = BDM12_CMD_WRITEW(addr,pack16BE(data_ptr));  // write a word
       addr     +=2; // increment memory address
       data_ptr +=2; // increment buffer pointer
       count    -=2; // decrement count of bytes
@@ -566,7 +568,7 @@ USBDM_ErrorCode f_CMD_WRITE_MEM(void) {
       }
       else {
          // Even address && >=2 bytes remaining
-         rc = BDM12_CMD_WRITEW((uint16_t)addr,*((uint16_t *)data_ptr)); // write a word
+         rc = BDM12_CMD_WRITEW((uint16_t)addr,pack16BE(data_ptr)); // write a word
          addr     +=2;                    // increment memory address
          data_ptr +=2;                    // increment buffer pointer
          count    -=2;                    // decrement count of bytes

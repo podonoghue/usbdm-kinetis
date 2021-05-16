@@ -27,6 +27,24 @@ namespace USBDM {
  */
 
 /**
+ * Pin filter numbers
+ *
+ * @note These are used as an index into the FILT table so numbers do NOT correspond to filter names FILT[0] <=> FILT1 etc
+ */
+enum LlwuFilterNum {
+   LlwuFilterNum_0, //!< FILT1
+#ifdef LLWU_FILT2_FILTE_MASK
+   LlwuFilterNum_1, //!< FILT2
+#endif
+#ifdef LLWU_FILT3_FILTE_MASK
+   LlwuFilterNum_2, //!< FILT3
+#endif
+#ifdef LLWU_FILT4_FILTE_MASK
+   LlwuFilterNum_3, //!< FILT4
+#endif
+};
+
+/**
  * LLWU pin wake-up mode
  */
 enum LlwuPinMode {
@@ -48,39 +66,84 @@ enum LlwuPeripheralMode {
  * LLWU pin sources
  */
 enum LlwuPin : uint32_t {
-   LlwuPin_Pte1            =  0, //!< Wake-up pin LLWU_P0
-   LlwuPin_Pte2            =  1, //!< Wake-up pin LLWU_P1
-   LlwuPin_Pte4            =  2, //!< Wake-up pin LLWU_P2
-   LlwuPin_Pta4            =  3, //!< Wake-up pin LLWU_P3
-   LlwuPin_Pta13           =  4, //!< Wake-up pin LLWU_P4
-   LlwuPin_Ptb0            =  5, //!< Wake-up pin LLWU_P5
-   LlwuPin_Ptc1            =  6, //!< Wake-up pin LLWU_P6
-   LlwuPin_Ptc3            =  7, //!< Wake-up pin LLWU_P7
-   LlwuPin_Ptc4            =  8, //!< Wake-up pin LLWU_P8
-   LlwuPin_Ptc5            =  9, //!< Wake-up pin LLWU_P9
-   LlwuPin_Ptc6            = 10, //!< Wake-up pin LLWU_P10
-   LlwuPin_Ptc11           = 11, //!< Wake-up pin LLWU_P11
-   LlwuPin_Ptd0            = 12, //!< Wake-up pin LLWU_P12
-   LlwuPin_Ptd2            = 13, //!< Wake-up pin LLWU_P13
-   LlwuPin_Ptd4            = 14, //!< Wake-up pin LLWU_P14
-   LlwuPin_Ptd6            = 15, //!< Wake-up pin LLWU_P15
-};
+   LlwuPin_0            =   0,  //!< Wake-up pin LLWU_P0 
+   LlwuPin_1            =   1,  //!< Wake-up pin LLWU_P1 
+   LlwuPin_2            =   2,  //!< Wake-up pin LLWU_P2 
+   LlwuPin_3            =   3,  //!< Wake-up pin LLWU_P3 
+#ifdef LLWU_PE2_WUPE4_MASK
+   LlwuPin_4            =   4,  //!< Wake-up pin LLWU_P4 
+   LlwuPin_5            =   5,  //!< Wake-up pin LLWU_P5 
+   LlwuPin_6            =   6,  //!< Wake-up pin LLWU_P6 
+   LlwuPin_7            =   7,  //!< Wake-up pin LLWU_P7 
+#endif
+#ifdef LLWU_PE3_WUPE8_MASK
+   LlwuPin_8            =   8,  //!< Wake-up pin LLWU_P8 
+   LlwuPin_9            =   9,  //!< Wake-up pin LLWU_P9 
+   LlwuPin_10           =  10,  //!< Wake-up pin LLWU_P10
+   LlwuPin_11           =  11,  //!< Wake-up pin LLWU_P11
+#endif
+#ifdef LLWU_PE4_WUPE12_MASK
+   LlwuPin_12           =  12,  //!< Wake-up pin LLWU_P12
+   LlwuPin_13           =  13,  //!< Wake-up pin LLWU_P13
+   LlwuPin_14           =  14,  //!< Wake-up pin LLWU_P14
+   LlwuPin_15           =  15,  //!< Wake-up pin LLWU_P15
+#endif
+#ifdef LLWU_PE5_WUPE16_MASK
+   LlwuPin_16           =  16,  //!< Wake-up pin LLWU_P16
+   LlwuPin_17           =  17,  //!< Wake-up pin LLWU_P17
+   LlwuPin_18           =  18,  //!< Wake-up pin LLWU_P18
+   LlwuPin_19           =  19,  //!< Wake-up pin LLWU_P19
+#endif
+#ifdef LLWU_PE6_WUPE20_MASK
+   LlwuPin_20           =  20,  //!< Wake-up pin LLWU_P20
+   LlwuPin_21           =  21,  //!< Wake-up pin LLWU_P21
+   LlwuPin_22           =  22,  //!< Wake-up pin LLWU_P22
+   LlwuPin_23           =  23,  //!< Wake-up pin LLWU_P23
+#endif
+#ifdef LLWU_PE7_WUPE24_MASK
+   LlwuPin_24           =  24,  //!< Wake-up pin LLWU_P24
+   LlwuPin_25           =  25,  //!< Wake-up pin LLWU_P25
+   LlwuPin_26           =  26,  //!< Wake-up pin LLWU_P26
+   LlwuPin_27           =  27,  //!< Wake-up pin LLWU_P27
+#endif
+#ifdef LLWU_PE8_WUPE28_MASK
+   LlwuPin_28           =  28,  //!< Wake-up pin LLWU_P28
+   LlwuPin_29           =  29,  //!< Wake-up pin LLWU_P29
+   LlwuPin_30           =  30,  //!< Wake-up pin LLWU_P30
+   LlwuPin_31           =  31,  //!< Wake-up pin LLWU_P31
+#endif
 
+   // Mapped pins
+   LlwuPin_Ptb0         = LlwuPin_5,    //!< Mapped pin PTB0
+   LlwuPin_Ptc1         = LlwuPin_6,    //!< Mapped pin PTC1
+   LlwuPin_Ptc4         = LlwuPin_8,    //!< Mapped pin PTC4
+   LlwuPin_Ptd0         = LlwuPin_12,   //!< Mapped pin PTD0
+
+};
 
 /**
  * LLWU peripheral sources
  */
 enum LlwuPeripheral : uint32_t {
-   LlwuPeripheral_Lptmr           = (1<<0), //!< Wake-up peripheral LLWU_M0IF
-   LlwuPeripheral_Cmp0            = (1<<1), //!< Wake-up peripheral LLWU_M1IF
-   LlwuPeripheral_Cmp1            = (1<<2), //!< Wake-up peripheral LLWU_M2IF
-   LlwuPeripheral_Cmp2Cmp3        = (1<<3), //!< Wake-up peripheral LLWU_M3IF
-   LlwuPeripheral_Tsi0            = (1<<4), //!< Wake-up peripheral LLWU_M4IF
-   LlwuPeripheral_RtcAlarm        = (1<<5), //!< Wake-up peripheral LLWU_M5IF
-   LlwuPeripheral_RtcSeconds      = (1<<7), //!< Wake-up peripheral LLWU_M7IF
+   LlwuPeripheral_0               = (1<<0), //!< Wake-up peripheral LLWU_M0IF
+   LlwuPeripheral_1               = (1<<1), //!< Wake-up peripheral LLWU_M1IF
+   LlwuPeripheral_2               = (1<<2), //!< Wake-up peripheral LLWU_M2IF
+   LlwuPeripheral_3               = (1<<3), //!< Wake-up peripheral LLWU_M3IF
+   LlwuPeripheral_4               = (1<<4), //!< Wake-up peripheral LLWU_M4IF
+   LlwuPeripheral_5               = (1<<5), //!< Wake-up peripheral LLWU_M5IF
+   LlwuPeripheral_6               = (1<<6), //!< Wake-up peripheral LLWU_M6IF
+   LlwuPeripheral_7               = (1<<7), //!< Wake-up peripheral LLWU_M7IF
+
+   // Connected peripherals
+   LlwuPeripheral_Lptmr           = LlwuPeripheral_0, //!< LPTMR wake-up
+   LlwuPeripheral_Cmp0            = LlwuPeripheral_1, //!< CMP0 wake-up
+   LlwuPeripheral_Cmp1            = LlwuPeripheral_2, //!< CMP1 wake-up
+   LlwuPeripheral_Cmp2Cmp3        = LlwuPeripheral_3, //!< CMP2/CMP3 wake-up
+   LlwuPeripheral_Tsi0            = LlwuPeripheral_4, //!< TSI0 wake-up
+   LlwuPeripheral_RtcAlarm        = LlwuPeripheral_5, //!< RTC Alarm wake-up
+   LlwuPeripheral_RtcSeconds      = LlwuPeripheral_7, //!< RTC Seconds wake-up
+
 };
-
-
 
 /**
  * LLWU pin wake-up mode
@@ -165,7 +228,7 @@ public:
     *                        Use nullptr to remove callback.
     */
    static void setCallback(LLWUCallbackFunction callback) {
-      usbdm_assert(Info::irqHandlerInstalled, "LLWU not configured for interrupts");
+      static_assert(Info::irqHandlerInstalled, "LLWU not configured for interrupts");
       if (callback == nullptr) {
          callback = unhandledCallback;
       }
@@ -203,20 +266,46 @@ public:
       Info::initPCRs();
 
       llwu().PE1   = Info::pe1;
+#ifdef LLWU_PE2_WUPE4_MASK
       llwu().PE2   = Info::pe2;
+#endif
+#ifdef LLWU_PE3_WUPE8_MASK
       llwu().PE3   = Info::pe3;
+#endif
+#ifdef LLWU_PE4_WUPE12_MASK
       llwu().PE4   = Info::pe4;
+#endif
+#ifdef LLWU_PE5_WUPE16_MASK
+      llwu().PE5   = Info::pe5;
+#endif
+#ifdef LLWU_PE6_WUPE20_MASK
+      llwu().PE6   = Info::pe6;
+#endif
+#ifdef LLWU_PE7_WUPE24_MASK
+      llwu().PE7   = Info::pe7;
+#endif
+#ifdef LLWU_PE8_WUPE28_MASK
+      llwu().PE8   = Info::pe8;
+#endif
 
       llwu().ME    = Info::me;
 
       llwu().FILT1 = Info::filt1|LLWU_FILT_FILTF_MASK;
+#ifdef LLWU_FILT2_FILTE_MASK
       llwu().FILT2 = Info::filt2|LLWU_FILT_FILTF_MASK;
+#endif
+#ifdef LLWU_FILT3_FILTE_MASK
+      llwu().FILT3 = Info::filt3|LLWU_FILT_FILTF_MASK;
+#endif
+#ifdef LLWU_FILT4_FILTE_MASK
+      llwu().FILT4 = Info::filt4|LLWU_FILT_FILTF_MASK;
+#endif
 
 #ifdef LLWU_RST_LLRSTE
       llwu().RST   = Info::rst;
 #endif
 
-      enableNvicInterrupts();
+      enableNvicInterrupts(Info::irqLevel);
    }
 
    /*
@@ -253,7 +342,19 @@ public:
     * @return Bit mask
     */
    static uint32_t getPinWakeupSources() {
-      return (llwu().PF[1]<<8)|llwu().PF[0];
+      constexpr unsigned PF_SIZE = sizeof(llwu().PF)/sizeof(llwu().PF[0]);
+      if constexpr(PF_SIZE==4) {
+         return (llwu().PF[1]<<24)|(llwu().PF[1]<<16)|(llwu().PF[1]<<8)|llwu().PF[0];
+      }
+      else if constexpr(PF_SIZE==3) {
+         return (llwu().PF[1]<<16)|(llwu().PF[1]<<8)|llwu().PF[0];
+      }
+      else if constexpr(PF_SIZE==2) {
+         return (llwu().PF[1]<<8)|llwu().PF[0];
+      }
+      else {
+         return llwu().PF[0];
+      }
    }
 
    /**
@@ -290,13 +391,8 @@ public:
     * Clear all wake-up pin flags
     */
    static void clearPinWakeupFlags() {
-      llwu().PF[0] = 0xFF;
-      llwu().PF[1] = 0xFF;
-      if (sizeof(llwu().PF) > 2) {
-         llwu().PF[2] = 0xFF;
-      }
-      if (sizeof(llwu().PF) > 3) {
-         llwu().PF[3] = 0xFF;
+      for(unsigned index=0; index<(sizeof(llwu().PF)/sizeof(llwu().PF[0])); index++) {
+         llwu().PF[index] = 0xFF;
       }
    }
 
@@ -315,13 +411,10 @@ public:
     * @note Filtering is bypassed in VLLS0
     */
    static ErrorCode configureFilteredPinSource(
-         unsigned          filterNum,
+         LlwuFilterNum     filterNum,
          LlwuPin           llwuPin,
          LlwuFilterPinMode llwuFilterPinMode) {
 
-      if (filterNum>(sizeof(llwu().FILT)/sizeof(llwu().FILT[0]))) {
-         return setErrorCode(E_ILLEGAL_PARAM);
-      }
       llwu().FILT[filterNum] = llwuPin|llwuFilterPinMode;
       return E_NO_ERROR;
    }
@@ -343,7 +436,7 @@ public:
     *
     * @param[in] filterNum Pin Filter to clear flag
     */
-   static void clearFilteredPinWakeupFlag(unsigned filterNum) {
+   static void clearFilteredPinWakeupFlag(LlwuFilterNum filterNum) {
       llwu().FILT[filterNum] |= LLWU_FILT_FILTF_MASK;
    }
 
@@ -351,15 +444,8 @@ public:
     * Clear all filtered wake-up pin flags
     */
    static void clearFilteredPinWakeupFlags() {
-      llwu().FILT[0] |= LLWU_FILT_FILTF_MASK;
-      if (sizeof(llwu().FILT)/sizeof(llwu().FILT[0]) > 1) {
-         llwu().FILT[1] |= LLWU_FILT_FILTF_MASK;
-      }
-      if (sizeof(llwu().FILT)/sizeof(llwu().FILT[0]) > 2) {
-         llwu().FILT[2] |= LLWU_FILT_FILTF_MASK;
-      }
-      if (sizeof(llwu().FILT)/sizeof(llwu().FILT[0]) > 3) {
-         llwu().FILT[3] |= LLWU_FILT_FILTF_MASK;
+      for (unsigned index=0; index<(sizeof(llwu().FILT)/sizeof(llwu().FILT[0])); index++) {
+         llwu().FILT[index] |= LLWU_FILT_FILTF_MASK;
       }
    }
 
@@ -402,16 +488,12 @@ public:
     * Disable all wake-up sources (pins and peripherals)
     */
    static void disableAllSources() {
-      llwu().PE[1] = 0;
-      llwu().PE[2] = 0;
-      if ((sizeof(llwu().PE)/sizeof(llwu().PE[0]))>=3) {
-         llwu().PE[3] = 0;
-      }
-      if ((sizeof(llwu().PE)/sizeof(llwu().PE[0]))>=4) {
-         llwu().PE[4] = 0;
+      for (unsigned index=0; index<(sizeof(llwu().PE)/(sizeof(llwu().PE[0]))); index++) {
+         llwu().PE[index] = 0;
       }
       llwu().ME  = 0;
    }
+
    /**
     * Get flag bit mask indicating wake-up peripheral sources\n
     * The mask returned correspond to (multiple) peripheral sources.\n
@@ -446,10 +528,9 @@ public:
 
    /**
     * Enable interrupts in NVIC
-    * Any pending NVIC interrupts are first cleared.
     */
    static void enableNvicInterrupts() {
-      enableNvicInterrupt(Info::irqNums[0]);
+      NVIC_EnableIRQ(Info::irqNums[0]);
    }
 
    /**
@@ -479,7 +560,10 @@ public:
       using Pcr = PcrTable_T<Info, llwuPin>;
 
    public:
-      static constexpr LlwuPin pin = llwuPin;
+      static constexpr LlwuPin  pin = llwuPin;
+
+      static constexpr int      PORT_BITNUM  = Pcr::BITNUM;    ///< Bit number for bit within associated port
+      static constexpr uint32_t PORT_BITMASK = Pcr::BITMASK;   ///< Bit mask for bit within associated port
 
       /**
        * Set Pin Control Register (PCR) value \n
@@ -526,10 +610,9 @@ public:
 
       /**
        * Enable Pin interrupts in NVIC
-       * Any pending NVIC interrupts are first cleared.
        */
       static void enablePinNvicInterrupts() {
-         Pcr::enableNvicInterrupt();
+         Pcr::enableNvicInterrupts();
       }
 
       /**
@@ -539,7 +622,7 @@ public:
        * @param[in]  nvicPriority  Interrupt priority
        */
       static void enablePinNvicInterrupts(uint32_t nvicPriority) {
-         Pcr::enableNvicInterrupt(nvicPriority);
+         Pcr::enableNvicInterrupts(nvicPriority);
       }
 
       /**

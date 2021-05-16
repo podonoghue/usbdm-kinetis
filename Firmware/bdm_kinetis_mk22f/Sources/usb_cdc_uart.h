@@ -80,7 +80,7 @@ public:
       static uint8_t lastSciStatus = 0x00;
 
       // Assume DCD & DSR
-      CdcLineState status = {CDC_STATE_DCD_MASK|CDC_STATE_DSR_MASK};
+      CdcLineState status(CDC_STATE_DCD_MASK|CDC_STATE_DSR_MASK);
 
       if (cdcStatus&UART_S1_FE_MASK) {
          status.bits |= CDC_STATE_FRAME_MASK;
@@ -121,7 +121,7 @@ public:
       cdcStatus  = CDC_STATE_CHANGE_MASK;
       breakCount = 0; // Clear any current BREAKs
 
-      (void)memcpy(&lineCoding, lineCodingStructure, sizeof(LineCodingStructure));
+      lineCoding = *lineCodingStructure;
 
       //! Note - for a 48MHz bus speed the useful baud range is ~300 to ~115200 for 0.5% error
       //  230400 & 460800 have a 8.5% error

@@ -176,7 +176,7 @@ Control extended Boot features on these devices
 #define RESERVED1      (0)      // -0
 #define RESERVED2      (0)      // -1
 #define FOPT_MISC      (0x27)   // q2
-#define FOPT_RESERVED  (0xD8)   // Bits not controlled by above
+#define FOPT_RESERVED  (0b11011000)   // Bits not controlled by above
 
 #define FOPT_VALUE (FOPT_RESERVED|FOPT_MISC)
 

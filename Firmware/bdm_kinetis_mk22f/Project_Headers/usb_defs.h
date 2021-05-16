@@ -18,6 +18,7 @@
  * Any manual changes will be lost.
  */
 #include <stdint.h>
+#define NEED_ENDIAN_CONVERSIONS 1
 #include "utilities.h"
 
 /**
@@ -482,6 +483,12 @@ struct BdtEntry {
    constexpr BdtEntry(uint8_t value, uint16_t byteCount, uint32_t address) :
       raw(value), bc(byteCount), addr(address) {};
 
+   void initialise(uint8_t value, uint16_t byteCount, uint32_t address) volatile {
+      raw  = value;
+      bc   = byteCount;
+      addr = address;
+   }
+
    void setByteCount(uint16_t byteCount) volatile {
       bc = byteCount;
    }
@@ -573,6 +580,7 @@ struct CdcLineState {
          uint8_t overrun:1;
       };
    };
+   constexpr CdcLineState(uint8_t state) : bits(state) {}
 };
 
 /**

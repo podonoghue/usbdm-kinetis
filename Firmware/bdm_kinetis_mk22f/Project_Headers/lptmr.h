@@ -261,10 +261,9 @@ public:
 
    /**
     * Enable interrupts in NVIC
-    * Any pending NVIC interrupts are first cleared.
     */
    static void enableNvicInterrupts() {
-      enableNvicInterrupt(Info::irqNums[0]);
+      NVIC_EnableIRQ(Info::irqNums[0]);
    }
 
    /**
@@ -291,7 +290,7 @@ public:
     *                        Use nullptr to remove callback.
     */
    static void setCallback(LPTMRCallbackFunction callback) {
-      usbdm_assert(Info::irqHandlerInstalled, "LPTMR not configure for interrupts");
+      static_assert(Info::irqHandlerInstalled, "LPTMR not configure for interrupts");
       if (callback == nullptr) {
          callback = unhandledCallback;
       }
@@ -342,6 +341,75 @@ public:
       lptmr().CSR = 0;
       NVIC_DisableIRQ(Info::irqNums[0]);
       Info::disableClock();
+   }
+
+   /**
+    * Converts a number in ticks to time in microseconds.
+    *
+    * @param[in]  ticks Time in ticks
+    *
+    * @return Time in microseconds
+    *
+    * @note Assumes prescale has been chosen appropriately.
+    * @note Rudimentary range checking only. Sets error code.
+    */
+   static uint32_t convertTicksToMicroseconds(unsigned ticks) {
+      uint32_t tickRate = Info::getClockFrequency();
+      uint64_t rv       = (((uint64_t)ticks)*1000000)/tickRate;
+
+#ifdef DEBUG_BUILD
+      if (rv > UINT_MAX) {
+         // Attempt to set too long a period
+         setErrorCode(E_TOO_LARGE);
+      }
+      if (rv == 0) {
+         // Attempt to set too short a period
+         setErrorCode(E_TOO_SMALL);
+      }
+#endif
+      return rv;
+   }
+
+   /**
+    * Converts a number in ticks to time in milliseconds.
+    *
+    * @param[in]  ticks Time in ticks
+    *
+    * @return Time in milliseconds
+    *
+    * @note Assumes prescale has been chosen appropriately.
+    * @note Rudimentary range checking only. Sets error code.
+    */
+   static unsigned convertTicksToMilliseconds(unsigned ticks) {
+      uint32_t tickRate = Info::getClockFrequency();
+      uint64_t rv       = (((uint64_t)ticks)*1000)/tickRate;
+
+#ifdef DEBUG_BUILD
+      if (rv > UINT_MAX) {
+         // Attempt to set too long a period
+         setErrorCode(E_TOO_LARGE);
+      }
+      if (rv == 0) {
+         // Attempt to set too short a period
+         setErrorCode(E_TOO_SMALL);
+      }
+#endif
+      return rv;
+   }
+
+   /**
+    * Converts a number in ticks to time in seconds.
+    *
+    * @param[in]  ticks Time in ticks
+    *
+    * @return Time in seconds (as float)
+    *
+    * @note Assumes prescale has been chosen appropriately.
+    * @note Rudimentary range checking only. Sets error code.
+    */
+   static float convertTicksToSeconds(unsigned ticks) {
+      uint32_t tickRate = Info::getClockFrequency();
+      return ((float)ticks)/tickRate;
    }
 
    /**
@@ -509,13 +577,15 @@ public:
     * @return Timer value in ticks.
     */
    static uint32_t getCounterValue() {
+      // It is necessary to write to the CNR to capture current value
+      lptmr().CNR = 0;
       return lptmr().CNR;
    }
 };
 
 template<class Info> LPTMRCallbackFunction LptmrBase_T<Info>::sCallback = LptmrBase_T<Info>::unhandledCallback;
 
-#ifdef LPTMR0
+#ifdef USBDM_LPTMR0_IS_DEFINED
 /**
  * @brief Class representing LPTMR0
  *
@@ -544,7 +614,7 @@ template<class Info> LPTMRCallbackFunction LptmrBase_T<Info>::sCallback = LptmrB
 using Lptmr0 = LptmrBase_T<Lptmr0Info>;
 #endif
 
-#ifdef LPTMR1
+#ifdef USBDM_LPTMR1_IS_DEFINED
 /**
  * @brief Class representing LPTMR1
  *

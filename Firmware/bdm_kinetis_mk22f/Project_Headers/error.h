@@ -1,6 +1,6 @@
 /**
  * @file error.h
- * @brief TODO
+ * @brief USBDM Error codes and messages
  *
  *  Created on: 27 Jan 2019
  *      Author: podonoghue
@@ -38,6 +38,7 @@ enum ErrorCode {
    E_CLOCK_INIT_FAILED,           //!< Clock initialisation failed
    E_HANDLER_ALREADY_SET,         //!< Handler (callback) already installed
    E_NO_RESOURCE,                 //!< Failed resource allocation
+   E_TIMEOUT,                     //!< Failed resource allocation
 
    E_CMSIS_ERR_OFFSET = 1<<20,    //!< Offset added to CMSIS error codes
 };
@@ -133,7 +134,7 @@ inline void _usbdm_assert(const char *msg) {
 
 } // End namespace USBDM
 
-#if defined (DEBUG_BUILD) && !defined (NDEBUG)
+#if !defined (NDEBUG)
 #define USBDM_STRINGIFY(x)  #x
 #define USBDM_TOSTRING(x)   USBDM_STRINGIFY(x)
 

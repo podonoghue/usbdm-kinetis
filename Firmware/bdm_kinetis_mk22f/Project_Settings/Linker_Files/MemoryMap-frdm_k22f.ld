@@ -10,7 +10,7 @@
    <i> In CMSIS this will determine the ISR stack size
    <0x0-0x20000> 
 */
-__stack_size = 0x8000;
+__stack_size = 0x10000;
 
 /* <o> Minimum Heap Size 
    <i> Actual heap may be larger as it fills all unused RAM up to STACK

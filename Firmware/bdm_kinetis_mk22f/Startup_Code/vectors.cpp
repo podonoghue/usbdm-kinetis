@@ -27,8 +27,7 @@
  */
 typedef void( *const intfunc )( void );
 
-#define WEAK_DEFAULT_HANDLER __attribute__ ((__weak__, alias("Default_Handler")))
-
+#define WEAK_DEFAULT_HANDLER __attribute__ ((__nothrow__, __weak__, alias("Default_Handler")))
 /**
  * Default handler for interrupts
  *
@@ -111,9 +110,7 @@ void _HardFault_Handler(
       volatile ExceptionFrame *exceptionFrame __attribute__((__unused__)),
       uint32_t execReturn                     __attribute__((__unused__)) ) {
 
-   __asm__("bkpt");
-
-#ifdef DEBUG_BUILD
+#if 0 && defined(DEBUG_BUILD) && USE_CONSOLE
    using namespace USBDM;
 
    console.setPadding(Padding_LeadingZeroes);
@@ -204,6 +201,8 @@ void SPI1_IRQHandler(void)                    WEAK_DEFAULT_HANDLER;
 void I2S0_Tx_IRQHandler(void)                 WEAK_DEFAULT_HANDLER;
 void I2S0_Rx_IRQHandler(void)                 WEAK_DEFAULT_HANDLER;
 void LPUART0_IRQHandler(void)                 WEAK_DEFAULT_HANDLER;
+void UART0_RxTx_IRQHandler(void)              WEAK_DEFAULT_HANDLER;
+void UART0_Error_IRQHandler(void)             WEAK_DEFAULT_HANDLER;
 void UART2_RxTx_IRQHandler(void)              WEAK_DEFAULT_HANDLER;
 void UART2_Error_IRQHandler(void)             WEAK_DEFAULT_HANDLER;
 void ADC0_IRQHandler(void)                    WEAK_DEFAULT_HANDLER;
@@ -288,8 +287,8 @@ VectorTable const __vector_table = {
       I2S0_Tx_IRQHandler,                      /*   44,   28  Synchronous Serial Interface                                                     */
       I2S0_Rx_IRQHandler,                      /*   45,   29  Synchronous Serial Interface                                                     */
       LPUART0_IRQHandler,                      /*   46,   30  Serial Communication Interface                                                   */
-      USBDM::Uart0::irqRxTxHandler,            /*   47,   31  Serial Communication Interface                                                   */
-      USBDM::Uart0::irqErrorHandler,           /*   48,   32  Serial Communication Interface                                                   */
+      UART0_RxTx_IRQHandler,                   /*   47,   31  Serial Communication Interface                                                   */
+      UART0_Error_IRQHandler,                  /*   48,   32  Serial Communication Interface                                                   */
       USBDM::Uart1::irqRxTxHandler,            /*   49,   33  Serial Communication Interface                                                   */
       USBDM::Uart1::irqErrorHandler,           /*   50,   34  Serial Communication Interface                                                   */
       UART2_RxTx_IRQHandler,                   /*   51,   35  Serial Communication Interface                                                   */

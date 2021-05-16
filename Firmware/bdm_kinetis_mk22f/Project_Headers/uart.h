@@ -21,7 +21,7 @@
 #include "derivative.h"
 #include "hardware.h"
 #include "formatted_io.h"
-#include "queue.h"
+#include "uart_queue.h"
 #ifdef __CMSIS_RTOS
 #include "cmsis.h"
 #endif
@@ -169,7 +169,7 @@ public:
    /**
     * Construct UART interface
     *
-    * @param[in]  lpuart Reference to UART hardware
+    * @param[in]  uart Reference to UART hardware
     */
    Uart(volatile UART_Type &uart) : uart(uart) {
    }
@@ -345,7 +345,7 @@ typedef void (*UARTCallbackFunction)(uint8_t status);
  *  Uart *uart0 = new USBDM::Uart_T<Uart0Info>(115200);
  *
  *  for(int i=0; i++;) {
- *     uart<<"Hello world, i="<<i<<"\n";
+ *     uart.write("Hello world,").writeln(i);
  *  }
  *  @endcode
  *
@@ -559,7 +559,6 @@ public:
 
    /**
     * Enable interrupts in NVIC
-    * Any pending NVIC interrupts are first cleared.
     */
    static void enableNvicInterrupts() {
       NVIC_EnableIRQ(Info::irqNums[0]);
@@ -725,7 +724,7 @@ public:
  *  Uart *uart0 = new USBDM::UartBuffered_T<Uart0Info, 20, 30>(115200);
  *
  *  for(int i=0; i++;) {
- *     uart<<"Hello world, i="<<i<<"\n";
+ *     uart.write("Hello world,").writeln(i);
  *  }
  *  @endcode
  *
@@ -750,11 +749,11 @@ public:
    /**
     * Queue for Buffered reception (if used)
     */
-   static Queue<char, rxSize> rxQueue;
+   static UartQueue<char, rxSize> rxQueue;
    /**
     * Queue for Buffered transmission (if used)
     */
-   static Queue<char, txSize> txQueue;
+   static UartQueue<char, txSize> txQueue;
 
 protected:
 
@@ -981,8 +980,8 @@ public:
    }
 };
 
-template<class Info, int rxSize, int txSize> Queue<char, rxSize> UartBuffered_T<Info, rxSize, txSize>::rxQueue;
-template<class Info, int rxSize, int txSize> Queue<char, txSize> UartBuffered_T<Info, rxSize, txSize>::txQueue;
+template<class Info, int rxSize, int txSize> UartQueue<char, rxSize> UartBuffered_T<Info, rxSize, txSize>::rxQueue;
+template<class Info, int rxSize, int txSize> UartQueue<char, txSize> UartBuffered_T<Info, rxSize, txSize>::txQueue;
 template<class Info, int rxSize, int txSize> volatile uint32_t   UartBuffered_T<Info, rxSize, txSize>::fReadLock  = 0;
 template<class Info, int rxSize, int txSize> volatile uint32_t   UartBuffered_T<Info, rxSize, txSize>::fWriteLock = 0;
 
@@ -996,11 +995,11 @@ template<class Info, int rxSize, int txSize> volatile uint32_t   UartBuffered_T<
  *  USBDM::Uart0 uart;
  *
  *  for(int i=0; i++;) {
- *     uart<<"Hello world, i="<<i<<"\n";
+ *     uart.write("Hello world,").writeln(i);
  *  }
  *  @endcode
  */
-typedef  UartBuffered_brfa_T<Uart0Info> Uart0;
+typedef  Uart_brfa_T<Uart0Info> Uart0;
 #endif
 
 #ifdef USBDM_UART1_IS_DEFINED
@@ -1013,7 +1012,7 @@ typedef  UartBuffered_brfa_T<Uart0Info> Uart0;
  *  USBDM::Uart1 uart;
  *
  *  for(int i=0; i++;) {
- *     uart<<"Hello world, i="<<i<<"\n";
+ *     uart.write("Hello world,").writeln(i);
  *  }
  *  @endcode
  */
@@ -1030,7 +1029,7 @@ typedef  Uart_brfa_T<Uart1Info> Uart1;
  *  USBDM::Uart2 uart;
  *
  *  for(int i=0; i++;) {
- *     uart<<"Hello world, i="<<i<<"\n";
+ *     uart.write("Hello world,").writeln(i);
  *  }
  *  @endcode
  */
@@ -1047,7 +1046,7 @@ typedef  Uart_brfa_T<Uart2Info> Uart2;
  *  USBDM::Uart3 uart;
  *
  *  for(int i=0; i++;) {
- *     uart<<"Hello world, i="<<i<<"\n";
+ *     uart.write("Hello world,").writeln(i);
  *  }
  *  @endcode
  */
@@ -1064,7 +1063,7 @@ typedef  Symbol '/UART3/uartClass' not found<Uart3Info> Uart3;
  *  USBDM::Uart4 uart;
  *
  *  for(int i=0; i++;) {
- *     uart<<"Hello world, i="<<i<<"\n";
+ *     uart.write("Hello world,").writeln(i);
  *  }
  *  @endcode
  */
@@ -1081,7 +1080,7 @@ typedef  Symbol '/UART4/uartClass' not found<Uart4Info> Uart4;
  *  USBDM::Uart5 uart;
  *
  *  for(int i=0; i++;) {
- *     uart<<"Hello world, i="<<i<<"\n";
+ *     uart.write("Hello world,").writeln(i);
  *  }
  *  @endcode
  */

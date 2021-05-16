@@ -31,8 +31,7 @@
  *   | PID | Handshake packet : ACK, NAK
  *   +-----+
  *
- *
- * Phase -  transaction has three phases.
+ * Phase - transaction has three phases.
  *  - Token packet
  *  - Data packet (optional)
  *  - Handshake packet (optional)
@@ -48,6 +47,7 @@
  *
  * Bulk Reads and Writes
  * - Consist of a series of either OUT or IN transactions
+ * - Each transaction includes all three phases.
  *   +--------+  +--------+  +--------+ // +--------+
  *   | OUT(0) |  | OUT(1) |  | OUT(0) | // |OUT(0/1)|
  *   +--------+  +--------+  +--------+ // +--------+
@@ -110,7 +110,7 @@ public:
       bool selfPowered  : 1;    //!< Device is self-powered
       bool remoteWakeup : 1;    //!< Supports remote wake-up
       bool portTest     : 1;    //!< Port test
-      int res1          : 13;    //!< Reserved
+      int  res1         : 13;   //!< Reserved
    };
 
    /**
@@ -125,9 +125,10 @@ public:
     * Events for user callback
     */
    enum UserEvent {
-      UserEvent_Suspend,  //!< USB has been suspended
-      UserEvent_Resume,   //!< USB has been resumed
-      UserEvent_Reset,    //!< USB has been reset
+      UserEvent_Suspend,   //!< USB has been suspended
+      UserEvent_Resume,    //!< USB has been resumed
+      UserEvent_Reset,     //!< USB has been reset
+      UserEvent_Configure, //!< USB has been configured
    };
 
    /**
@@ -149,14 +150,6 @@ public:
     * @return  Error code
     */
    typedef ErrorCode (*SOFCallbackFunction)(uint16_t frameNumber);
-
-   /**
-    * Type definition for user call-back\n
-    * This function is called whenever the 'user' code needs to be notified of an event
-    *
-    *  @param[in]  event Reason for callback
-    */
-   typedef void (*SetupCompleteCallbackFunction)();
 
    /**
     * Type definition for USB SETUP call-back\n
@@ -327,14 +320,12 @@ protected:
    static UserCallbackFunction fUserCallbackFunction;
 
    /**
-    * SETUP complete callback\n
-    * This function is called when SETUP transaction is complete
-    */
-   static SetupCompleteCallbackFunction fSetupCompleteCallback;
-
-   /**
-    * Start-of-frame callback \n
-    * This function is called when SOF transaction is complete
+    * USB SOF call-back\n
+    * This function is call for SOF transactions
+    *
+    * @param frameNumber Frame number from SOF token
+    *
+    * @return  Error code
     */
    static SOFCallbackFunction fSofCallbackFunction;
 
@@ -355,8 +346,6 @@ public:
       Info::enableClock();
 
       configureAllPins();
-
-      enableNvicInterrupts(Info::irqLevel);
    }
 
    /**
@@ -368,10 +357,9 @@ public:
 
    /**
     * Enable and set priority of interrupts in NVIC
+    * Any pending NVIC interrupts are first cleared.
     *
     * @param[in]  nvicPriority  Interrupt priority
-    *
-    * @note Any pending interrupts are cleared before enabling.
     */
    static void enableNvicInterrupts(uint32_t nvicPriority) {
       enableNvicInterrupt(Info::irqNums[0], nvicPriority);
@@ -428,7 +416,7 @@ protected:
     * @param[in]  state State active immediately before call-back\n
     * (End-point state is currently EPIdle)
     */
-   static EndpointState ep0TransactionCallback(EndpointState state);
+   static EndpointState ep0DummyTransactionCallback(EndpointState state);
 
    /**
     * Does base initialisation of the USB interface
@@ -549,16 +537,20 @@ protected:
     * Set configures state
     *
     * @param[in]  config The number of the configuration to set
+    *
+    * @return true  => configuration changed
+    * @return false => configuration unchanged
     */
-   static void setUSBconfiguredState( uint8_t config ) {
+   static bool setUSBconfiguredState( uint8_t config ) {
       if (config == 0) {
          // unconfigure
          setUSBaddressedState(fUsb().ADDR);
+         return true;
       }
-      else {
-         fConnectionState      = USBconfigured;
-         fDeviceConfiguration  = config;
-      }
+      bool changed = (fConnectionState != USBconfigured) || (fDeviceConfiguration != config);
+      fConnectionState      = USBconfigured;
+      fDeviceConfiguration  = config;
+      return changed;
    }
 
    /**
@@ -591,7 +583,6 @@ protected:
     */
    static void handleStallComplete() {
       fControlEndpoint.clearStall();
-//      ep0ConfigureSetupTransaction();
    }
 
    /**
@@ -680,10 +671,12 @@ protected:
       // Setup callback to update address at end of transaction
       static auto callback = [](EndpointState) {
          setUSBaddressedState(newAddress);
-         fControlEndpoint.setCallback(nullptr);
+         // Remove this call-back
+         fControlEndpoint.setCallback(ep0DummyTransactionCallback);
          return EPIdle;
          // console.WRITE("setAddr(").WRITE(newAddress, Radix_16).WRITE(")");
       };
+      // Call-back to execute when transaction completed
       fControlEndpoint.setCallback(callback);
 
       fControlEndpoint.startTxStatus(); // Transmit empty Status transaction
@@ -721,7 +714,7 @@ protected:
 
       if ((fEp0SetupBuffer.bmRequestType != bmRequestType) || // NOT valid request OR
           (fEp0SetupBuffer.wLength != 1)) {                   // NOT correct length
-         // Illegal format - stall fControlEndpoint
+         // Illegal format - stall Control Endpoint
          fControlEndpoint.stall();
          return;
       }
@@ -735,9 +728,12 @@ public:
 };
 
 /**
- * Start-of-frame callback
+ * USB SOF call-back\n
+ * This function is call for SOF transactions
  *
  * @param frameNumber Frame number from SOF token
+ *
+ * @return  Error code
  */
 template<class Info, int EP0_SIZE>
 UsbBase::SOFCallbackFunction UsbBase_T<Info, EP0_SIZE>::fSofCallbackFunction = unsetSOFHandlerCallback;
@@ -747,6 +743,8 @@ UsbBase::SOFCallbackFunction UsbBase_T<Info, EP0_SIZE>::fSofCallbackFunction = u
  * This function is called whenever the 'user' code needs to be notified of an event
  *
  *  @param[in]  event Reason for callback
+ *  @return     E_NOERROR if handled
+ *  @return     Else stalls endpoint
  */
 template<class Info, int EP0_SIZE>
 UsbBase::UserCallbackFunction UsbBase_T<Info, EP0_SIZE>::fUserCallbackFunction = unsetUserCallback;
@@ -757,13 +755,6 @@ UsbBase::UserCallbackFunction UsbBase_T<Info, EP0_SIZE>::fUserCallbackFunction =
  */
 template<class Info, int EP0_SIZE>
 UsbBase::SetupCallbackFunction UsbBase_T<Info, EP0_SIZE>::fUnhandledSetupCallback = (SetupCallbackFunction)unsetSetupPacketCallback;
-
-/**
- * SETUP complete callback \n
- * This function is called when SETUP transaction is complete
- */
-template <class Info, int EP0_SIZE>
-UsbBase::SetupCompleteCallbackFunction UsbBase_T<Info, EP0_SIZE>::fSetupCompleteCallback = (SetupCompleteCallbackFunction)unsetOptionalHandlerCallback;
 
 /** USB connection state */
 template<class Info, int EP0_SIZE>
@@ -851,7 +842,7 @@ void UsbBase_T<Info, EP0_SIZE>::handleSetupToken() {
    fControlEndpoint.setupReceived();
 
    // Call-backs only persist during a SETUP transaction
-   fControlEndpoint.setCallback(nullptr);
+   fControlEndpoint.setCallback(ep0DummyTransactionCallback);
 
 //   console.WRITE("handleSetupToken - ").WRITELN(getSetupPacketDescription(&fEp0SetupBuffer));
 
@@ -898,7 +889,7 @@ void UsbBase_T<Info, EP0_SIZE>::handleSetupToken() {
                   handleUnexpectedSetup();
                }
 #else
-               // Always stall if not supported
+               // Stall if not supported
                fControlEndpoint.stall();
 #endif
                break;
@@ -981,6 +972,9 @@ bool UsbBase_T<Info, EP0_SIZE>::handleTokenComplete(UsbStat usbStat) {
    return true;
 }
 
+// Must have handler installed in USBDM configuration
+static_assert(Usb0Info::irqHandlerInstalled);
+
 /**
  * Handler for USB Bus reset\n
  * Re-initialises the interface
@@ -1009,6 +1003,8 @@ void UsbBase_T<Info, EP0_SIZE>::handleUSBReset() {
 
    // Initialise control end-point
    initialiseEndpoints();
+   UsbImplementation::clearPinPongToggle();
+   UsbImplementation::initialiseEndpoints();
 
    // Enable various interrupts
    setInterruptMask(USB_INTMASKS|USB_INTEN_ERROREN_MASK);
@@ -1070,8 +1066,9 @@ void UsbBase_T<Info, EP0_SIZE>::handleUSBResume() {
    handleUserCallback(UserEvent_Resume);
 
    // Initialise all end-points
-   UsbImplementation::initialiseEndpoints();
    initialiseEndpoints();
+   UsbImplementation::clearPinPongToggle();
+   UsbImplementation::initialiseEndpoints();
 
    // Enable the transmit or receive of packets
    fUsb().CTL = USB_CTL_USBENSOFEN_MASK;
@@ -1086,8 +1083,7 @@ void UsbBase_T<Info, EP0_SIZE>::handleUSBResume() {
  * @return The endpoint state to set after call-back (EPIdle)
  */
 template<class Info, int EP0_SIZE>
-EndpointState UsbBase_T<Info, EP0_SIZE>::ep0TransactionCallback(EndpointState) {
-   fSetupCompleteCallback();
+EndpointState UsbBase_T<Info, EP0_SIZE>::ep0DummyTransactionCallback(EndpointState) {
    return EPIdle;
 }
 
@@ -1204,15 +1200,15 @@ void UsbBase_T<Info, EP0_SIZE>::initialiseEndpoints() {
    // Clear all BDTs
    memset((uint8_t*)(endPointBdts), 0, sizeof(EndpointBdtEntry[UsbImplementation::NUMBER_OF_ENDPOINTS]));
 
-   // Clear odd/even bits & enable USB device
+   // Clear hardware odd/even buffer selection & enable USB device
    fUsb().CTL = USB_CTL_USBENSOFEN_MASK|USB_CTL_ODDRST_MASK;
    fUsb().CTL = USB_CTL_USBENSOFEN_MASK;
 
    addEndpoint(&fControlEndpoint);
 
+   fControlEndpoint.clearPinPongToggle();
    fControlEndpoint.initialise();
-
-   fControlEndpoint.setCallback(ep0TransactionCallback);
+   fControlEndpoint.setCallback(ep0DummyTransactionCallback);
 
    // Set up to receive SETUP transaction
    ep0ConfigureSetupTransaction();
@@ -1464,9 +1460,11 @@ void UsbBase_T<Info, EP0_SIZE>::handleSetConfiguration() {
       return;
    }
    setUSBconfiguredState(fEp0SetupBuffer.wValue.lo());
-
+   
    // Initialise non-control end-points
+//   console.WRITE("RxOdd").WRITELN((bool)UsbImplementation::epBulkOut.fRxOdd);
    UsbImplementation::initialiseEndpoints();
+   fUserCallbackFunction(UserEvent::UserEvent_Configure);
 
    // Tx empty Status transaction
    fControlEndpoint.startTxStatus();
@@ -1515,12 +1513,12 @@ void UsbBase_T<Info, EP0_SIZE>::irqHandler() {
       if (pendingInterruptFlags == 0) {
          return;
       }
-      //      if (pendingInterruptFlags != USB_ISTAT_SOFTOK_MASK) {
-      // Report other than SOF
-      //          console.WRITE("Irq ").WRITELN(pendingInterruptFlags, Radix_16);
-      //      }
+//      if (pendingInterruptFlags != USB_ISTAT_SOFTOK_MASK) {
+//         // Report other than SOF
+//         console.WRITE("Irq ").WRITELN(pendingInterruptFlags&~USB_ISTAT_SOFTOK_MASK, Radix_2);
+//      }
       if ((pendingInterruptFlags&USB_ISTAT_USBRST_MASK) != 0) {
-         console.WRITELN("========\nRes");
+//         console.WRITELN("========\nRes");
          // Reset signaled on Bus
          handleUSBReset();
          return;
@@ -1528,12 +1526,15 @@ void UsbBase_T<Info, EP0_SIZE>::irqHandler() {
       if ((pendingInterruptFlags&USB_ISTAT_TOKDNE_MASK) != 0) {
          // Get endpoint status
          UsbStat usbStat = (UsbStat)fUsb().STAT;
-         // console.WRITE("(").WRITE(usbStat.endp).WRITE(usbStat.tx?",T,":",R,").WRITE(usbStat.odd?"O,":"E,").WRITE("),");
-
+//         console.WRITE("St ").WRITE(usbStat.endp).WRITE(',').WRITE((unsigned)usbStat.tx).WRITE(',').WRITELN((unsigned)usbStat.odd);
          // Token complete interrupt
-         if (!handleTokenComplete(usbStat)) {
-            //            console.WRITELN("Tc not handled");
+         if (usbStat.endp == fControlEndpoint.fEndpointNumber) {
+            handleTokenComplete(usbStat);
+         }
+         else {
             // Pass to extension routine
+//            console.WRITE("(").WRITE(usbStat.endp).WRITE(usbStat.tx?",T,":",R,").WRITE(usbStat.odd?"O,":"E,").WRITE("),");
+//            console.WRITELN(UsbImplementation::epBulkOut.getStateName());
             UsbImplementation::handleTokenComplete(usbStat);
          }
       }

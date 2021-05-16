@@ -30,7 +30,7 @@ class TargetVddInterface {
 
 private:
    /**
-    * Represents the 2:1 voltage divider on input
+    * Represents the 2:1 resistor voltage divider on input
     */
    static constexpr int externalDivider = 2;
 
@@ -83,7 +83,7 @@ private:
    /**
     * ADC channel for Target Vdd measurement
     */
-   using VddMeasure = USBDM::Adc0Channel<12>;
+   using VddMeasure = USBDM::Adc0::Channel<12>;
 
    /**
     * Comparator to monitor Vdd level
@@ -157,7 +157,10 @@ public:
    }
 
    /**
-    * Monitors Target Vdd (Vbdm) power switch overload (IRQ pin)
+    * Monitors Target Vdd (Vbdm) power switch overload
+    * GPIO falling edge IRQ
+    *
+    * @param status Bit mask for entire port
     */
    static void powerFaultCallback(uint32_t status) {
 
@@ -189,7 +192,7 @@ public:
    /**
     * Initialise Vdd control and measurement interface
     */
-   static void initialise() {
+   static void initialise(void (*callback)(VddState)) {
       Control::setOutput();
 
       // Do default calibration for 8-bits
@@ -201,7 +204,7 @@ public:
             USBDM::PinDriveMode_PushPull,
             USBDM::PinSlewRate_Slow);
 
-      fCallback = nullCallback;
+      fCallback = callback;
 
       VddMonitor::setCallback(vddMonitorCallback);
       VddMonitor::configure(
@@ -211,7 +214,7 @@ public:
       VddMonitor::configureDac(
             powerOnResetThresholdDac,
             USBDM::CmpDacSource_Vdda);
-      VddMonitor::selectInputs(USBDM::Cmp0Input_CmpIn1, USBDM::Cmp0Input_DacRef);
+      VddMonitor::selectInputs(USBDM::Cmp0Input_1, USBDM::Cmp0Input_Cmp0Dac);
       VddMonitor::enableInterrupts(USBDM::CmpInterrupt_Both);
       VddMonitor::enableNvicInterrupts(true);
 
@@ -385,6 +388,7 @@ public:
 
          case VddState_Internal :
             if (!isVddOK_3V3()) {
+               // Power should be present!
                vddState = VddState_Error;
             }
             break;

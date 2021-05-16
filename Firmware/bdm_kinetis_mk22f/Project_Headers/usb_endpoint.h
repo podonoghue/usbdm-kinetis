@@ -19,6 +19,9 @@
  */
 #include "usb_defs.h"
 #include "derivative.h"
+#include "error.h"
+#include "cstring"
+#include "console.h"
 
 namespace USBDM {
 
@@ -32,7 +35,7 @@ namespace USBDM {
 extern volatile EndpointBdtEntry endPointBdts[];
 
 /** BDTs as simple array */
-constexpr BdtEntry *bdts() { return (BdtEntry *)endPointBdts; }
+static BdtEntry *bdts() { return (BdtEntry *)endPointBdts; }
 
 /** Endpoint state values */
 enum EndpointState {
@@ -57,7 +60,14 @@ enum EndPointType {
 class Endpoint {
 
 protected:
+   /// Endpoint type
    const EndPointType fEndPointType;
+
+   /// Value used to initialise an Endpoint Control Register
+   const uint8_t fEpControlValue;
+
+   /// Associated BDTs (2*Tx, 2*Rx)
+   volatile EndpointBdtEntry &fBdt;
 
 public:
    /**
@@ -101,8 +111,8 @@ public:
     * @param size    Number of bytes to copy
     */
    static void safeCopy(volatile void *to, volatile const void *from, unsigned size) {
-      volatile uint8_t *_to   = (volatile uint8_t *)to;
-      volatile uint8_t *_from = (volatile uint8_t *)from;
+      volatile uint8_t       *_to   = reinterpret_cast<volatile uint8_t *>(to);
+      volatile const uint8_t *_from = reinterpret_cast<volatile const uint8_t *>(from);
       while(size-->0) {
          *_to++ = *_from++;
       }
@@ -110,31 +120,31 @@ public:
 
 protected:
    /** Data 0/1 flag */
-   volatile DataToggle fDataToggle;
+   volatile DataToggle fDataToggle = DataToggle_0;
 
    /** Odd/Even Transmit buffer flag */
-   volatile BufferToggle fTxOdd;
+   volatile BufferToggle fTxOdd = BufferToggle_Even;
 
    /** Odd/Even Receive buffer flag */
-   volatile BufferToggle fRxOdd;
+   volatile BufferToggle fRxOdd = BufferToggle_Even;
 
    /** End-point state */
-   volatile EndpointState fState;
+   volatile EndpointState fState = EPIdle;
 
    /**
     *  Indicates that the IN transaction needs to be
     *  terminated with ZLP if size is a multiple of fEndpointSize
     */
-   volatile bool fNeedZLP;
+   volatile bool fNeedZLP = false;
 
    /** Pointer to external data buffer for transmit/receive */
-   volatile uint8_t* fDataPtr;
+   volatile uint8_t* fDataPtr = nullptr;
 
    /** Count of remaining bytes in external data buffer to transmit/receive */
-   volatile uint16_t fDataRemaining;
+   volatile uint16_t fDataRemaining = 0;
 
    /** Count of data bytes transferred to/from data buffer */
-   volatile uint16_t fDataTransferred;
+   volatile uint16_t fDataTransferred = 0;
 
    /**
     *  Callback used on completion of data and handshake phases of transaction.
@@ -150,7 +160,7 @@ protected:
     *
     * @return The endpoint state to set after call-back
     */
-   EndpointState (*fCallback)(EndpointState endpointState);
+   EndpointState (*fCallback)(EndpointState endpointState) = unsetHandlerCallback;
 
    /**
     *  Dummy callback used to catch use of unset callback
@@ -161,9 +171,8 @@ protected:
     */
    static EndpointState unsetHandlerCallback(EndpointState endpointState) {
       (void)endpointState;
-
+//      setAndCheckErrorCode(E_NO_HANDLER);
       return EPIdle;
-      //      setAndCheckErrorCode(E_NO_HANDLER);
    }
 
    /** Reference to hardware instance */
@@ -185,26 +194,19 @@ protected:
     * @param[in]  usb            Reference to USB hardware
     */
    constexpr Endpoint(
-         int endpointNumber,
-         unsigned endpointSize,
-         EndPointType endPointType,
-         uint8_t dataBuffer[],
+         int               endpointNumber,
+         unsigned          endpointSize,
+         EndPointType      endPointType,
+         uint8_t           bdtValue,
+         uint8_t           dataBuffer[],
          volatile USB_Type &usb) :
             fEndPointType(endPointType),
-            fDataToggle(DataToggle_0),
-            fTxOdd(BufferToggle_Even),
-            fRxOdd(BufferToggle_Even),
-            fState(EPIdle),
-            fNeedZLP(false),
-            fDataPtr(nullptr),
-            fDataRemaining(0),
-            fDataTransferred(0),
-            fCallback(unsetHandlerCallback),
+            fEpControlValue(bdtValue),
+            fBdt(endPointBdts[endpointNumber]),
             fUsb(usb),
             fDataBuffer(dataBuffer),
             fEndpointNumber(endpointNumber),
             fEndpointSize(endpointSize) {
-      initialise();
    }
 
    virtual ~Endpoint() {}
@@ -212,10 +214,20 @@ protected:
 public:
 
    /** End point number */
-   const unsigned fEndpointNumber;
+   const uint16_t fEndpointNumber;
 
    /**  Size of endpoint (size of maximum transfer)  */
    const uint16_t fEndpointSize;
+
+   /**
+    * Clear value reflecting selected hardware based ping-pong buffer.
+    * This would normally only be called when resetting the USB hardware or using
+    * USBx_CTL_ODDRST.
+    */
+   void clearPinPongToggle() {
+      fTxOdd            = BufferToggle_Even;
+      fRxOdd            = BufferToggle_Even;
+   }
 
    /**
     * Initialise endpoint
@@ -224,8 +236,6 @@ public:
     */
    void initialise() {
       fDataToggle       = DataToggle_0;
-      fTxOdd            = BufferToggle_Even;
-      fRxOdd            = BufferToggle_Even;
       fState            = EPIdle;
       fNeedZLP          = false;
       fDataPtr          = nullptr;
@@ -233,11 +243,14 @@ public:
       fDataTransferred  = 0;
       fCallback         = unsetHandlerCallback;
 
+      // Value used to initialise an Endpoint Control Register
+      fUsb.ENDPOINT[fEndpointNumber].ENDPT = fEpControlValue;
+
       // Assumes single shared buffer
-      endPointBdts[fEndpointNumber].rxEven.setAddress(nativeToLe32((uint32_t)fDataBuffer));
-      endPointBdts[fEndpointNumber].rxOdd.setAddress(nativeToLe32((uint32_t)fDataBuffer));
-      endPointBdts[fEndpointNumber].txEven.setAddress(nativeToLe32((uint32_t)fDataBuffer));
-      endPointBdts[fEndpointNumber].txOdd.setAddress(nativeToLe32((uint32_t)fDataBuffer));
+      fBdt.rxEven.initialise( 0, 0, nativeToLe32((uint32_t)fDataBuffer));
+      fBdt.rxOdd.initialise(  0, 0, nativeToLe32((uint32_t)fDataBuffer));
+      fBdt.txEven.initialise( 0, 0, nativeToLe32((uint32_t)fDataBuffer));
+      fBdt.txOdd.initialise(  0, 0, nativeToLe32((uint32_t)fDataBuffer));
    }
 
    /**
@@ -263,8 +276,10 @@ public:
     */
    void stall() {
 //      console.WRITELN("EpX.stall");
-      fState = EPStall;
-      fUsb.ENDPOINT[fEndpointNumber].ENDPT |= USB_ENDPT_EPSTALL_MASK;
+      fUsb.ENDPOINT[fEndpointNumber].ENDPT = fEpControlValue|USB_ENDPT_EPSTALL_MASK;
+//      fBdt.txEven.setControl(BDTEntry_OWN_MASK|BDTEntry_STALL_MASK|BDTEntry_DTS_MASK);
+//      fBdt.txOdd.setControl(BDTEntry_OWN_MASK|BDTEntry_STALL_MASK|BDTEntry_DTS_MASK);
+      setState(EPStall);
    }
 
    /**
@@ -281,7 +296,9 @@ public:
     */
    void clearStall() {
 //      console.WRITELN("EpX.clearStall");
-      fUsb.ENDPOINT[fEndpointNumber].ENDPT &= ~USB_ENDPT_EPSTALL_MASK;
+      fUsb.ENDPOINT[fEndpointNumber].ENDPT = fEpControlValue;
+//      fBdt.txEven.setControl(BDTEntry_DTS_MASK);
+//      fBdt.txOdd.setControl(BDTEntry_DTS_MASK);
       setState(EPIdle);
       setDataToggle(DataToggle_0);
    }
@@ -340,8 +357,8 @@ public:
     *
     * @return Receive BDT
     */
-   volatile BdtEntry *getFreeBdtReceiveEntry() {
-      return fRxOdd?&endPointBdts[fEndpointNumber].rxOdd:&endPointBdts[fEndpointNumber].rxEven;
+   volatile BdtEntry &getFreeBdtReceiveEntry() {
+      return fRxOdd?fBdt.rxOdd:fBdt.rxEven;
    }
 
    /**
@@ -349,8 +366,8 @@ public:
     *
     * @return Receive BDT
     */
-   volatile BdtEntry *getCompleteBdtReceiveEntry() {
-      return (!fRxOdd)?&endPointBdts[fEndpointNumber].rxOdd:&endPointBdts[fEndpointNumber].rxEven;
+   volatile BdtEntry &getCompleteBdtReceiveEntry() {
+      return (!fRxOdd)?fBdt.rxOdd:fBdt.rxEven;
    }
 
    /**
@@ -358,8 +375,8 @@ public:
     *
     * @return Transmit BDT
     */
-   volatile BdtEntry *getFreeBdtTransmitEntry() {
-      return fTxOdd?&endPointBdts[fEndpointNumber].txOdd:&endPointBdts[fEndpointNumber].txEven;
+   volatile BdtEntry &getFreeBdtTransmitEntry() {
+      return fTxOdd?fBdt.txOdd:fBdt.txEven;
    }
 
    /**
@@ -367,8 +384,8 @@ public:
     *
     * @return Transmit BDT
     */
-   volatile BdtEntry *getCompleteBdtTransmitEntry() {
-      return (!fTxOdd)?&endPointBdts[fEndpointNumber].txOdd:&endPointBdts[fEndpointNumber].txEven;
+   volatile BdtEntry &getCompleteBdtTransmitEntry() {
+      return (!fTxOdd)?fBdt.txOdd:fBdt.txEven;
    }
 
    /**
@@ -396,7 +413,7 @@ public:
     * @param[in]  bufSize Size of buffer to send (may be zero)
     * @param[in]  bufPtr  Pointer to external buffer (may be NULL to indicate fDatabuffer is being used directly)
     */
-   void startTxStage(EndpointState state, uint8_t bufSize=0, volatile const uint8_t *bufPtr=nullptr) {
+   void startTxStage(EndpointState state, uint16_t bufSize=0, volatile const uint8_t *bufPtr=nullptr) {
       // Pointer to data
       fDataPtr = (uint8_t*)bufPtr;
 
@@ -419,11 +436,11 @@ public:
    void startTxTransaction() {
 
       // Get BDT to use
-      volatile BdtEntry *bdt = getFreeBdtTransmitEntry();
-      if (bdt->own != BdtOwner_MCU) {
+      volatile BdtEntry &bdt = getFreeBdtTransmitEntry();
+      if (bdt.own != BdtOwner_MCU) {
          __asm__("bkpt");
       }
-      usbdm_assert(bdt->own == BdtOwner_MCU, "MCU doesn't own BDT!");
+//      usbdm_assert(bdt.own == BdtOwner_MCU, "MCU doesn't own BDT!");
 
       uint16_t size = fDataRemaining;
       if (size > fEndpointSize) {
@@ -448,12 +465,12 @@ public:
       fDataRemaining   -= size;
 
       // Set up to Transmit transaction
-      bdt->setByteCount((uint8_t)size);
+      bdt.setByteCount((uint8_t)size);
       if (fDataToggle == DataToggle_1) {
-         bdt->setControl(BDTEntry_OWN_MASK|BDTEntry_DATA1_MASK|BDTEntry_DTS_MASK);
+         bdt.setControl(BDTEntry_OWN_MASK|BDTEntry_DATA1_MASK|BDTEntry_DTS_MASK);
       }
       else {
-         bdt->setControl(BDTEntry_OWN_MASK|BDTEntry_DATA0_MASK|BDTEntry_DTS_MASK);
+         bdt.setControl(BDTEntry_OWN_MASK|BDTEntry_DATA0_MASK|BDTEntry_DTS_MASK);
       }
       // console.WRITE("BdtTx(s=").WRITE(size).WRITE(",").WRITE(fDataToggle?"D1,":"D0,").WRITE(fTxOdd?"Odd),":"Even),");;
    }
@@ -465,7 +482,7 @@ public:
     *   @param[in]  bufSize - Size of data to transfer (may be zero)
     *   @param[in]  bufPtr  - Buffer for data (may be nullptr)
     */
-   void startRxStage(EndpointState state, uint8_t bufSize=0, uint8_t *bufPtr=nullptr) {
+   void startRxStage(EndpointState state, uint16_t bufSize=0, uint8_t *bufPtr=nullptr) {
       // Count of bytes transferred
       fDataTransferred     = 0;
       // Total bytes to Receive
@@ -487,18 +504,18 @@ public:
    void startRxTransaction() {
 
       // Get BDT to use
-      volatile BdtEntry *bdt = getFreeBdtReceiveEntry();
+      volatile BdtEntry &bdt = getFreeBdtReceiveEntry();
 
-      usbdm_assert(bdt->own == BdtOwner_MCU, "MCU doesn't own BDT!");
+      usbdm_assert(bdt.own == BdtOwner_MCU, "MCU doesn't own BDT!");
 
       // Set up to Receive transaction
       // Always used maximum size even if expecting less data
-      bdt->setByteCount(fEndpointSize);
+      bdt.setByteCount(fEndpointSize);
       if (fDataToggle) {
-         bdt->setControl(BDTEntry_OWN_MASK|BDTEntry_DATA1_MASK|BDTEntry_DTS_MASK);
+         bdt.setControl(BDTEntry_OWN_MASK|BDTEntry_DATA1_MASK|BDTEntry_DTS_MASK);
       }
       else {
-         bdt->setControl(BDTEntry_OWN_MASK|BDTEntry_DATA0_MASK|BDTEntry_DTS_MASK);
+         bdt.setControl(BDTEntry_OWN_MASK|BDTEntry_DATA0_MASK|BDTEntry_DTS_MASK);
       }
       // console.WRITE("BdtRx(s=").WRITE(EP_MAXSIZE).WRITE(fDataToggle?",D1:":",D0:").WRITE(fRxOdd?"Odd),":"Even),");
    }
@@ -511,9 +528,9 @@ public:
    uint8_t saveRxData() {
 
       // Get BDT to use
-      volatile BdtEntry *bdt = getCompleteBdtReceiveEntry();
+      volatile BdtEntry &bdt = getCompleteBdtReceiveEntry();
 
-      uint8_t size = bdt->bc;
+      uint8_t size = bdt.bc;
 
       if (size > 0) {
          // Check if more data than requested - discard excess
@@ -532,9 +549,9 @@ public:
          // Count down bytes to go
          fDataRemaining   -= size;
       }
-      else {
-         console.WRITELN("RxSize = 0\n");
-      }
+//      else {
+//         console.WRITELN("RxSize = 0\n");
+//      }
       return size;
    }
 
@@ -635,6 +652,7 @@ public:
          case EPStatusIn: // Just done an IN transaction as a status handshake for an OUT Data transfer
             // Execute callback function after STATUS IN transaction
             fState = EPIdle;
+//            console.write((void*)fCallback); // Check call-back address
             fCallback(EPStatusIn);
             break;
 
@@ -681,8 +699,8 @@ public:
    /**
     * Constructor
     */
-   Endpoint_T(EndPointType endPointType) :
-      Endpoint(ENDPOINT_NUM, EP_MAXSIZE, endPointType, fAllocatedDataBuffer, Info::usb()) {
+   Endpoint_T(EndPointType endPointType, uint8_t bdtValue) :
+      Endpoint(ENDPOINT_NUM, EP_MAXSIZE, endPointType, bdtValue, fAllocatedDataBuffer, Info::usb()) {
    }
 };
 
@@ -711,29 +729,19 @@ public:
    /** End point number */
    static constexpr unsigned fEndpointNumber = 0;
 
+   // Value used to initialise an Endpoint Control Register - Tx and Rx
+   static constexpr uint8_t fEpControlValue = USB_ENDPT_EPRXEN_MASK|USB_ENDPT_EPTXEN_MASK|USB_ENDPT_EPHSHK_MASK;
+
    /**
-    * Constructor
+    * Constructor for CONTROL endpoint
     */
-   constexpr ControlEndpoint() : Endpoint_T<Info, 0, EP0_SIZE>(EndPointType_Control) {
+   constexpr ControlEndpoint() : Endpoint_T<Info, 0, EP0_SIZE>(EndPointType_Control, fEpControlValue) {
    }
 
    /**
     * Destructor
     */
    virtual ~ControlEndpoint() {
-   }
-
-   /**
-    * Initialise endpoint
-    *  - Internal state
-    *  - BDTs
-    *  - fUsb.ENDPOINT[].ENDPT
-    */
-   void initialise() {
-      Endpoint::initialise();
-
-      // Receive/Transmit/SETUP
-      fUsb.ENDPOINT[0].ENDPT = USB_ENDPT_EPRXEN_MASK|USB_ENDPT_EPTXEN_MASK|USB_ENDPT_EPHSHK_MASK;
    }
 
    /**
@@ -770,9 +778,9 @@ public:
     */
    void checkSetupReady() {
       // Get BDT to use
-      volatile BdtEntry *bdt = getFreeBdtReceiveEntry();
+      volatile BdtEntry &bdt = getFreeBdtReceiveEntry();
 
-      if (bdt->own == BdtOwner_MCU) {
+      if (bdt.own == BdtOwner_MCU) {
          // Make ready for SETUP transaction
          startRxTransaction();
       }
@@ -811,24 +819,14 @@ private:
    using Endpoint::startRxTransaction;
    using Endpoint::saveRxData;
 
+   // Value used to initialise an Endpoint Control Register - Tx
+   static constexpr uint8_t fEpControlValue = USB_ENDPT_EPTXEN_MASK|USB_ENDPT_EPHSHK_MASK;
+
 public:
    /**
-    * Constructor
+    * Constructor for IN endpoint
     */
-   constexpr InEndpoint(EndPointType endPointType) : Endpoint(endPointType)  {
-   }
-
-   /**
-    * Initialise endpoint
-    *  - Internal state
-    *  - BDTs
-    *  - fUsb.ENDPOINT[].ENDPT
-    */
-   void initialise() {
-      Endpoint::initialise();
-
-      // Transmit only
-      fUsb.ENDPOINT[ENDPOINT_NUM].ENDPT = USB_ENDPT_EPTXEN_MASK|USB_ENDPT_EPHSHK_MASK;
+   constexpr InEndpoint(EndPointType endPointType) : Endpoint(endPointType, fEpControlValue)  {
    }
 };
 
@@ -851,25 +849,16 @@ private:
    using Endpoint::startTxStage;
    using Endpoint::startTxTransaction;
 
+   // Value used to initialise an Endpoint Control Register - Rx
+   static constexpr uint8_t fEpControlValue = USB_ENDPT_EPRXEN_MASK|USB_ENDPT_EPHSHK_MASK;
+
 public:
    /**
-    * Constructor
+    * Constructor for OUT endpoint
     */
-   constexpr OutEndpoint(EndPointType endPointType) : Endpoint(endPointType) {
+   constexpr OutEndpoint(EndPointType endPointType) : Endpoint(endPointType, fEpControlValue) {
    }
 
-   /**
-    * Initialise endpoint
-    *  - Internal state
-    *  - BDTs
-    *  - fUsb.ENDPOINT[].ENDPT
-    */
-   void initialise() {
-      Endpoint::initialise();
-
-      // Receive only
-      fUsb.ENDPOINT[ENDPOINT_NUM].ENDPT = USB_ENDPT_EPRXEN_MASK|USB_ENDPT_EPHSHK_MASK;
-   }
 };
 
 /**

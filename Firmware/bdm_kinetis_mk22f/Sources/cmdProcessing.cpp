@@ -705,7 +705,7 @@ static const FunctionPtr HCS12functionPtrs[] = {
       Hcs12::f_CMD_READ_MEM            ,//= 33, CMD_USBDM_READ_MEM
 };
 static const FunctionPtrs HCS12FunctionPointers = {CMD_USBDM_CONNECT,
-      sizeof(HCS12functionPtrs)/sizeof(FunctionPtr),
+      (uint8_t)(sizeof(HCS12functionPtrs)/sizeof(FunctionPtr)),
       HCS12functionPtrs};
 #endif
 
@@ -740,7 +740,7 @@ static const FunctionPtrs HCS12FunctionPointers = {CMD_USBDM_CONNECT,
          Cfv1::f_CMD_READ_MEM          ,//= 33, CMD_USBDM_READ_MEM
    };
    static const FunctionPtrs S12ZFunctionPointers = {CMD_USBDM_CONNECT,
-         sizeof(S12ZfunctionPtrs)/sizeof(FunctionPtr),
+         (uint8_t)(sizeof(S12ZfunctionPtrs)/sizeof(FunctionPtr)),
          S12ZfunctionPtrs};
 #endif
 
@@ -789,7 +789,7 @@ static const FunctionPtrs HCS12FunctionPointers = {CMD_USBDM_CONNECT,
 #endif
    };
    static const FunctionPtrs HCS08FunctionPointers = {CMD_USBDM_CONNECT,
-         sizeof(HCS08functionPtrs)/sizeof(FunctionPtr),
+         (uint8_t)(sizeof(HCS08functionPtrs)/sizeof(FunctionPtr)),
          HCS08functionPtrs};
 #endif
 
@@ -829,7 +829,7 @@ static const FunctionPtrs HCS12FunctionPointers = {CMD_USBDM_CONNECT,
 #endif
    };
    static const FunctionPtrs CFV1FunctionPointers  = {CMD_USBDM_CONNECT,
-         sizeof(CFV1functionPtrs)/sizeof(FunctionPtr),
+         (uint8_t)(sizeof(CFV1functionPtrs)/sizeof(FunctionPtr)),
          CFV1functionPtrs};
 #endif
 
@@ -985,7 +985,7 @@ static const FunctionPtrs HCS12FunctionPointers = {CMD_USBDM_CONNECT,
    };
    /** Information about command functions for ARM-SWD targets */
    static const FunctionPtrs SWDFunctionPointers   = {CMD_USBDM_CONNECT,
-         sizeof(SWDfunctionPtrs)/sizeof(FunctionPtr),
+         (uint8_t)(sizeof(SWDfunctionPtrs)/sizeof(FunctionPtr)),
          SWDfunctionPtrs};
 #endif
 

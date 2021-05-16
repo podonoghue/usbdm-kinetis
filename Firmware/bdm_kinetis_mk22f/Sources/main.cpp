@@ -317,8 +317,11 @@ void warmStart() {
 
    Debug::initialise();
 
-   InterfaceEnable::setOutput();
-   InterfaceEnable::high();
+   InterfaceEnable::initialise();
+   // The interface is always on
+   InterfaceEnable::on();
+
+   console_initialise();
 
    checkError();
 }
@@ -326,8 +329,7 @@ void warmStart() {
 void coldStart() {
    warmStart();
 
-   TargetVddInterface::initialise();
-   TargetVddInterface::setCallback(targetVddSense);
+   TargetVddInterface::initialise(targetVddSense);
 
    // Wait for Vbdm stable
    wait(10*ms);
@@ -342,7 +344,7 @@ char buff[100];
 int main() {
 //   hcs08Testing();
 
-   // Need to coldStart for debug UART0, voltage monitoring etc
+   // Need to coldStart voltage monitoring etc
    ::coldStart();
 
 //   console.write("SystemBusClock  = ").write(::SystemBusClock/1000000.0).writeln(" MHz");

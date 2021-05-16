@@ -76,12 +76,12 @@ const MS_CompatibleIdFeatureDescriptor msCompatibleIdFeatureDescriptor = {
 };
 
 const MS_PropertiesFeatureDescriptor msPropertiesFeatureDescriptor = {
-      /* uint32_t lLength;         */ nativeToLe32((uint32_t)sizeof(MS_PropertiesFeatureDescriptor)),
-      /* uint16_t wVersion;        */ nativeToLe16(0x0100),
-      /* uint16_t wIndex;          */ nativeToLe16(5),
-      /* uint16_t bnumSections;    */ nativeToLe16(2),
+      /* uint32_t lLength;         */ (uint32_t)nativeToLe32((uint32_t)sizeof(MS_PropertiesFeatureDescriptor)),
+      /* uint16_t wVersion;        */ (uint16_t)nativeToLe16(0x0100),
+      /* uint16_t wIndex;          */ (uint16_t)nativeToLe16(5),
+      /* uint16_t bnumSections;    */ (uint16_t)nativeToLe16(2),
       /*---------------------- Section 1 -----------------------------*/
-      /* uint32_t lPropertySize0;  */ nativeToLe32(
+      /* uint32_t lPropertySize0;  */ (uint32_t)nativeToLe32(
             sizeof(msPropertiesFeatureDescriptor.lPropertySize0)+
             sizeof(msPropertiesFeatureDescriptor.ldataType0)+
             sizeof(msPropertiesFeatureDescriptor.wNameLength0)+
@@ -89,13 +89,13 @@ const MS_PropertiesFeatureDescriptor msPropertiesFeatureDescriptor = {
             sizeof(msPropertiesFeatureDescriptor.wPropertyLength0)+
             sizeof(msPropertiesFeatureDescriptor.bData0)
       ),
-      /* uint32_t ldataType0;       */ nativeToLe32(7UL), // 7 == REG_MULTI_SZ
-      /* uint16_t wNameLength0;     */ nativeToLe16(sizeof(msPropertiesFeatureDescriptor.bName0)),
+      /* uint32_t ldataType0;       */ (uint32_t)nativeToLe32(7UL), // 7 == REG_MULTI_SZ
+      /* uint16_t wNameLength0;     */ (uint16_t)nativeToLe16(sizeof(msPropertiesFeatureDescriptor.bName0)),
       /* char16_t  bName0[42];      */ MS_DEVICE_INTERFACE_GUIDs,
-      /* uint32_t wPropertyLength0; */ nativeToLe32(sizeof(msPropertiesFeatureDescriptor.bData0)),
+      /* uint32_t wPropertyLength0; */ (uint32_t)nativeToLe32(sizeof(msPropertiesFeatureDescriptor.bData0)),
       /* char16_t  bData0[78];      */ MS_DEVICE_GUID,
       /*---------------------- Section 2 -----------------------------*/
-      /* uint32_t lPropertySize1;   */ nativeToLe32(
+      /* uint32_t lPropertySize1;   */ (uint32_t)nativeToLe32(
             sizeof(msPropertiesFeatureDescriptor.lPropertySize1)+
             sizeof(msPropertiesFeatureDescriptor.ldataType1)+
             sizeof(msPropertiesFeatureDescriptor.wNameLength1)+
@@ -103,10 +103,10 @@ const MS_PropertiesFeatureDescriptor msPropertiesFeatureDescriptor = {
             sizeof(msPropertiesFeatureDescriptor.wPropertyLength1)+
             sizeof(msPropertiesFeatureDescriptor.bData1)
       ),
-      /* uint32_t ldataType1;       */ nativeToLe32(7UL), // 7 == REG_MULTI_SZ
-      /* uint16_t wNameLength1;     */ nativeToLe16(sizeof(msPropertiesFeatureDescriptor.bName1)),
+      /* uint32_t ldataType1;       */ (uint32_t)nativeToLe32(7UL), // 7 == REG_MULTI_SZ
+      /* uint16_t wNameLength1;     */ (uint16_t)nativeToLe16(sizeof(msPropertiesFeatureDescriptor.bName1)),
       /* uint8_t  bName1[];         */ MS_ICONS,
-      /* uint32_t wPropertyLength1; */ nativeToLe32(sizeof(msPropertiesFeatureDescriptor.bData1)),
+      /* uint32_t wPropertyLength1; */ (uint32_t)nativeToLe32(sizeof(msPropertiesFeatureDescriptor.bData1)),
       /* uint8_t  bData1[];         */ MS_ICON_PATH,
 };
 
@@ -143,6 +143,16 @@ const char *UsbBase::getTokenName(unsigned token) {
       rc = names[token];
    }
    return rc;
+}
+/**
+ * Get name of USB end-point state
+ *
+ * @param[in]  state End-point state
+ *
+ * @return Pointer to static string
+ */
+const char *UsbBase::getStateName(EndpointState state) {
+   return Endpoint::getStateName(state);
 }
 
 /**
@@ -249,8 +259,8 @@ const char *UsbBase::getSetupPacketDescription(SetupPacket *p) {
 void reportLineState(uint8_t value) {
    (void)value;
    console.
-   writeln("Line state: RTS=").write((value&(1<<1))?1:0).
-   write("DTR=").writeln((value&(1<<0))?1:0);
+      writeln("Line state: RTS=").write((value&(1<<1))?1:0).
+      write("DTR=").writeln((value&(1<<0))?1:0);
 }
 
 /**

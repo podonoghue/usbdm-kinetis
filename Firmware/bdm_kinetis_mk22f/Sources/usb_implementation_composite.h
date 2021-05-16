@@ -11,6 +11,8 @@
 #ifndef PROJECT_HEADERS_USB_IMPLEMENTATION_COMPOSITE_H_
 #define PROJECT_HEADERS_USB_IMPLEMENTATION_COMPOSITE_H_
 
+#include <stdint.h>
+
 /*
  * Under Windows 8, or 10 there is no need to install a driver for
  * the bulk end-points if the MS_COMPATIBLE_ID_FEATURE is enabled.
@@ -54,10 +56,10 @@ namespace USBDM {
 #endif
 
 #ifndef VENDOR_ID
-#define VENDOR_ID  (0x16D0)
+#define VENDOR_ID             (0x16D0)    // Vendor (actually MCS)
 #endif
 #ifndef PRODUCT_ID
-#define PRODUCT_ID (0xFFFF)
+#define PRODUCT_ID            (0xFFFF)    // Product ID
 #endif
 #ifndef VERSION_ID
 #define VERSION_ID (0x0100)
@@ -203,7 +205,7 @@ public:
     *  @param[in] buffer Pointer to bytes to send
     *
     *  @note : Waits for idle BEFORE transmission but\n
-    *  returns before data has been transmitted
+    *          returns before data has been transmitted
     */
    static void sendBulkData(const uint8_t size, const uint8_t *buffer);
 
@@ -274,16 +276,29 @@ public:
 
 protected:
    /**
+    * Clear value reflecting selected hardware based ping-pong buffer.
+    * This would normally only be called when resetting the USB hardware or using
+    * USBx_CTL_ODDRST.
+    */
+   static void clearPinPongToggle() {
+      epBulkOut.clearPinPongToggle();
+      epBulkIn.clearPinPongToggle();
+      epCdcNotification.clearPinPongToggle();
+      epCdcDataOut.clearPinPongToggle();
+      epCdcDataIn.clearPinPongToggle();
+   }
+
+   /**
     * Initialises all end-points
     */
    static void initialiseEndpoints(void) {
       epBulkOut.initialise();
       addEndpoint(&epBulkOut);
-//      epBulkOut.setCallback(bulkOutTransactionCallback);
+      epBulkOut.setCallback(bulkOutTransactionCallback);
 
       epBulkIn.initialise();
       addEndpoint(&epBulkIn);
-//      epBulkIn.setCallback(bulkInTransactionCallback);
+      epBulkIn.setCallback(bulkInTransactionCallback);
 
       epCdcNotification.initialise();
       addEndpoint(&epCdcNotification);

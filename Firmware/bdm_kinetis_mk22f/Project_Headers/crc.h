@@ -43,10 +43,10 @@ enum CrcWriteTranspose {
  * Identifies the transpose configuration of the value read from the CRC Data register
  */
 enum CrcReadTranspose {
-   CrcReadTranspose_None          = CRC_CTRL_TOT(0), //!< No transpose
-   CrcReadTranspose_Bits          = CRC_CTRL_TOT(1), //!< Transpose bits only
-   CrcReadTranspose_BitsAndBytes  = CRC_CTRL_TOT(2), //!< Transpose bits and bytes
-   CrcReadTranspose_Bytes         = CRC_CTRL_TOT(3), //!< Transpose bytes only
+   CrcReadTranspose_None          = CRC_CTRL_TOTR(0), //!< No transpose
+   CrcReadTranspose_Bits          = CRC_CTRL_TOTR(1), //!< Transpose bits only
+   CrcReadTranspose_BitsAndBytes  = CRC_CTRL_TOTR(2), //!< Transpose bits and bytes
+   CrcReadTranspose_Bytes         = CRC_CTRL_TOTR(3), //!< Transpose bytes only
 };
 
 /**
@@ -74,7 +74,7 @@ enum CrcWidth {
  * The cyclic redundancy check (CRC) module generates 16/32-bit CRC code for error detection.
  * The CRC module provides a programmable polynomial, WAS, and other parameters
  * required to implement a 16-bit or 32-bit CRC standard.
- * The 16/32-bit code is calculated for 32 bits of data at a time.
+ * The 16/32-bit code is calculated for up to 32 bits of data at a time.
  *
  * Example CRC methods provided
  * See http://reveng.sourceforge.net/crc-catalogue/
@@ -168,9 +168,9 @@ public:
     * @param seedValue  Seed value to initialise CRC calculation
     */
    static void writeSeed(uint32_t seedValue) {
-      crc().CTRL |= CRC_CTRLHU_WAS_MASK;
+      crc().CTRL |= CRC_CTRL_WAS_MASK;
       crc().DATA = seedValue;
-      crc().CTRL &= ~CRC_CTRLHU_WAS_MASK;
+      crc().CTRL &= ~CRC_CTRL_WAS_MASK;
    }
 
    /**
@@ -266,6 +266,115 @@ public:
       writeSeed(0xffffffff);
    }
 
+   /**
+    * Configure CRC-32/BZIP
+    * See https://crccalc.com/
+    */
+   static void configure_Crc32_BZIP() {
+      configure(
+            CrcWidth_32bits,
+            CrcWriteTranspose_None,
+            CrcReadTranspose_None,
+            CrcReadComplement_Active
+            );
+      writePolynomial(0x04c11db7);
+      writeSeed(0xffffffff);
+   }
+
+   /**
+    * Configure CRC-32-C
+    * See https://crccalc.com/
+    */
+   static void configure_Crc32_C() {
+      configure(
+            CrcWidth_32bits,
+            CrcWriteTranspose_BitsAndBytes,
+            CrcReadTranspose_BitsAndBytes,
+            CrcReadComplement_Active
+            );
+      writePolynomial(0x1EDC6F41);
+      writeSeed(0xffffffff);
+   }
+
+   /**
+    * Configure CRC-32-D
+    * See https://crccalc.com/
+    */
+   static void configure_Crc32_D() {
+      configure(
+            CrcWidth_32bits,
+            CrcWriteTranspose_BitsAndBytes,
+            CrcReadTranspose_BitsAndBytes,
+            CrcReadComplement_Active
+            );
+      writePolynomial(0xA833982B);
+      writeSeed(0xffffffff);
+   }
+
+   /**
+    * Configure CRC-32/MPEG-2
+    * See https://crccalc.com/
+    */
+   static void configure_Crc32_MPEG_2() {
+      configure(
+            CrcWidth_32bits,
+            CrcWriteTranspose_None,
+            CrcReadTranspose_None,
+            CrcReadComplement_Inactive
+            );
+      writePolynomial(0x04c11db7);
+      writeSeed(0xffffffff);
+   }
+
+   /**
+    * Configure CRC-32/POSIX
+    * See https://crccalc.com/
+    */
+   static void configure_Crc32_POSIX() {
+      configure(
+            CrcWidth_32bits,
+            CrcWriteTranspose_None,
+            CrcReadTranspose_None,
+            CrcReadComplement_Active
+            );
+      writePolynomial(0x04c11db7);
+      writeSeed(0x00000000);
+   }
+
+   /**
+    * Calculate CRC over a range
+    * Call configure_...() before this function
+    *
+    * @param data Data to process (1, 2 or 4 byte objects)
+    * @param size Size of data in bytes
+    *
+    * @return Calculated CRC value
+    *
+    * Example:
+    * @code
+    *    uint32_t data[100] = {...};
+    *    uint32_t crc = calculateCrc(data, sizeof(data));
+    * @endcode
+    */
+   template<typename T>
+   static uint32_t calculateCrc(const T *data, unsigned size) {
+      static_assert((sizeof(T) == 1) || (sizeof(T) == 2) || (sizeof(T) == 4), "Illegal size");
+      while (size>0) {
+         if constexpr (sizeof(T) == 1) {
+            writeData8(*data++);
+            size -= 1;
+         }
+         else if constexpr (sizeof(T) == 2) {
+            writeData16(*data++);
+            size -= 2;
+         }
+         else if constexpr (sizeof(T) == 4) {
+            writeData32(*data++);
+            size -= 4;
+         }
+      }
+      return getCalculatedCrc();
+   }
 };
 
 #if defined(USBDM_CRC_IS_DEFINED)

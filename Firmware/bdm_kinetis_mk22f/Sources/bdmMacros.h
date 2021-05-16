@@ -168,7 +168,7 @@ inline USBDM_ErrorCode  BDM_CMD_TRACE1()                                     { r
 inline USBDM_ErrorCode  BDM_CMD_TAGGO()                                      { return cmd_0_0(_BDM_TAGGO);      }
 
 // Write memory using X as a pointer with automatic pre-increment (HC12)
-inline USBDM_ErrorCode  BDM12_CMD_WRITE_NEXT(uint8_t value)                  { return cmd_1W_0(_BDM12_WRITE_NEXT,value); }
+inline USBDM_ErrorCode  BDM12_CMD_WRITE_NEXT(uint16_t value)                  { return cmd_1W_0(_BDM12_WRITE_NEXT,value); }
 
 // Write register commands
 //! Write REG (HC12)

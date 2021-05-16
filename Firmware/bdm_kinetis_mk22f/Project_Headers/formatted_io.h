@@ -23,6 +23,13 @@
 #include <ctype.h>      // isspace() etc
 #include "hardware.h"
 
+#if defined(__FREE_RTOS)
+#include "FreeRTOS.h"
+#include "semphr.h"
+#elif defined(__CMSIS_RTOS)
+#include "cmsis.h"
+#endif
+
 namespace USBDM {
 
 /**
@@ -60,7 +67,7 @@ enum EndOfLineType {
 /**
  * Padding for integers
  */
-enum Padding {
+enum Padding : uint8_t {
    Padding_None ,         //!< No padding
    Padding_LeadingSpaces, //!< Pad with leading spaces
    Padding_LeadingZeroes, //!< Pad with leading zeroes
@@ -70,11 +77,11 @@ enum Padding {
 /**
  * Width for integers
  */
-enum Width : int {
+enum Width : uint8_t {
    Width_auto = 0,//!< Width_auto
 };
 
-enum EchoMode {
+enum EchoMode : uint8_t {
    /*
     * For use with operator<< and operator>>
     */
@@ -90,16 +97,64 @@ enum FlushType {
    Flush
 };
 
+struct FormattingSettings {
+   /**
+    * Precision multiplier used for floating point numbers (10^fFloatPrecision)
+    */
+   unsigned fFloatPrecisionMultiplier;
+
+   /**
+    * Current radix for << and >> operators
+    */
+   Radix fRadix;
+
+   /**
+    * Control echo of input characters
+    */
+   EchoMode fEcho;
+
+   /**
+    * Padding for integers
+    */
+   Padding fPadding;
+
+   /**
+    * Width used for integers numbers
+    */
+   uint8_t fWidth;
+
+   /**
+    * How to pad the digits on left of floating point number
+    */
+   Padding fFloatPadding;
+
+   /**
+    * Precision used for floating point numbers
+    */
+   uint8_t fFloatWidth;
+
+   /**
+    * Precision used for floating point numbers
+    */
+   uint8_t fFloatPrecision;
+
+   constexpr FormattingSettings() :
+      fFloatPrecisionMultiplier(1000), fRadix(Radix_10), fEcho(EchoMode_On), fPadding(Padding_None),
+      fWidth(0), fFloatPadding(Padding_None), fFloatWidth(0), fFloatPrecision(3) {
+   }
+};
+
 /**
  * Virtual Base class for formatted IO
  */
 class FormattedIO {
 
 protected:
+
    /**
-    * Current radix for << and >> operators
+    * Current settings
     */
-   Radix fRadix = Radix_10;
+   FormattingSettings fFormat;
 
    /**
     * Indicate in error state
@@ -107,35 +162,36 @@ protected:
    bool inErrorState = false;
 
    /**
-    * Control echo of input characters
-    */
-   EchoMode echo = EchoMode_Off;
-
-   /**
     * One character look-ahead
     */
    int16_t lookAhead = -1;
 
-   /**
-    * Padding for integers
-    */
-   Padding fPadding = Padding_None;
-
-   /**
-    * Width used for integers numbers
-    */
-   int fWidth = 0;
+#if defined (__FREE_RTOS) && ( configSUPPORT_DYNAMIC_ALLOCATION == 1 ) && ( configUSE_RECURSIVE_MUTEXES == 1 )
+   SemaphoreHandle_t mutex;
+#elif defined(__CMSIS_RTOS)
+   CMSIS::Mutex* mutex;
+#endif
 
    /**
     * Construct formatter interface
     */
    FormattedIO() {
+#if defined (__FREE_RTOS) && ( configSUPPORT_DYNAMIC_ALLOCATION == 1 ) && ( configUSE_RECURSIVE_MUTEXES == 1 )
+      mutex = xSemaphoreCreateRecursiveMutex();
+#elif defined(__CMSIS_RTOS)
+      mutex = new CMSIS::Mutex();
+#endif
    }
 
    /**
     * Destructor
     */
    virtual ~FormattedIO() {
+#if defined (__FREE_RTOS) && ( configSUPPORT_DYNAMIC_ALLOCATION == 1 ) && ( configUSE_RECURSIVE_MUTEXES == 1 )
+      vSemaphoreDelete(mutex);
+#elif defined(__CMSIS_RTOS)
+      delete mutex;
+#endif
    }
 
    /**
@@ -188,6 +244,77 @@ protected:
 
 public:
    /**
+    * Get current settings e.g width, precision etc
+    *
+    * @param[out] settings Setting object
+    */
+   FormattedIO &getFormat(FormattingSettings &settings) {
+      settings = fFormat;
+      return *this;
+   }
+
+   /**
+    * Set current settings e.g width, precision etc
+    *
+    * @param[in] settings Setting object
+    */
+   FormattedIO &setFormat(FormattingSettings &settings) {
+      fFormat = settings;
+      return *this;
+   }
+
+   /**
+    * Reset to default formatting.
+    * Radix = radix_10, width=0, Padding_None
+    *
+    * @return Reference to self
+    */
+   FormattedIO &resetFormat() {
+      // Default settings
+      static const FormattingSettings defaultSettings;
+
+      fFormat = defaultSettings;
+      return *this;
+   }
+
+   /**
+    *  Flush output data
+    */
+   virtual void flushOutput() = 0;
+
+   /**
+    *  Flush input data
+    */
+   virtual void flushInput() = 0;
+
+   /**
+    * Lock the object
+    *
+    * @note Requires use of RTOS + Mutexes
+    */
+   FormattedIO &lock() {
+#if defined (__FREE_RTOS) && (configSUPPORT_DYNAMIC_ALLOCATION == 1) && (configUSE_RECURSIVE_MUTEXES == 1)
+      xSemaphoreTakeRecursive(mutex, portMAX_DELAY);
+#elif defined(__CMSIS_RTOS)
+      mutex->wait(osWaitForever);
+#endif
+      return *this;
+   }
+
+   /**
+    * Unlock the object
+    *
+    * @note Requires use of RTOS + Mutexes
+    */
+   void unlock() {
+#if defined (__FREE_RTOS) && ( configSUPPORT_DYNAMIC_ALLOCATION == 1 ) && ( configUSE_RECURSIVE_MUTEXES == 1 )
+      xSemaphoreGiveRecursive(mutex);
+#elif defined(__CMSIS_RTOS)
+      mutex->release();
+#endif
+   }
+
+   /**
     * Peek at lookahead (non-blocking).
     *
     * @return <0   No character available
@@ -201,10 +328,10 @@ public:
          return -1;
       }
       lookAhead = _readChar();
-      if (lookAhead == (uint8_t)'\r') {
+      if (lookAhead == static_cast<uint8_t>('\r')) {
          lookAhead = '\n';
       }
-      if (echo) {
+      if (fFormat.fEcho) {
          _writeChar(lookAhead);
       }
       return lookAhead;
@@ -216,7 +343,7 @@ public:
     * @param[in] ch Character to push
     */
    void NOINLINE_DEBUG pushBack(char ch) {
-      lookAhead = (uint8_t)ch;
+      lookAhead = static_cast<uint8_t>(ch);
    }
 
    /**
@@ -231,7 +358,8 @@ public:
    /**
     * Receives a single character
     *
-    * @return Character received
+    * @return >0 Character received
+    * @return <0 No character available
     */
    int NOINLINE_DEBUG readChar() {
       int ch;
@@ -250,7 +378,7 @@ public:
     * @return Reference to self
     */
    FormattedIO &setPadding(Padding padding) {
-      fPadding = padding;
+      fFormat.fPadding = padding;
       return *this;
    }
 
@@ -261,8 +389,38 @@ public:
     *
     * @return Reference to self
     */
-   FormattedIO &setWidth(int width) {
-      fWidth = width;
+   FormattedIO &setWidth(unsigned width) {
+      fFormat.fWidth = width;
+      return *this;
+   }
+
+   /**
+    * Set precision for floating point numbers
+    *
+    * @param precision Precision to use
+    *
+    * @return Reference to self
+    */
+   /**
+    *
+    * @param precision Number of digits to the right of decimal point
+    * @param padding   How to pad on the left of the number (Padding_LeadingSpaces, Padding_None, Padding_LeadingZeroes)
+    * @param width     Number of characters to the left of decimal point
+    * @return
+    */
+   FormattedIO &setFloatFormat( unsigned  precision,
+                                Padding   padding  = Padding_None,
+                                unsigned  width    = 0) {
+      if (padding == Padding_TrailingSpaces) {
+         padding = Padding_LeadingSpaces;
+      }
+      fFormat.fFloatPrecision           = precision;
+      fFormat.fFloatPrecisionMultiplier = 1;
+      while (precision-->0) {
+         fFormat.fFloatPrecisionMultiplier *= 10;
+      }
+      fFormat.fFloatPadding = padding;
+      fFormat.fFloatWidth   = width;
       return *this;
    }
 
@@ -446,14 +604,16 @@ public:
    }
 
    /**
-    * Receive string until terminator character\n
-    * The terminating character is discarded and the string '\0' terminated
+    * Receive string until terminator character or buffer full.\n
+    * The terminating character is discarded and the string always '\0' terminated
     *
     * @param[out] data       Data buffer for reception
-    * @param[in]  size       Size of data buffer (including '\0')
+    * @param[in]  size       Size of data buffer (including space for '\0')
     * @param[in]  terminator Terminating character
     *
     * @return number of characters read (excluding terminator)
+    *
+    * @note Excess characters are discarded once the buffer is full.
     *
     * Usage
     * @code
@@ -463,14 +623,15 @@ public:
     */
    int __attribute__((noinline)) gets(char data[], uint16_t size, char terminator='\n') {
       char *ptr = data;
-      while (size-->1) {
-         char ch = readChar();
-         if (ch == terminator) {
-            break;
+
+      char ch;
+      do {
+         ch = readChar();
+         if (ptr<(data+size)) {
+            *ptr++ = ch;
          }
-         *ptr++ = ch;
-      }
-      *ptr = '\0';
+      } while(ch != terminator);
+      *--ptr = '\0';
       return ptr-data;
    }
 
@@ -483,19 +644,6 @@ public:
     */
    FormattedIO NOINLINE_DEBUG &write(char ch) {
       writeChar(ch);
-      return *this;
-   }
-
-   /**
-    * Reset to default formatting
-    * Radix = radix_10, width=0, fPadding=Padding_None
-    *
-    * @return Reference to self
-    */
-   FormattedIO NOINLINE_DEBUG &reset() {
-      fWidth   = 0;
-      fPadding = Padding_None;
-      fRadix   = Radix_10;
       return *this;
    }
 
@@ -526,6 +674,37 @@ public:
     */
    FormattedIO  NOINLINE_DEBUG &writeln(char ch) {
       write(ch);
+      return writeln();
+   }
+
+   /**
+    * Write a C string
+    *
+    * @param[in]  str   String to print
+    * @param[in]  width Width of string (either truncated or padded to this width)
+    *
+    * @return Reference to self
+    */
+   FormattedIO __attribute__((noinline)) &write(const char *str, unsigned width) {
+      while ((*str != '\0') && (width-->0)) {
+         write(*str++);
+      }
+      while (width-->0) {
+         write(' ');
+      }
+      return *this;
+   }
+
+   /**
+    * Write a C string
+    *
+    * @param[in]  str   String to print
+    * @param[in]  width Width of string (either truncated or padded to this width)
+    *
+    * @return Reference to self
+    */
+   FormattedIO __attribute__((noinline)) &writeln(const char *str, unsigned width) {
+      write(str, width);
       return writeln();
    }
 
@@ -588,7 +767,7 @@ public:
     */
    FormattedIO __attribute__((noinline)) &write(unsigned long value, Radix radix=Radix_10) {
       char buff[35];
-      ultoa(buff, value, radix, fPadding, fWidth, false);
+      ultoa(buff, value, radix, fFormat.fPadding, fFormat.fWidth, false);
       return write(buff);
    }
 
@@ -606,7 +785,7 @@ public:
       if (isNegative) {
          value = -value;
       }
-      ultoa(buff, (unsigned long)value, radix, fPadding, fWidth, isNegative);
+      ultoa(buff, static_cast<unsigned long>(value), radix, fFormat.fPadding, fFormat.fWidth, isNegative);
       return write(buff);
    }
 
@@ -632,7 +811,7 @@ public:
     * @return Reference to self
     */
    FormattedIO __attribute__((noinline)) &write(const void *value, Radix radix=Radix_16) {
-      return write((unsigned long) value, radix);
+      return write(reinterpret_cast<unsigned long>(value), radix);
    }
 
    /**
@@ -644,7 +823,7 @@ public:
     * @return Reference to self
     */
    FormattedIO NOINLINE_DEBUG &writeln(const void *value, Radix radix=Radix_16) {
-      return writeln((unsigned long) value, radix);
+      return writeln(reinterpret_cast<unsigned long>(value), radix);
    }
 
    /**
@@ -669,7 +848,7 @@ public:
     * @return Reference to self
     */
    FormattedIO NOINLINE_DEBUG &write(unsigned value, Radix radix=Radix_10) {
-      return write((unsigned long)value, radix);
+      return write(static_cast<unsigned long>(value), radix);
    }
 
    /**
@@ -681,7 +860,7 @@ public:
     * @return Reference to self
     */
    FormattedIO NOINLINE_DEBUG &writeln(unsigned value, Radix radix=Radix_10) {
-      return writeln((unsigned long)value, radix);
+      return writeln(static_cast<unsigned long>(value), radix);
    }
 
    /**
@@ -693,7 +872,7 @@ public:
     * @return Reference to self
     */
    FormattedIO NOINLINE_DEBUG &write(int value, Radix radix=Radix_10) {
-      return write((long)value, radix);
+      return write(static_cast<long>(value), radix);
    }
 
    /**
@@ -705,7 +884,7 @@ public:
     * @return Reference to self
     */
    FormattedIO NOINLINE_DEBUG  &writeln(int value, Radix radix=Radix_10) {
-      return writeln((long)value, radix);
+      return writeln(static_cast<long>(value), radix);
    }
 
 #if 0
@@ -739,9 +918,12 @@ public:
          write('-');
          value = -value;
       }
-      ultoa(buff, (long)value, Radix_10, Padding_None, 0);
+      long scaledValue = static_cast<long>(round(value*fFormat.fFloatPrecisionMultiplier));
+      ultoa(buff, scaledValue/fFormat.fFloatPrecisionMultiplier, Radix_10, fFormat.fFloatPadding, fFormat.fFloatWidth);
       write(buff).write('.');
-      ultoa(buff, ((long)round(value*1000))%1000, Radix_10, Padding_LeadingZeroes, 3);
+      ultoa(buff, 
+           (scaledValue)%fFormat.fFloatPrecisionMultiplier,
+           Radix_10, Padding_LeadingZeroes, fFormat.fFloatPrecision);
       write(buff);
       return *this;
    }
@@ -766,7 +948,7 @@ public:
     * @return Reference to self
     */
    FormattedIO NOINLINE_DEBUG &write(float value) {
-      return write((double)value);
+      return write(static_cast<double>(value));
    }
 
    /**
@@ -777,7 +959,7 @@ public:
     * @return Reference to self
     */
    FormattedIO NOINLINE_DEBUG &writeln(float value) {
-      return writeln((double)value);
+      return writeln(static_cast<double>(value));
    }
 
    /**
@@ -821,7 +1003,7 @@ public:
     * @return Reference to self
     */
    FormattedIO NOINLINE_DEBUG &operator <<(unsigned long value) {
-      return write(value, fRadix);
+      return write(value, fFormat.fRadix);
    }
 
    /**
@@ -832,7 +1014,7 @@ public:
     * @return Reference to self
     */
    FormattedIO NOINLINE_DEBUG &operator <<(long value) {
-      return write(value, fRadix);
+      return write(value, fFormat.fRadix);
    }
 
    /**
@@ -843,7 +1025,7 @@ public:
     * @return Reference to self
     */
    FormattedIO NOINLINE_DEBUG &operator <<(unsigned int value) {
-      return write(value, fRadix);
+      return write(value, fFormat.fRadix);
    }
 
    /**
@@ -854,7 +1036,7 @@ public:
     * @return Reference to self
     */
    FormattedIO NOINLINE_DEBUG &operator <<(int value) {
-      return write(value, fRadix);
+      return write(value, fFormat.fRadix);
    }
 
    /**
@@ -865,7 +1047,7 @@ public:
     * @return Reference to self
     */
    FormattedIO NOINLINE_DEBUG &operator <<(const void *value) {
-      return write((unsigned long)value, fRadix);
+      return write(reinterpret_cast<unsigned long>(value), fFormat.fRadix);
    }
 
    /**
@@ -876,7 +1058,7 @@ public:
     * @return Reference to self
     */
    FormattedIO NOINLINE_DEBUG &operator <<(float value) {
-      return write((double)value);
+      return write(static_cast<double>(value));
    }
 
    /**
@@ -900,7 +1082,7 @@ public:
     * @note Only applies for operator<< methods
     */
    FormattedIO NOINLINE_DEBUG &operator <<(Radix radix) {
-      fRadix = radix;
+      fFormat.fRadix = radix;
       return *this;
    }
 
@@ -1048,7 +1230,7 @@ public:
     * @return Reference to self
     */
    FormattedIO NOINLINE_DEBUG &setEcho(EchoMode echoMode=EchoMode_On) {
-      echo = echoMode;
+      fFormat.fEcho = echoMode;
       return *this;
    }
    /**
@@ -1203,7 +1385,7 @@ public:
     * @note Only applies for operator<< methods
     */
    FormattedIO NOINLINE_DEBUG &operator >>(Radix radix) {
-      fRadix = radix;
+      fFormat.fRadix = radix;
       return *this;
    }
 
@@ -1229,7 +1411,7 @@ public:
     * @note Skips leading whitespace
     */
    FormattedIO NOINLINE_DEBUG &operator >>(unsigned long &value) {
-      return read(value, fRadix);
+      return read(value, fFormat.fRadix);
    }
 
    /**
@@ -1242,7 +1424,7 @@ public:
     * @note Skips leading whitespace
     */
    FormattedIO NOINLINE_DEBUG &operator >>(long &value) {
-      return read(value, fRadix);
+      return read(value, fFormat.fRadix);
    }
 
    /**
@@ -1255,7 +1437,7 @@ public:
     * @note Skips leading whitespace
     */
    FormattedIO NOINLINE_DEBUG &operator >>(unsigned int &value) {
-      return read(value, fRadix);
+      return read(value, fFormat.fRadix);
    }
 
    /**
@@ -1268,7 +1450,7 @@ public:
     * @note Skips leading whitespace
     */
    FormattedIO NOINLINE_DEBUG &operator >>(int &value) {
-      return read(value, fRadix);
+      return read(value, fFormat.fRadix);
    }
 
    /**
@@ -1279,7 +1461,7 @@ public:
     * @return Radix corresponding to base
     */
    static constexpr Radix NOINLINE_DEBUG radix(unsigned radix) {
-      return (Radix)radix;
+      return static_cast<Radix>(radix);
    }
 
    /**
@@ -1290,7 +1472,7 @@ public:
     * @return Width corresponding to width
     */
    static constexpr Width NOINLINE_DEBUG width(int width) {
-      return (Width)width;
+      return static_cast<Width>(width);
    }
 
    /**
@@ -1314,16 +1496,6 @@ public:
       setPadding(padding);
       return *this;
    }
-
-   /**
-    *  Flush output data
-    */
-   virtual void flushOutput() = 0;
-
-   /**
-    *  Flush input data
-    */
-   virtual void flushInput() = 0;
 
    /**
     * Print an array as a hex table.
@@ -1383,7 +1555,7 @@ public:
             writeln();
          }
       }
-      writeln().reset();
+      writeln().resetFormat();
    }
 
 };
