@@ -105,15 +105,16 @@ USBDM_ErrorCode f_CMD_GET_SPEED(void) {
  *  @return BDM_RC_OK => success, error otherwise
  *
  *  @note Action depends on register (some responses are pipelined) \n
- *    SWD_WR_DP_ABORT   - Write value to ABORT register (accepted) \n
- *    SWD_WR_DP_CONTROL - Write value to CONTROL register (may be pending), FAULT on sticky error. \n
- *    SWD_WR_DP_SELECT  - Write value to SELECT register (may be pending), FAULT on sticky error. \n
- *    SWD_WR_AP_REGx    - Write to AP register.  May initiate action e.g. memory access.  Result is pending, FAULT on sticky error.
+ *    SwdWrite_DP_ABORT   - Write value to ABORT register (accepted) \n
+ *    SwdWrite_DP_CONTROL - Write value to CONTROL register (may be pending), FAULT on sticky error. \n
+ *    SwdWrite_DP_SELECT  - Write value to SELECT register (may be pending), FAULT on sticky error. \n
+ *    SwdWrite_AP_REGx    - Write to AP register.  May initiate action e.g. memory access.  Result is pending, FAULT on sticky error.
  */
 USBDM_ErrorCode f_CMD_WRITE_DREG(void) {
-   static const uint8_t writeDP[] = {
-         Swd::SWD_WR_DP_ABORT, Swd::SWD_WR_DP_CONTROL, Swd::SWD_WR_DP_SELECT, 0,
-         Swd::SWD_WR_AP_REG0,  Swd::SWD_WR_AP_REG1,    Swd::SWD_WR_AP_REG2,   Swd::SWD_WR_AP_REG3, };
+
+   static const SwdWrite writeDP[] = {
+         SwdWrite_DP_ABORT, SwdWrite_DP_CONTROL, SwdWrite_DP_SELECT, SwdWrite_DP_INVALID,
+         SwdWrite_AP_REG0,  SwdWrite_AP_REG1,    SwdWrite_AP_REG2,   SwdWrite_AP_REG3, };
 
    return Swd::writeReg(writeDP[commandBuffer[3]&0x07], commandBuffer+4);
 }
@@ -130,16 +131,16 @@ USBDM_ErrorCode f_CMD_WRITE_DREG(void) {
  *    - [1..4]  =>  32-bit register value in BIG-ENDIAN order
  *
  *  @note Action and Data returned depends on register (some responses are pipelined) \n
- *    SWD_RD_DP_IDCODE - Value from IDCODE reg \n
- *    SWD_RD_DP_STATUS - Value from STATUS reg \n
- *    SWD_RD_DP_RESEND - LAST value read (AP read or DP-RDBUFF), FAULT on sticky error    \n
- *    SWD_RD_DP_RDBUFF - Value from last AP read and clear READOK flag in STRL/STAT, FAULT on sticky error \n
- *    SWD_RD_AP_REGx   - Value from last AP read, clear READOK flag in STRL/STAT and INITIATE next AP read, FAULT on sticky error
+ *    SwdRead_DP_IDCODE - Value from IDCODE reg \n
+ *    SwdRead_DP_STATUS - Value from STATUS reg \n
+ *    SwdRead_DP_RESEND - LAST value read (AP read or DP-RDBUFF), FAULT on sticky error    \n
+ *    SwdRead_DP_RDBUFF - Value from last AP read and clear READOK flag in STRL/STAT, FAULT on sticky error \n
+ *    SwdRead_AP_REGx   - Value from last AP read, clear READOK flag in STRL/STAT and INITIATE next AP read, FAULT on sticky error
  */
 USBDM_ErrorCode f_CMD_READ_DREG(void) {
-   static const uint8_t readDP[]  = {
-         Swd::SWD_RD_DP_IDCODE, Swd::SWD_RD_DP_STATUS, Swd::SWD_RD_DP_RESEND, Swd::SWD_RD_DP_RDBUFF,
-         Swd::SWD_RD_AP_REG0,   Swd::SWD_RD_AP_REG1,   Swd::SWD_RD_AP_REG2,   Swd::SWD_RD_AP_REG3, };
+   static const SwdRead readDP[]  = {
+         SwdRead_DP_IDCODE, SwdRead_DP_STATUS, SwdRead_DP_RESEND, SwdRead_DP_RDBUFF,
+         SwdRead_AP_REG0,   SwdRead_AP_REG1,   SwdRead_AP_REG2,   SwdRead_AP_REG3, };
    returnSize = 5;
    return Swd::readReg(readDP[commandBuffer[3]&0x07], commandBuffer+1);
 }

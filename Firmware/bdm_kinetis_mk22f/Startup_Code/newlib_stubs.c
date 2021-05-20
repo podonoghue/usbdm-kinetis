@@ -175,10 +175,9 @@ caddr_t _sbrk(int incr) {
       /* Heap and stack collision */
 #ifdef DEBUG_BUILD
       __asm__("bkpt");
-#else
+#endif
       errno = ENOMEM;
       return (caddr_t)-1;
-#endif
    }
    heap_end = next_heap_end;
    return prev_heap_end;
@@ -202,7 +201,7 @@ int _stat(const char *filepath __attribute__((unused)), struct stat *st __attrib
  */
 __attribute__((__weak__))
 clock_t _times(struct tms *buf __attribute__((unused))) {
-   return -1;
+   return 0;
 }
 
 /**
@@ -246,7 +245,11 @@ __attribute__((__weak__))
 void _exit(int rc __attribute__((unused))) {
    for(;;) {
       /*
-       * If you end up here it probably means you fell of the end of main()!
+       * If you end up here it probably means you fell of the end of main() or
+       * failed an assertion!
+       *
+       * Check console output to see description of failed assertions and
+       * check the stack trace in the Debug window to find source of problem.
        */
       __asm__("bkpt");
    }
@@ -274,7 +277,7 @@ int _usbdm_read(int file, char *ptr, int len) {
    int ch;
    do {
       ch = console_rxChar();
-      *ptr++ = ch;
+      *ptr++ = (char)ch;
    } while ((++done<len) && (ch != '\n'));
    return done;
 }

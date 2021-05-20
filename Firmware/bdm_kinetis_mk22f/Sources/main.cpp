@@ -321,7 +321,7 @@ void warmStart() {
    // The interface is always on
    InterfaceEnable::on();
 
-   console_initialise();
+//   console_initialise();
 
    checkError();
 }
@@ -354,6 +354,7 @@ int main() {
 //   console.write("Target Vdd = ").write(TargetVddInterface::readVoltage()).writeln(" V");
 
    console.WRITELN("\n\nStarting");
+
    UsbImplementation::initialise();
    checkError();
 

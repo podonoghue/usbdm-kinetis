@@ -141,10 +141,10 @@ public:
       if (status.event == USBDM::CmpEvent_Rising) {
          // Rising edge
          switch(vddState) {
-            case VddState_Error:
-            case VddState_External:
             case VddState_Internal:
                break;
+            case VddState_Error:
+            case VddState_External:
             case VddState_None:
                // External power supplied
                vddState = VddState_External;
@@ -180,7 +180,7 @@ public:
    /**
     * Set callback to execute on Target Vdd (Vbdm) changes
     *
-    * @param[in] callback Callback to execute
+    * @param[in] callback Callback for target Vdd state changes (may be null)
     */
    static void setCallback(void (*callback)(VddState)) {
       if (callback == nullptr) {
@@ -191,6 +191,8 @@ public:
 
    /**
     * Initialise Vdd control and measurement interface
+    *
+    * @param[in] callback Callback for target Vdd state changes (may be null)
     */
    static void initialise(void (*callback)(VddState)) {
       Control::setOutput();
@@ -204,7 +206,7 @@ public:
             USBDM::PinDriveMode_PushPull,
             USBDM::PinSlewRate_Slow);
 
-      fCallback = callback;
+      setCallback(callback);
 
       VddMonitor::setCallback(vddMonitorCallback);
       VddMonitor::configure(

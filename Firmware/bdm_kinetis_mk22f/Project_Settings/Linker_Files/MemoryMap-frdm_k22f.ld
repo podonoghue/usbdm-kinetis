@@ -13,8 +13,9 @@
 __stack_size = 0x10000;
 
 /* <o> Minimum Heap Size 
-   <i> Actual heap may be larger as it fills all unused RAM up to STACK
-   <0x0-0x20000> 
+   <i> This is the minimum allocated.  
+   <i> Available heap may be larger.
+   <0x0-0x10000:4> 
 */
 __heap_size  = 0x8000;
 
@@ -31,6 +32,7 @@ __heap_size  = 0x8000;
    <i>    __attribute__ ((section(".bitband"))) uint32_t variable_bits[8*sizeof(variable)];
    <i>
    <i>  See bme.h and bitband.h for more information
+   <0x0-0x1000:4> 
 */
 __sram_u_size = 0;
    

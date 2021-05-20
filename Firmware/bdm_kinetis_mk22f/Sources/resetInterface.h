@@ -39,15 +39,14 @@ public:
     * Initialise Transceiver
     *
     * Initial state:
-    *    Input
+    *    Input/HighZ
     */
    static void initialise() {
 
       // Set pin as input
       Data::setInput();
 
-      // Direction low => input
-      Direction::low();
+      // Initially Direction low => input
       Direction::setOutput();
 
       // IRQ on falling edge - reset detection

@@ -24,7 +24,7 @@
    \verbatim
    Change History
    +=========================================================================================================
-   | 27 Jul 2016 | Kinetis version                                                          V4.12.1.120 - pgo
+   | 21 May 2021 | Kinetis version                                                          V4.12.1.270 - pgo
    +=========================================================================================================
    \endverbatim
  */
@@ -61,20 +61,24 @@ CheckSignal<SpiInfo, 1> sin_chk;
 CheckSignal<SpiInfo, 2> sout_chk;
 CheckSignal<SpiInfo, 5> enable_chk;
 
+// Masks for SPI CS which controls the SWDIO output drive
+static constexpr SpiPeripheralSelect SwdDriveEnable  = SpiPeripheralSelect_2;
+static constexpr SpiPeripheralSelect SwdDriveDisable = SpiPeripheralSelect_None;
+
 //===========================================================================
 
-// Masks for SWD_WR_DP_ABORT clear sticky
+// Masks for SWD_DP_ABORT clear sticky
 static constexpr uint32_t  SWD_DP_ABORT_CLEAR_STICKY_ERRORS = 0x0000001E;
 
-// Masks for SWD_WR_DP_ABORT abort AP
+// Masks for SWD_DP_ABORT abort AP
 static constexpr uint32_t  SWD_DP_ABORT_ABORT_AP            = 0x00000001;
 
-// Masks for SWD_RD_DP_STATUS
-//static constexpr uint32_t  SWD_RD_DP_STATUS_ANYERROR        = 0x000000B2;
+// Masks for SWD_DP_STATUS
+//static constexpr uint32_t  SwdRead_DP_STATUS_ANYERROR        = 0x000000B2;
 
-// Masks for SWD_WR_DP_CONTROL
-static constexpr uint32_t  SWD_WR_DP_CONTROL_POWER_REQ = (1<<30)|(1<<28);
-static constexpr uint32_t  SWD_WR_DP_CONTROL_POWER_ACK = (1<<31)|(1<<29);
+// Masks for SWD_DP_CONTROL
+static constexpr uint32_t  SWD_DP_CONTROL_POWER_REQ = (1<<30)|(1<<28);
+static constexpr uint32_t  SWD_DP_CONTROL_POWER_ACK = (1<<31)|(1<<29);
 
 // AP number for AHB-AP (MEM-AP implementation)
 static constexpr uint32_t  AHB_AP_NUM        = (0x0);
@@ -86,13 +90,6 @@ static constexpr uint32_t ARM_AHB_AP_BANK0 = AHB_AP_NUM;
 //   static constexpr uint32_t  AHB_TAR_REGNUM    = (0x4);  // TAR register bank+register number
 //   static constexpr uint32_t  AHB_DRW_REGNUM    = (0xC);  // DRW register bank+register number
 
-static constexpr uint32_t  SWD_RD_AHB_CSW = SWD_RD_AP_REG0; // SWD command for reading AHB-CSW
-//static constexpr uint32_t  SWD_RD_AHB_TAR = SWD_RD_AP_REG1; // SWD command for reading AHB-TAR
-static constexpr uint32_t  SWD_RD_AHB_DRW = SWD_RD_AP_REG3; // SWD command for reading AHB-DRW
-
-static constexpr uint32_t  SWD_WR_AHB_CSW = SWD_WR_AP_REG0; // SWD command for writing AHB-CSW
-static constexpr uint32_t  SWD_WR_AHB_TAR = SWD_WR_AP_REG1; // SWD command for writing AHB-TAR
-static constexpr uint32_t  SWD_WR_AHB_DRW = SWD_WR_AP_REG3; // SWD command for writing AHB-DRW
 
 // AHB-AP (MEM-AP) CSW Register masks
 static constexpr uint32_t  AHB_AP_CSW_INC_SINGLE    = (1<<4);
@@ -102,6 +99,13 @@ static constexpr uint32_t  AHB_AP_CSW_SIZE_BYTE     = (0<<0);
 static constexpr uint32_t  AHB_AP_CSW_SIZE_HALFWORD = (1<<0);
 static constexpr uint32_t  AHB_AP_CSW_SIZE_WORD     = (2<<0);
 //static constexpr uint32_t  AHB_AP_CSW_SIZE_MASK     = (7<<0);
+
+// CTAR values used for communication
+uint32_t PreambleCtar;  //< Transmit  8 bits = Write:start,APnDP,RnW,ADDR(2:3),parity,stop,park
+uint32_t AckCtar;       //< Receive   5 bits = Read:T,ACK,Data(0) or Write:T,ACK,T
+uint32_t RxCtar;        //< Receive  16 bits = Read:Data(1-16) or Read:Data(17-31),parity
+uint32_t TxCtar;        //< Transmit 11 bits = Write:Data(0-10) or Write:Data(11-21) or Write:Data(22-31),parity
+uint32_t Tx16Ctar;      //< Transmit 16 bits = Write:Data(15-0)
 
 static constexpr uint32_t cswValues[5] = {
       0,
@@ -122,77 +126,25 @@ static constexpr uint32_t getcswValue(int size) {
    return cswValues[size];
 };
 
+   /**
+    * SWD ACK values padded to 5 bits e.g. 0 <ACK value> 0
+    */
 enum SwdAck {
    /** OK ACK value. Indicates SWD transfer was successful */
-   SWD_ACK_OK    = 0x1,
+   SWD_ACK_OK    = 0b01000,/**< SWD_ACK_OK */
    /** WAIT ACK value. Indicates SWD transfer cannot complete yet. Should be retried */
-   SWD_ACK_WAIT  = 0x2,
+   SWD_ACK_WAIT  = 0b00100,/**< SWD_ACK_WAIT */
    /** FAULT ACK value. Indicates SWD transfer failed. */
-   SWD_ACK_FAULT = 0x4,
+   SWD_ACK_FAULT = 0b00010,/**< SWD_ACK_FAULT */
+   /** Mask to indicate valid ACK bits in return value */
+   SW_ACK_MASK   = 0b01110, /**< SW_ACK_MASK */
 };
-
-/** Select for BKGD/SWD_DIR pin direction - Transmit */
-static constexpr uint32_t TX_MASK = SPI_PUSHR_PCS(-1);
-
-/** Select for BKGD/SWD_DIR pin direction - Receive */
-static constexpr uint32_t RX_MASK = SPI_PUSHR_PCS(0);
-
-/** Base transmit communication settings (CTAR value) */
-static constexpr uint32_t  CTAR_TX =
-      SPI_CTAR_CPOL(1)   | // Clock idle is high
-      SPI_CTAR_CPHA(1)   | // Data changes falling edge, target captures on rising
-      SPI_CTAR_LSBFE(1)  | // LSB first
-      SPI_CTAR_PCSSCK(0) | // PCS to SCK  delay Prescaler
-      SPI_CTAR_CSSCK(0)  | // PCS to SCK  delay
-      SPI_CTAR_PASC(0)   | // SCK to PCSn delay Prescaler
-      SPI_CTAR_ASC(0)    | // SCK to PCSn delay
-      SPI_CTAR_PDT(0)    | // PCS inactive to PCS active delay Prescaler
-      SPI_CTAR_DT(0);      // PCS inactive to PCS active delay
-
-/** Base receive communication settings (CTAR value) */
-static constexpr uint32_t  CTAR_RX =
-      SPI_CTAR_CPOL(1)   | // Clock idle is high
-      SPI_CTAR_CPHA(0)   | // Data changes rising edge, master captures on falling
-      SPI_CTAR_LSBFE(1)  | // LSB first
-      SPI_CTAR_PCSSCK(0) | // PCS to SCK  delay Prescaler
-      SPI_CTAR_CSSCK(0)  | // PCS to SCK  delay
-      SPI_CTAR_PASC(0)   | // SCK to PCSn delay Prescaler
-      SPI_CTAR_ASC(0)    | // SCK to PCSn delay
-      SPI_CTAR_PDT(0)    | // PCS inactive to PCS active delay Prescaler
-      SPI_CTAR_DT(0);      // PCS inactive to PCS active delay
-
-static constexpr uint32_t CTAR_MASK = ~(SPI_CTAR_BR_MASK|SPI_CTAR_PBR_MASK|SPI_CTAR_DBR_MASK);
 
 /** SPI Object */
 static SPI_Type volatile &spi() { return SpiInfo::spi(); };
 
-/** Current Baud Rate */
-static uint32_t spiBaudValue;
-
 /** Initial value of AHB_SP_CSW register read from target */
 static uint32_t ahb_ap_csw_defaultValue;
-
-/**
- * Set SPI.CTAR0 value\n
- * Value will be combined with the current frequency divider
- *
- * @param ctar 32-bit CTAR value (excluding baud related settings)\n
- *     e.g. setCTAR0Value(SPI_CTAR_SLAVE_FMSZ(8-1)|SPI_CTAR_CPOL_MASK|SPI_CTAR_CPHA_MASK);
- */
-static void setCTAR0Value(uint32_t ctar) {
-   spi().CTAR[0] = spiBaudValue|(ctar&CTAR_MASK);
-}
-
-/**
- * Set SPI.CTAR1 value\n
- * Value will be combined with the current frequency divider
- *
- * @param ctar 32-bit CTAR value (excluding baud related settings)\n
- *     e.g. setCTAR1Value(SPI_CTAR_SLAVE_FMSZ(8-1)|SPI_CTAR_CPOL_MASK|SPI_CTAR_CPHA_MASK);
- */
-static void setCTAR1Value(uint32_t ctar) {
-   spi().CTAR[1] = spiBaudValue|(ctar&CTAR_MASK);
-}
 
 /**
  * Calculate parity of a 32-bit value
@@ -226,152 +178,6 @@ static uint8_t calcParity(const uint32_t data) {
 //   return SwdDin.isHigh();
 //}
 
-/**
- * Transmits 8-bits of idle (SWDIO=0)
- */
-static void txIdle8() {
-   setCTAR0Value(CTAR_TX|SPI_CTAR_FMSZ(8-1)); // 8-bit Transmit
-
-   // Write data
-   spi().PUSHR = SPI_PUSHR_CTAS(0)|SPI_PUSHR_CONT(0)|SPI_PUSHR_EOQ_MASK|TX_MASK|SPI_PUSHR_TXDATA(0);
-   // Wait until complete
-   while ((spi().SR & SPI_SR_EOQF_MASK) == 0) {
-   }
-   // Discard read data
-   (void)spi().POPR;
-   // Clear flags
-   spi().SR = SPI_SR_RFDF_MASK|SPI_SR_EOQF_MASK;
-}
-
-/**
- *  Transmit [mark, 8-bit word], receive [ACK]
- *
- *  @param data Data to send
- *
- *  @return ACK value received
- */
-static SwdAck txMark_8_rxAck(uint32_t data) {
-   setCTAR0Value(CTAR_TX|SPI_CTAR_FMSZ(9-1)); // 9-bit Transmit
-   setCTAR1Value(CTAR_RX|SPI_CTAR_FMSZ(3-1)); // 3-bit Receive
-
-   // Write data
-   spi().PUSHR = SPI_PUSHR_CTAS(0)|TX_MASK|SPI_PUSHR_CONT(1)|SPI_PUSHR_TXDATA((data<<1)|1);
-   // Read ACK
-   spi().PUSHR = SPI_PUSHR_CTAS(1)|RX_MASK|SPI_PUSHR_CONT(0)|SPI_PUSHR_TXDATA(0)|SPI_PUSHR_EOQ_MASK;
-   while ((spi().SR & SPI_SR_EOQF_MASK) == 0) {
-   }
-   // Discard read data
-   (void)spi().POPR;
-   // Clear flags
-   spi().SR = SPI_SR_RFDF_MASK|SPI_SR_EOQF_MASK;
-   // Return ACK
-   return (SwdAck)(spi().POPR);
-}
-
-/**
- *  Transmit [mark, 8-bit word], receive [ACK, TURN]
- *
- *  @param data Data to send
- *
- *  @return ACK value received
- */
-static SwdAck txMark_8_rxAck_Trn(uint32_t data) {
-   setCTAR0Value(CTAR_TX|SPI_CTAR_FMSZ(9-1)); // 9-bit Transmit
-   setCTAR1Value(CTAR_RX|SPI_CTAR_FMSZ(3-1)); // 5-bit Receive
-
-   // Write data
-   spi().PUSHR = SPI_PUSHR_CTAS(0)|TX_MASK|SPI_PUSHR_CONT(1)|SPI_PUSHR_TXDATA((data<<1)|1);
-   // Read ACK & TURN
-   spi().PUSHR = SPI_PUSHR_CTAS(1)|RX_MASK|SPI_PUSHR_CONT(0)|SPI_PUSHR_TXDATA(0)|SPI_PUSHR_EOQ_MASK;
-   while ((spi().SR & SPI_SR_EOQF_MASK) == 0) {
-   }
-   // Discard read data
-   (void)spi().POPR;
-   // Clear flags
-   spi().SR = SPI_SR_RFDF_MASK|SPI_SR_EOQF_MASK;
-   // Return ACK
-   return (SwdAck)(spi().POPR&0x3);
-}
-
-/**
- * Transmit [command], Receive [ACK]
- *
- *  @param command Command to send
- *
- *  @return ACK value received
- */
-static SwdAck txCommand_rxAck(uint32_t command) {
-
-   setCTAR0Value(CTAR_TX|SPI_CTAR_FMSZ(8-1)); // 8-bit Transmit
-   setCTAR1Value(CTAR_RX|SPI_CTAR_FMSZ(4-1)); // 4-bit Receive
-
-
-   // Write data
-   spi().PUSHR = SPI_PUSHR_CTAS(0)|TX_MASK|SPI_PUSHR_CONT(1)|SPI_PUSHR_TXDATA(command);
-   // Read ACK
-   spi().PUSHR = SPI_PUSHR_CTAS(1)|RX_MASK|SPI_PUSHR_CONT(0)|SPI_PUSHR_TXDATA(0)|SPI_PUSHR_EOQ_MASK;
-   // Wait until complete
-   while ((spi().SR & SPI_SR_EOQF_MASK) == 0) {
-   }
-   // Discard 1st byte read data
-   (void)spi().POPR;
-   // Clear flags
-   spi().SR = SPI_SR_RFDF_MASK|SPI_SR_EOQF_MASK;
-   // Return ACK value
-   return (SwdAck)(spi().POPR>>1);
-}
-
-/**
- * Transmit [command], Receive [ACK, TURN]
- *
- *  @param command Command to send
- *
- *  @return ACK value received
- */
-static SwdAck txCommand_rxAck_Trn(uint32_t command) {
-
-   setCTAR0Value(CTAR_TX|SPI_CTAR_FMSZ(8-1)); // 8-bit Transmit
-   setCTAR1Value(CTAR_RX|SPI_CTAR_FMSZ(5-1)); // 5-bit Receive = [TURN,ACK,TURN]
-
-   // Write data
-   spi().PUSHR = SPI_PUSHR_CTAS(0)|TX_MASK|SPI_PUSHR_CONT(1)|SPI_PUSHR_TXDATA(command);
-   // Read ACK
-   spi().PUSHR = SPI_PUSHR_CTAS(1)|RX_MASK|SPI_PUSHR_CONT(0)|SPI_PUSHR_TXDATA(0)|SPI_PUSHR_EOQ_MASK;
-   // Wait until complete
-   while ((spi().SR & SPI_SR_EOQF_MASK) == 0) {
-   }
-   // Discard 1st byte read data
-   (void)spi().POPR;
-   // Clear flags
-   spi().SR = SPI_SR_RFDF_MASK|SPI_SR_EOQF_MASK;
-   // Return 1st 3 bits (1st TURN not captured, 3xACK, 2nd TURN)
-   return (SwdAck)((spi().POPR>>1)&0x7);
-}
-
-/**
- *  Transmit [32-bit word, parity]
- *
- *  @param data Data to send
- */
-static void tx32_parity(const uint32_t data) {
-   uint8_t parity = calcParity(data);
-   setCTAR0Value(CTAR_TX|SPI_CTAR_FMSZ(8-1)); // 8-bit Transmit
-   setCTAR1Value(CTAR_TX|SPI_CTAR_FMSZ(9-1)); // 9-bit Transmit
-
-   // Write data with parity
-   spi().PUSHR = SPI_PUSHR_CTAS(0)|TX_MASK|SPI_PUSHR_CONT(1)|SPI_PUSHR_TXDATA(data);
-   spi().PUSHR = SPI_PUSHR_CTAS(0)|TX_MASK|SPI_PUSHR_CONT(1)|SPI_PUSHR_TXDATA(data>>8);
-   spi().PUSHR = SPI_PUSHR_CTAS(0)|TX_MASK|SPI_PUSHR_CONT(1)|SPI_PUSHR_TXDATA(data>>16);
-   spi().PUSHR = SPI_PUSHR_CTAS(1)|TX_MASK|SPI_PUSHR_CONT(1)|SPI_PUSHR_TXDATA((data>>24)|(parity<<8))|SPI_PUSHR_EOQ_MASK;
-   while ((spi().SR & SPI_SR_EOQF_MASK) == 0) {
-   }
-   (void)spi().POPR; // Discard read data
-   (void)spi().POPR;
-   (void)spi().POPR;
-   (void)spi().POPR;
-   // Clear flags
-   spi().SR = SPI_SR_RFDF_MASK|SPI_SR_EOQF_MASK;
-}
 
 /**
  *  Transmit [32-bit word]
@@ -379,46 +185,22 @@ static void tx32_parity(const uint32_t data) {
  *  @param data Data to send
  */
 static void tx32(const uint32_t data) {
-   setCTAR0Value(CTAR_TX|SPI_CTAR_FMSZ(16-1)); // 16-bit Transmit
+   spi().CTAR[0] = Tx16Ctar;
 
-   // Write data
-   spi().PUSHR = SPI_PUSHR_CTAS(0)|TX_MASK|SPI_PUSHR_CONT(1)|SPI_PUSHR_TXDATA(data);
-   spi().PUSHR = SPI_PUSHR_CTAS(0)|TX_MASK|SPI_PUSHR_CONT(1)|SPI_PUSHR_TXDATA(data>>16)|SPI_PUSHR_EOQ_MASK;
-   while ((spi().SR & SPI_SR_EOQF_MASK) == 0) {
+//   spi().MCR &= ~SPI_MCR_HALT_MASK;
+
+   spi().PUSHR = ((uint16_t)(data))    |SPI_PUSHR_CTAS(0)|SwdDriveEnable|SPI_PUSHR_CONT(1)|SPI_PUSHR_EOQ(0);
+   spi().PUSHR = ((uint16_t)(data>>16))|SPI_PUSHR_CTAS(0)|SwdDriveEnable|SPI_PUSHR_CONT(0)|SPI_PUSHR_EOQ(1);
+
+   // Wait until End of Transmission
+   while ((spi().SR & SPI_SR_EOQF_MASK)==0) {
    }
-   (void)spi().POPR;  // Discard read data
-   (void)spi().POPR;
-   // Clear flags
-   spi().SR = SPI_SR_RFDF_MASK|SPI_SR_EOQF_MASK;
-}
+   spi().SR = SPI_SR_TCF_MASK|SPI_SR_EOQF_MASK;
 
-/**
- *  Receive [32-bit word, parity] from the target
- *
- *  @param receive Data received
- *
- *  @return BDM_RC_OK               => Success
- *  @return BDM_RC_ARM_PARITY_ERROR => Parity error on reception
- */
-static USBDM_ErrorCode rx32_parity(uint32_t &receive) {
-   uint16_t byte_plus_parity;
-   setCTAR0Value(CTAR_RX|SPI_CTAR_FMSZ(8-1)); // 8-bit Receive
-   setCTAR1Value(CTAR_RX|SPI_CTAR_FMSZ(9-1)); // 9-bit Receive
+   (void)(spi().POPR);
+   (void)(spi().POPR);
 
-   // Read data & parity
-   spi().PUSHR = SPI_PUSHR_CTAS(0)|RX_MASK|SPI_PUSHR_CONT(0)|SPI_PUSHR_TXDATA(0);
-   spi().PUSHR = SPI_PUSHR_CTAS(0)|RX_MASK|SPI_PUSHR_CONT(0)|SPI_PUSHR_TXDATA(0);
-   spi().PUSHR = SPI_PUSHR_CTAS(0)|RX_MASK|SPI_PUSHR_CONT(0)|SPI_PUSHR_TXDATA(0);
-   spi().PUSHR = SPI_PUSHR_CTAS(1)|RX_MASK|SPI_PUSHR_CONT(0)|SPI_PUSHR_TXDATA(0)|SPI_PUSHR_EOQ_MASK;
-   while ((spi().SR & SPI_SR_EOQF_MASK) == 0) {
-   }
-   spi().SR = SPI_SR_EOQF_MASK;
-   receive           = spi().POPR;
-   receive          |= (spi().POPR<<8);
-   receive          |= (spi().POPR<<16);
-   byte_plus_parity  = spi().POPR;
-   receive          |= (byte_plus_parity<<24);
-   return ((byte_plus_parity>>8)!=calcParity(receive))?BDM_RC_ARM_PARITY_ERROR:BDM_RC_OK;
+//   spi().MCR |= SPI_MCR_HALT_MASK;
 }
 
 /**
@@ -431,7 +213,22 @@ static USBDM_ErrorCode rx32_parity(uint32_t &receive) {
  * Note: Chooses the highest speed that is not greater than frequency.
  */
 USBDM_ErrorCode setSpeed(uint32_t frequency) {
-   spiBaudValue = Spi::calculateDividers(SpiInfo::getClockFrequency(), frequency);
+   float SPI_PADDING2 = 1/(5.0*frequency);
+   const uint32_t ctarBase = Spi::calculateCtar(SpiInfo::getClockFrequency(), frequency, SPI_PADDING2, SPI_PADDING2, SPI_PADDING2);
+
+   PreambleCtar = ctarBase|SpiPolarity_InactiveHigh|SpiPhase_LeadingChange |SpiFrameSize(8) |SpiOrder_MsbFirst;
+   AckCtar      = ctarBase|SpiPolarity_InactiveHigh|SpiPhase_LeadingCapture|SpiFrameSize(5) |SpiOrder_MsbFirst;
+   RxCtar       = ctarBase|SpiPolarity_InactiveHigh|SpiPhase_LeadingCapture|SpiFrameSize(16)|SpiOrder_LsbFirst;
+   TxCtar       = ctarBase|SpiPolarity_InactiveHigh|SpiPhase_LeadingChange |SpiFrameSize(11)|SpiOrder_LsbFirst;
+   Tx16Ctar     = ctarBase|SpiPolarity_InactiveHigh|SpiPhase_LeadingChange |SpiFrameSize(16)|SpiOrder_LsbFirst;
+
+//   console.setPadding(Padding_LeadingZeroes).setWidth(32);
+//   console.WRITE("PreambleCtar ").WRITELN(PreambleCtar,Radix_2);
+//   console.WRITE("AckCtar      ").WRITELN(AckCtar,Radix_2);
+//   console.WRITE("RxCtar       ").WRITELN(RxCtar,Radix_2);
+//   console.WRITE("TxCtar       ").WRITELN(TxCtar,Radix_2);
+//   console.WRITE("Tx16Ctar     ").WRITELN(Tx16Ctar,Radix_2);
+
    return BDM_RC_OK;
 }
 
@@ -443,7 +240,7 @@ USBDM_ErrorCode setSpeed(uint32_t frequency) {
  * @note This may differ from set speed due to limited range of speeds available
  */
 uint32_t getSpeed() {
-   return Spi::calculateSpeed(SpiInfo::getClockFrequency(), spiBaudValue);
+   return Spi::calculateSpeed(SpiInfo::getClockFrequency(), TxCtar);
 }
 
 /**
@@ -459,10 +256,15 @@ void initialise() {
 
    SpiInfo::enableClock();
 
-   setSpeed(15000000);
+   setSpeed(12000000);
 
+   // Start reset 3-state
    ResetInterface::initialise();
    ResetInterface::highZ();
+
+   // GPIO controlling some interface signals (SWD, UART-TX)
+   InterfaceEnable::initialise();
+   InterfaceEnable::on();
 
    // Set mode
    spi().MCR =
@@ -483,7 +285,7 @@ void initialise() {
  */
 void interfaceIdle() {
 
-   console.WRITELN("Swd::interfaceIdle()");
+//   console.WRITELN("Swd::interfaceIdle()");
 
    // Configure RESET pins
    ResetInterface::highZ();
@@ -566,12 +368,12 @@ static USBDM_ErrorCode update_ahb_ap_csw_defaultValue() {
    // Read initial AHB-AP.csw register value as device dependent
    // Do posted read - dummy data returned
    uint32_t ahb_ap_cswValue = 0;
-   USBDM_ErrorCode rc = readReg(SWD_RD_AHB_CSW, ahb_ap_cswValue);
+   USBDM_ErrorCode rc = readReg(SwdRead_AHB_CSW, ahb_ap_cswValue);
    if (rc != BDM_RC_OK) {
       return rc;
    }
    // Get actual data
-   rc = readReg(SWD_RD_DP_RDBUFF, ahb_ap_cswValue);
+   rc = readReg(SwdRead_DP_RDBUFF, ahb_ap_cswValue);
    if (rc != BDM_RC_OK) {
       return rc;
    }
@@ -605,7 +407,7 @@ USBDM_ErrorCode connect(void) {
 
    // Target must respond to read IDCODE immediately
    uint32_t buff;
-   return readReg(SWD_RD_DP_IDCODE, buff);
+   return readReg(SwdRead_DP_IDCODE, buff);
 }
 
 /**
@@ -618,16 +420,16 @@ USBDM_ErrorCode connect(void) {
  */
 USBDM_ErrorCode powerUp() {
    USBDM_ErrorCode rc;
-   rc = writeReg(SWD_WR_DP_CONTROL, SWD_WR_DP_CONTROL_POWER_REQ);
+   rc = writeReg(SwdWrite_DP_CONTROL, SWD_DP_CONTROL_POWER_REQ);
    if (rc != BDM_RC_OK) {
       return rc;
    }
    uint32_t status;
-   rc = readReg(SWD_RD_DP_STATUS, status);
+   rc = readReg(SwdRead_DP_STATUS, status);
    if (rc != BDM_RC_OK) {
       return rc;
    }
-   return ((status&SWD_WR_DP_CONTROL_POWER_ACK) == SWD_WR_DP_CONTROL_POWER_ACK)?BDM_RC_OK:BDM_RC_ARM_PWR_UP_FAIL;
+   return ((status&SWD_DP_CONTROL_POWER_ACK) == SWD_DP_CONTROL_POWER_ACK)?BDM_RC_OK:BDM_RC_ARM_PWR_UP_FAIL;
 }
 
 /**
@@ -646,13 +448,26 @@ USBDM_ErrorCode lineReset(void) {
 
    // Target must respond to read IDCODE immediately
    uint32_t buff;
-   return readReg(SWD_RD_DP_IDCODE, buff);
+   return readReg(SwdRead_DP_IDCODE, buff);
+}
+
+/**
+ * Transmit 8 idle cycles
+ */
+void txIdle8() {
+   spi().CTAR[0] = PreambleCtar;
+   spi().PUSHR = 0b00000000|SPI_PUSHR_CTAS(0)|SwdDriveEnable |SPI_PUSHR_CONT(0)|SPI_PUSHR_EOQ(1);
+   // Wait until End of Transmission
+   while ((spi().SR & SPI_SR_EOQF_MASK)==0) {
+   }
+   spi().SR = SPI_SR_TCF_MASK|SPI_SR_EOQF_MASK;
+   (void)(spi().POPR);
 }
 
 /**
  *  Read ARM-SWD DP & AP register
  *
- *  @param command - SWD command byte to select register etc.
+ *  @param swdRead - SWD command byte to select register etc.
  *  @param data    - 32-bit value read
  *
  *  @return BDM_RC_OK               => Success        \n
@@ -662,27 +477,69 @@ USBDM_ErrorCode lineReset(void) {
  *  @return BDM_RC_ARM_PARITY_ERROR => Parity error on data read
  *
  *  @note Action and Data returned depends on register (some responses are pipelined)\n
- *    SWD_RD_DP_IDCODE - Value from IDCODE reg \n
- *    SWD_RD_DP_STATUS - Value from STATUS reg \n
- *    SWD_RD_DP_RESEND - LAST value read (AP read or DP-RDBUFF), FAULT on sticky error    \n
- *    SWD_RD_DP_RDBUFF - Value from last AP read and clear READOK flag in STRL/STAT, FAULT on sticky error \n
- *    SWD_RD_AP_REGx   - Value from last AP read, clear READOK flag in STRL/STAT and INITIATE next AP read, FAULT on sticky error
+ *    SwdRead_DP_IDCODE - Value from IDCODE reg \n
+ *    SwdRead_DP_STATUS - Value from STATUS reg \n
+ *    SwdRead_DP_RESEND - LAST value read (AP read or DP-RDBUFF), FAULT on sticky error    \n
+ *    SwdRead_DP_RDBUFF - Value from last AP read and clear READOK flag in STRL/STAT, FAULT on sticky error \n
+ *    SwdRead_AP_REGx   - Value from last AP read, clear READOK flag in STRL/STAT and INITIATE next AP read, FAULT on sticky error
  */
-USBDM_ErrorCode readReg(uint8_t command, uint32_t &data) {
-   int retry  = 2000;      // Set up retry count
-   USBDM_ErrorCode rc;
+USBDM_ErrorCode readReg(const SwdRead swdRead, uint32_t &data) {
 
-   // Transmit command + Receive ACK (1st attempt)
-   SwdAck ack = txCommand_rxAck(command);
+   spi().CTAR[0] = PreambleCtar;
+   spi().CTAR[1] = AckCtar;
+
+//   spi().MCR &= ~SPI_MCR_HALT_MASK;
+
+   unsigned        retry = 2000;
+   USBDM_ErrorCode rc    = BDM_RC_OK;
+
    do {
+      spi().PUSHR = swdRead   |SPI_PUSHR_CTAS(0)|SwdDriveEnable |SPI_PUSHR_CONT(0)|SPI_PUSHR_EOQ(0);
+      spi().PUSHR = SWD_ACK_OK|SPI_PUSHR_CTAS(1)|SwdDriveDisable|SPI_PUSHR_CONT(0)|SPI_PUSHR_EOQ(1);
+
+      // Wait until End of Transmission
+      while ((spi().SR & SPI_SR_EOQF_MASK)==0) {
+      }
+      spi().SR = SPI_SR_TCF_MASK|SPI_SR_EOQF_MASK;
+
+      (void)(spi().POPR);
+      uint8_t value = (spi().POPR);
+      SwdAck ack = (SwdAck)(value & SW_ACK_MASK);
+
+      data = value & 0b00001; // Data[0] is captured as part of the ACK read
+
       if (ack == SWD_ACK_OK) {
-         rc = rx32_parity(data);
+         // OK receive the rest of the data
+         spi().CTAR[1] = RxCtar;
+         spi().PUSHR = 0xFFFF|SPI_PUSHR_CTAS(1)|SwdDriveDisable|SPI_PUSHR_CONT(0)|SPI_PUSHR_EOQ(0);
+         spi().PUSHR = 0xFFFF|SPI_PUSHR_CTAS(1)|SwdDriveDisable|SPI_PUSHR_CONT(0)|SPI_PUSHR_EOQ(1);
+
+         // Wait until End of Transmission
+         while ((spi().SR & SPI_SR_EOQF_MASK)==0) {
+         }
+         spi().SR = SPI_SR_TCF_MASK|SPI_SR_EOQF_MASK;
+
+         // Transmit 8 bits idle
+         spi().PUSHR = 0b00000000|SPI_PUSHR_CTAS(0)|SwdDriveEnable |SPI_PUSHR_CONT(0)|SPI_PUSHR_EOQ(1);
+
+         // This can overlap with idle transmission
+         data |= (spi().POPR)<<1;       // Data[1-16]
+         uint32_t temp = (spi().POPR);  // Data[17-31],Parity
+         data |= temp<<17;
+         uint8_t receivedParity = temp>>15;
+         uint8_t calculatedparity = calcParity(data);
+         if (receivedParity != calculatedparity) {
+            rc = BDM_RC_ARM_PARITY_ERROR;
+         }
+         // Wait until End of Idle Transmission
+         while ((spi().SR & SPI_SR_EOQF_MASK)==0) {
+         }
+         spi().SR = SPI_SR_TCF_MASK|SPI_SR_EOQF_MASK;
+         // Discard idle Rx
+         (void)(spi().POPR);
       }
       else if (ack == SWD_ACK_WAIT) {
-         if (retry-- > 0) {
-            // 1 clock turn-around on WAIT + retry
-            // Turn-around + Transmit command (retry) + Receive ACK
-            ack = txMark_8_rxAck(command);
+         if (retry-->0) {
             continue;
          }
          rc = BDM_RC_ACK_TIMEOUT;
@@ -695,15 +552,17 @@ USBDM_ErrorCode readReg(uint8_t command, uint32_t &data) {
       }
       break;
    } while (true);
-   txIdle8();
+
+//   spi().MCR |= SPI_MCR_HALT_MASK;
+
    return rc;
 }
 
 /**
  *  Write ARM-SWD DP & AP register
  *
- *  @param command - SWD command byte to select register etc.
- *  @param data    - 32-bit value to write
+ *  @param swdWrite - SWD command byte to select register etc.
+ *  @param data     - 32-bit value to write
  *
  *  @return BDM_RC_OK               => Success        \n
  *  @return BDM_RC_ARM_FAULT_ERROR  => FAULT response from target \n
@@ -711,25 +570,57 @@ USBDM_ErrorCode readReg(uint8_t command, uint32_t &data) {
  *  @return BDM_RC_NO_CONNECTION    => Unexpected/no response from target
  *
  *  @note Action depends on register (some responses are pipelined)\n
- *    SWD_WR_DP_ABORT   - Write value to ABORT register (accepted) \n
- *    SWD_WR_DP_CONTROL - Write value to CONTROL register (may be pending), FAULT on sticky error. \n
- *    SWD_WR_DP_SELECT  - Write value to SELECT register (may be pending), FAULT on sticky error. \n
- *    SWD_WR_AP_REGx    - Write to AP register.  May initiate action e.g. memory access.  Result is pending, FAULT on sticky error.
+ *    SwdWrite_DP_ABORT   - Write value to ABORT register (accepted) \n
+ *    SwdWrite_DP_CONTROL - Write value to CONTROL register (may be pending), FAULT on sticky error. \n
+ *    SwdWrite_DP_SELECT  - Write value to SELECT register (may be pending), FAULT on sticky error. \n
+ *    SwdWrite_AP_REGx    - Write to AP register.  May initiate action e.g. memory access.  Result is pending, FAULT on sticky error.
  */
-USBDM_ErrorCode writeReg(uint8_t command, const uint32_t data) {
-   int retry = 2000;            // Set up retry count
-   SwdAck ack = txCommand_rxAck_Trn(command); // Transmit command & get ACK (1st attempt)
-   USBDM_ErrorCode rc;
+USBDM_ErrorCode writeReg(const SwdWrite swdWrite, const uint32_t data) {
+
+   spi().CTAR[0] = PreambleCtar;
+   spi().CTAR[1] = AckCtar;
+
+//   spi().MCR &= ~SPI_MCR_HALT_MASK;
+
+   unsigned        retry = 2000;
+   USBDM_ErrorCode rc    = BDM_RC_OK;
+
    do {
+      spi().PUSHR = swdWrite  |SPI_PUSHR_CTAS(0)|SwdDriveEnable |SPI_PUSHR_CONT(0)|SPI_PUSHR_EOQ(0);
+      spi().PUSHR = SWD_ACK_OK|SPI_PUSHR_CTAS(1)|SwdDriveDisable|SPI_PUSHR_CONT(0)|SPI_PUSHR_EOQ(1);
+
+      // Wait until End of Transmission
+      while ((spi().SR & SPI_SR_EOQF_MASK)==0) {
+      }
+      spi().SR = SPI_SR_TCF_MASK|SPI_SR_EOQF_MASK;
+
+      (void)(spi().POPR);
+      SwdAck ack = (SwdAck)(spi().POPR & SW_ACK_MASK);
+
       if (ack == SWD_ACK_OK) {
-         tx32_parity(data);
-         rc = BDM_RC_OK;
+         // OK send the data
+         uint32_t parity = calcParity(data)?(1<<10):0;
+
+         spi().CTAR[1] = TxCtar;
+
+         // Transmit 3x11 bits = Write:Data(0-10) or Write:Data(11-21) or Write:Data(22-31),parity
+         spi().PUSHR = ((uint16_t)(data>>0))|SPI_PUSHR_CTAS(1)|SwdDriveEnable|SPI_PUSHR_CONT(1)|SPI_PUSHR_EOQ(0);
+         spi().PUSHR = ((uint16_t)(data>>11))|SPI_PUSHR_CTAS(1)|SwdDriveEnable|SPI_PUSHR_CONT(1)|SPI_PUSHR_EOQ(0);
+         spi().PUSHR = ((uint16_t)(data>>22))|parity|SPI_PUSHR_CTAS(1)|SwdDriveEnable|SPI_PUSHR_CONT(0)|SPI_PUSHR_EOQ(0);
+         // Transmit 8 bits idle
+         spi().PUSHR = 0b00000000|SPI_PUSHR_CTAS(0)|SwdDriveEnable |SPI_PUSHR_CONT(0)|SPI_PUSHR_EOQ(1);
+
+         // Wait until End of Transmission
+         while ((spi().SR & SPI_SR_EOQF_MASK)==0) {
+         }
+         spi().SR = SPI_SR_TCF_MASK|SPI_SR_EOQF_MASK;
+         (void)(spi().POPR);
+         (void)(spi().POPR);
+         (void)(spi().POPR);
+         (void)(spi().POPR);
       }
       else if (ack == SWD_ACK_WAIT) {
-         if (retry-- > 0) {
-            // 1 clock turn-around on WAIT + retry
-            // Turn-around + Transmit command (retry) + rx ACK
-            ack = txMark_8_rxAck_Trn(command);
+         if (retry-->0) {
             continue;
          }
          rc = BDM_RC_ACK_TIMEOUT;
@@ -742,7 +633,9 @@ USBDM_ErrorCode writeReg(uint8_t command, const uint32_t data) {
       }
       break;
    } while (true);
-   txIdle8();
+   
+//   spi().MCR |= SPI_MCR_HALT_MASK;
+
    return rc;
 }
 
@@ -760,13 +653,13 @@ USBDM_ErrorCode writeReg(uint8_t command, const uint32_t data) {
  *  @note - Access is completed before return
  */
 USBDM_ErrorCode readAPReg(const uint32_t address, uint32_t &buff) {
-   static const uint8_t readAP[]  = {SWD_RD_AP_REG0,   SWD_RD_AP_REG1,    SWD_RD_AP_REG2,   SWD_RD_AP_REG3};
+   static const uint8_t readAP[]  = {SwdRead_AP_REG0,   SwdRead_AP_REG1,    SwdRead_AP_REG2,   SwdRead_AP_REG3};
    USBDM_ErrorCode rc;
-   uint8_t  regNo      = readAP[(address>>2)&0x3];
+   SwdRead  regNo      = (SwdRead)readAP[(address>>2)&0x3];
    uint32_t selectData = address&0xFF0000F0;
 
    // Set up SELECT register for AP access
-   rc = writeReg(SWD_WR_DP_SELECT, selectData);
+   rc = writeReg(SwdWrite_DP_SELECT, selectData);
    if (rc != BDM_RC_OK) {
       return rc;
    }
@@ -776,7 +669,7 @@ USBDM_ErrorCode readAPReg(const uint32_t address, uint32_t &buff) {
       return rc;
    }
    // Read from READBUFF register
-   return readReg(SWD_RD_DP_RDBUFF, buff);
+   return readReg(SwdRead_DP_RDBUFF, buff);
 }
 
 /**
@@ -793,13 +686,13 @@ USBDM_ErrorCode readAPReg(const uint32_t address, uint32_t &buff) {
  *  @note - Access is completed before return
  */
 USBDM_ErrorCode writeAPReg(const uint32_t address, const uint32_t data) {
-   static const uint8_t writeAP[] = {SWD_WR_AP_REG0,   SWD_WR_AP_REG1,    SWD_WR_AP_REG2,   SWD_WR_AP_REG3};
+   static const uint8_t writeAP[] = {SwdWrite_AP_REG0,   SwdWrite_AP_REG1,    SwdWrite_AP_REG2,   SwdWrite_AP_REG3};
    USBDM_ErrorCode rc;
-   uint8_t  regNo      = writeAP[(address>>2)&0x3];
+   SwdWrite regNo      = (SwdWrite)writeAP[(address>>2)&0x3];
    uint32_t selectData = address&0xFF0000F0;
 
    // Set up SELECT register for AP access
-   rc = writeReg(SWD_WR_DP_SELECT, selectData);
+   rc = writeReg(SwdWrite_DP_SELECT, selectData);
    if (rc != BDM_RC_OK) {
       return rc;
    }
@@ -809,7 +702,7 @@ USBDM_ErrorCode writeAPReg(const uint32_t address, const uint32_t data) {
       return rc;
    }
    // Read from READBUFF register to allow stall/status response
-   return readReg(SWD_RD_DP_RDBUFF, selectData);
+   return readReg(SwdRead_DP_RDBUFF, selectData);
 }
 
 /**
@@ -818,7 +711,7 @@ USBDM_ErrorCode writeAPReg(const uint32_t address, const uint32_t data) {
  *  @return error code
  */
 USBDM_ErrorCode clearStickyBits(void) {
-   return writeReg(SWD_WR_DP_ABORT, SWD_DP_ABORT_CLEAR_STICKY_ERRORS);
+   return writeReg(SwdWrite_DP_ABORT, SWD_DP_ABORT_CLEAR_STICKY_ERRORS);
 }
 
 /**
@@ -827,7 +720,7 @@ USBDM_ErrorCode clearStickyBits(void) {
  *  @return error code
  */
 USBDM_ErrorCode abortAP(void) {
-   return writeReg(SWD_WR_DP_ABORT, SWD_DP_ABORT_CLEAR_STICKY_ERRORS|SWD_DP_ABORT_ABORT_AP);
+   return writeReg(SwdWrite_DP_ABORT, SWD_DP_ABORT_CLEAR_STICKY_ERRORS|SWD_DP_ABORT_ABORT_AP);
 }
 
 static constexpr uint32_t  MDM_AP_STATUS                     = 0x01000000;
@@ -845,7 +738,7 @@ static constexpr uint32_t  MDM_AP_CONTROL_RESET_REQUEST      = (1<<3);
 static constexpr uint32_t  MDM_AP_STATUS_SECURE              = (1<<2);
 static constexpr uint32_t  MDM_AP_STATUS_MASS_ERASE_ENABLE   = (1<<5);
 
-static constexpr uint32_t  ATTEMPT_MULTIPLE                  = 100;  // How many times to attemp mass erase
+static constexpr uint32_t  ATTEMPT_MULTIPLE                  = 100;  // How many times to attempt mass erase
 static constexpr uint32_t  ERASE_MULTIPLE                    = 2;    // How many times to mass erase
 
 /**
@@ -941,7 +834,7 @@ USBDM_ErrorCode writeMemoryWord(const uint32_t address, const uint32_t data) {
     *  - Write value to DRW (data value to target memory)
     */
    // Select AHB-AP memory bank - subsequent AHB-AP register accesses are all in the same bank
-   rc = writeReg(SWD_WR_DP_SELECT, ARM_AHB_AP_BANK0);
+   rc = writeReg(SwdWrite_DP_SELECT, ARM_AHB_AP_BANK0);
    if (rc != BDM_RC_OK) {
       return rc;
    }
@@ -950,23 +843,23 @@ USBDM_ErrorCode writeMemoryWord(const uint32_t address, const uint32_t data) {
       return rc;
    }
    // Write CSW (word access etc)
-   rc = writeReg(SWD_WR_AHB_CSW, ahb_ap_csw_defaultValue|AHB_AP_CSW_SIZE_WORD);
+   rc = writeReg(SwdWrite_AHB_CSW, ahb_ap_csw_defaultValue|AHB_AP_CSW_SIZE_WORD);
    if (rc != BDM_RC_OK) {
       return rc;
    }
    // Write TAR (target address)
-   rc = writeReg(SWD_WR_AHB_TAR, address);
+   rc = writeReg(SwdWrite_AHB_TAR, address);
    if (rc != BDM_RC_OK) {
       return rc;
    }
    // Write data value
-   rc = writeReg(SWD_WR_AHB_DRW, data);
+   rc = writeReg(SwdWrite_AHB_DRW, data);
    if (rc != BDM_RC_OK) {
       return rc;
    }
    // Dummy read to get status
    uint32_t tt;
-   return readReg(SWD_RD_DP_RDBUFF, tt);
+   return readReg(SwdRead_DP_RDBUFF, tt);
 }
 
 /**  Write ARM-SWD Memory
@@ -998,7 +891,7 @@ USBDM_ErrorCode writeMemory(
     *    - Write value to DRW (data value to target memory)
     */
    // Select AHB-AP memory bank - subsequent AHB-AP register accesses are all in the same bank
-   rc = writeReg(SWD_WR_DP_SELECT, ARM_AHB_AP_BANK0);
+   rc = writeReg(SwdWrite_DP_SELECT, ARM_AHB_AP_BANK0);
    if (rc != BDM_RC_OK) {
       return rc;
    }
@@ -1007,12 +900,12 @@ USBDM_ErrorCode writeMemory(
       return rc;
    }
    // Write CSW (auto-increment etc)
-   rc = writeReg(SWD_WR_AHB_CSW, ahb_ap_csw_defaultValue|getcswValue(elementSize));
+   rc = writeReg(SwdWrite_AHB_CSW, ahb_ap_csw_defaultValue|getcswValue(elementSize));
    if (rc != BDM_RC_OK) {
       return rc;
    }
    // Write TAR (target address)
-   rc = writeReg(SWD_WR_AHB_TAR, addr);
+   rc = writeReg(SwdWrite_AHB_TAR, addr);
    if (rc != BDM_RC_OK) {
       return rc;
    }
@@ -1025,7 +918,7 @@ USBDM_ErrorCode writeMemory(
          case 2: temp[1] = *data_ptr++; break;
          case 3: temp[0] = *data_ptr++; break;
          }
-         rc = writeReg(SWD_WR_AHB_DRW, temp);
+         rc = writeReg(SwdWrite_AHB_DRW, temp);
          if (rc != BDM_RC_OK) {
             return rc;
          }
@@ -1042,7 +935,7 @@ USBDM_ErrorCode writeMemory(
          case 2:  temp[1] = *data_ptr++;
          temp[0] = *data_ptr++; break;
          }
-         rc = writeReg(SWD_WR_AHB_DRW, temp);
+         rc = writeReg(SwdWrite_AHB_DRW, temp);
          if (rc != BDM_RC_OK) {
             return rc;
          }
@@ -1057,7 +950,7 @@ USBDM_ErrorCode writeMemory(
          temp[2] = *data_ptr++;
          temp[1] = *data_ptr++;
          temp[0] = *data_ptr++;
-         rc = writeReg(SWD_WR_AHB_DRW, temp);
+         rc = writeReg(SwdWrite_AHB_DRW, temp);
          if (rc != BDM_RC_OK) {
             return rc;
          }
@@ -1065,7 +958,7 @@ USBDM_ErrorCode writeMemory(
       break;
    }
    // Dummy read to obtain status from last write
-   return readReg(SWD_RD_DP_RDBUFF, temp);
+   return readReg(SwdRead_DP_RDBUFF, temp);
 }
 
 /** Read 32-bit value from ARM-SWD Memory
@@ -1086,7 +979,7 @@ USBDM_ErrorCode readMemoryWord(const uint32_t address, uint32_t &data) {
     *  - Read data value from DP-READBUFF
     */
    // Select AHB-AP memory bank - subsequent AHB-AP register accesses are all in the same bank
-   rc = writeReg(SWD_WR_DP_SELECT, ARM_AHB_AP_BANK0);
+   rc = writeReg(SwdWrite_DP_SELECT, ARM_AHB_AP_BANK0);
    if (rc != BDM_RC_OK) {
       return rc;
    }
@@ -1095,23 +988,23 @@ USBDM_ErrorCode readMemoryWord(const uint32_t address, uint32_t &data) {
       return rc;
    }
    // Write memory access control to CSW
-   rc = writeReg(SWD_WR_AHB_CSW, ahb_ap_csw_defaultValue|AHB_AP_CSW_SIZE_WORD);
+   rc = writeReg(SwdWrite_AHB_CSW, ahb_ap_csw_defaultValue|AHB_AP_CSW_SIZE_WORD);
    if (rc != BDM_RC_OK) {
       return rc;
    }
    // Write TAR (target address)
-   rc = writeReg(SWD_WR_AHB_TAR, address);
+   rc = writeReg(SwdWrite_AHB_TAR, address);
    if (rc != BDM_RC_OK) {
       return rc;
    }
    uint32_t tt;
    // Initial read of DRW (dummy data)
-   rc = readReg(SWD_RD_AHB_DRW, tt);
+   rc = readReg(SwdRead_AHB_DRW, tt);
    if (rc != BDM_RC_OK) {
       return rc;
    }
    // Read memory data
-   return readReg(SWD_RD_DP_RDBUFF, data);
+   return readReg(SwdRead_DP_RDBUFF, data);
 }
 
 /**  Read ARM-SWD Memory
@@ -1149,7 +1042,7 @@ USBDM_ErrorCode readMemory(uint32_t elementSize, int count, uint32_t addr, uint8
    }
 #else
    // Select AHB-AP memory bank - subsequent AHB-AP register accesses are all in the same bank
-   rc = writeReg(SWD_WR_DP_SELECT, ARM_AHB_AP_BANK0);
+   rc = writeReg(SwdWrite_DP_SELECT, ARM_AHB_AP_BANK0);
    if (rc != BDM_RC_OK) {
       return rc;
    }
@@ -1158,18 +1051,18 @@ USBDM_ErrorCode readMemory(uint32_t elementSize, int count, uint32_t addr, uint8
       return rc;
    }
    // Write CSW (auto-increment etc)
-   rc = writeReg(SWD_WR_AHB_CSW, ahb_ap_csw_defaultValue|getcswValue(elementSize));
+   rc = writeReg(SwdWrite_AHB_CSW, ahb_ap_csw_defaultValue|getcswValue(elementSize));
    if (rc != BDM_RC_OK) {
       return rc;
    }
    // Write TAR (target address)
-   rc = writeReg(SWD_WR_AHB_TAR, addr);
+   rc = writeReg(SwdWrite_AHB_TAR, addr);
    if (rc != BDM_RC_OK) {
       return rc;
    }
 
    // Initial read of DRW (dummy data)
-   rc = readReg(SWD_RD_AHB_DRW, temp);
+   rc = readReg(SwdRead_AHB_DRW, temp);
    if (rc != BDM_RC_OK) {
       return rc;
    }
@@ -1179,11 +1072,11 @@ USBDM_ErrorCode readMemory(uint32_t elementSize, int count, uint32_t addr, uint8
          count--;
          if (count == 0) {
             // Read data from RDBUFF for final read
-            rc = readReg(SWD_RD_DP_RDBUFF, temp);
+            rc = readReg(SwdRead_DP_RDBUFF, temp);
          }
          else {
             // Start next read and collect data from last read
-            rc = readReg(SWD_RD_AHB_DRW, temp);
+            rc = readReg(SwdRead_AHB_DRW, temp);
          }
          if (rc != BDM_RC_OK) {
             return rc;
@@ -1204,11 +1097,11 @@ USBDM_ErrorCode readMemory(uint32_t elementSize, int count, uint32_t addr, uint8
          count--;
          if (count == 0) {
             // Read data from RDBUFF for final read
-            rc = readReg(SWD_RD_DP_RDBUFF, temp);
+            rc = readReg(SwdRead_DP_RDBUFF, temp);
          }
          else {
             // Start next read and collect data from last read
-            rc = readReg(SWD_RD_AHB_DRW, temp);
+            rc = readReg(SwdRead_AHB_DRW, temp);
          }
          if (rc != BDM_RC_OK) {
             return rc;
@@ -1231,11 +1124,11 @@ USBDM_ErrorCode readMemory(uint32_t elementSize, int count, uint32_t addr, uint8
          count--;
          if (count == 0) {
             // Read data from RDBUFF for final read
-            rc = readReg(SWD_RD_DP_RDBUFF, temp);
+            rc = readReg(SwdRead_DP_RDBUFF, temp);
          }
          else {
             // Start next read and collect data from last read
-            rc = readReg(SWD_RD_AHB_DRW, temp);
+            rc = readReg(SwdRead_AHB_DRW, temp);
          }
          if (rc != BDM_RC_OK) {
             return rc;
@@ -1275,7 +1168,7 @@ USBDM_ErrorCode writeMemory(uint32_t elementSize, int count, uint32_t addr, uint
     *    - Write value to DRW (data value to target memory)
     */
    // Select AHB-AP memory bank - subsequent AHB-AP register accesses are all in the same bank
-   rc = writeReg(SWD_WR_DP_SELECT, ARM_AHB_AP_BANK0);
+   rc = writeReg(SwdWrite_DP_SELECT, ARM_AHB_AP_BANK0);
    if (rc != BDM_RC_OK) {
       return rc;
    }
@@ -1284,12 +1177,12 @@ USBDM_ErrorCode writeMemory(uint32_t elementSize, int count, uint32_t addr, uint
       return rc;
    }
    // Write CSW (auto-increment etc)
-   rc = writeReg(SWD_WR_AHB_CSW, ahb_ap_csw_defaultValue|getcswValue(elementSize));
+   rc = writeReg(SwdWrite_AHB_CSW, ahb_ap_csw_defaultValue|getcswValue(elementSize));
    if (rc != BDM_RC_OK) {
       return rc;
    }
    // Write TAR (target address)
-   rc = writeReg(SWD_WR_AHB_TAR, addr);
+   rc = writeReg(SwdWrite_AHB_TAR, addr);
    if (rc != BDM_RC_OK) {
       return rc;
    }
@@ -1310,7 +1203,7 @@ USBDM_ErrorCode writeMemory(uint32_t elementSize, int count, uint32_t addr, uint
             temp[0] = *data_ptr++;
             break;
          }
-         rc = writeReg(SWD_WR_AHB_DRW, temp);
+         rc = writeReg(SwdWrite_AHB_DRW, temp);
          if (rc != BDM_RC_OK) {
             return rc;
          }
@@ -1331,7 +1224,7 @@ USBDM_ErrorCode writeMemory(uint32_t elementSize, int count, uint32_t addr, uint
             temp[0] = *data_ptr++;
             break;
          }
-         rc = writeReg(SWD_WR_AHB_DRW, temp);
+         rc = writeReg(SwdWrite_AHB_DRW, temp);
          if (rc != BDM_RC_OK) {
             return rc;
          }
@@ -1346,7 +1239,7 @@ USBDM_ErrorCode writeMemory(uint32_t elementSize, int count, uint32_t addr, uint
          temp[2] = *data_ptr++;
          temp[1] = *data_ptr++;
          temp[0] = *data_ptr++;
-         rc = writeReg(SWD_WR_AHB_DRW, temp);
+         rc = writeReg(SwdWrite_AHB_DRW, temp);
          if (rc != BDM_RC_OK) {
             return rc;
          }
@@ -1354,7 +1247,7 @@ USBDM_ErrorCode writeMemory(uint32_t elementSize, int count, uint32_t addr, uint
       break;
    }
    // Dummy read to obtain status from last write
-   return readReg(SWD_RD_DP_RDBUFF, temp);
+   return readReg(SwdRead_DP_RDBUFF, temp);
 }
 
 /**
