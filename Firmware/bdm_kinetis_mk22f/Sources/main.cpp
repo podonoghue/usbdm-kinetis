@@ -12,6 +12,7 @@
 #include <random>
 #include <stdlib.h>
 #include "hardware.h"
+#include "interface.h"
 #include "usb.h"
 #include "targetVddInterface.h"
 #include "resetInterface.h"
@@ -20,10 +21,11 @@
 #include "configure.h"
 #include "commands.h"
 #include "bdmCommon.h"
-#include "bdm.h"
 #include "cmdProcessingSWD.h"
+#if HW_CAPABILITY & CAP_BDM
+#include "bdm.h"
 #include "cmdProcessingHCS.h"
-
+#endif
 using namespace USBDM;
 
 #if 0
@@ -135,8 +137,8 @@ USBDM_ErrorCode testmem(uint32_t addressStart, uint32_t addrRange) {
    }
    return BDM_RC_OK;
 }
-
 #endif
+
 #if 0
 USBDM_ErrorCode recover() {
    Swd::initialise();

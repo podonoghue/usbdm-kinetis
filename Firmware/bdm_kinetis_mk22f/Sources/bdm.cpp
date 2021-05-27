@@ -38,8 +38,8 @@
  */
 
 #include <stdint.h>
-#include "USBDM_MK.h"
 #include "delay.h"
+#include "utilities.h"
 #include "configure.h"
 #include "system.h"
 #include "derivative.h"

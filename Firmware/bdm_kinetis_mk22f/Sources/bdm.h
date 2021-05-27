@@ -8,7 +8,6 @@
 #ifndef SOURCES_H_
 #define SOURCES_H_
 
-#include "USBDM_MK.h"
 #include "system.h"
 #include "derivative.h"
 #include "hardware.h"

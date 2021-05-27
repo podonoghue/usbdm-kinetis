@@ -6,18 +6,22 @@
  */
 
 #include <string.h>
-#include <targetVddInterface.h>
+#include "targetVddInterface.h"
 #include "delay.h"
 #include "configure.h"
-#include "targetDefines.h"
-#include "resetInterface.h"
-#include "usb.h"
-#include "swd.h"
-#include "bdm.h"
 #include "bdmCommon.h"
 #include "cmdProcessing.h"
 #include "cmdProcessingSWD.h"
+#if HW_CAPABILITY & CAP_BDM
 #include "cmdProcessingHCS.h"
+#endif
+#include "resetInterface.h"
+#include "usb.h"
+#include "swd.h"
+#if HW_CAPABILITY & CAP_BDM
+#include "targetDefines.h"
+#include "bdm.h"
+#endif
 
 /** Buffer for USB command in, result out */
 uint8_t commandBuffer[MAX_COMMAND_SIZE+4];
@@ -42,7 +46,11 @@ BDM_Option_t bdm_option = {
       /* targetVdd          */   BDM_TARGET_VDD_OFF,   //!< Target Vdd (off, 3.3V or 5V)
       /* useAltBDMClock     */   CS_DEFAULT,           //!< Use alternative BDM clock source in target
       /* autoReconnect      */   AUTOCONNECT_STATUS,   //!< Automatically re-connect to target (for speed change)
+#ifdef HCS08_SBDFR_DEFAULT
       /* SBDFRaddress       */   HCS08_SBDFR_DEFAULT,  //!< Default HCS08_SBDFR address
+#else
+      /* SBDFRaddress       */   0,                    //!< Not used
+#endif
       /* reserved           */   {0}                   //   Reserved
 };
 
@@ -440,7 +448,9 @@ USBDM_ErrorCode f_CMD_GET_BDM_STATUS(void) {
 void getPinStatus(void) {
    PinLevelMasks_t status = ResetInterface::isHigh()?PIN_RESET_LOW:PIN_RESET_HIGH;
    Swd::getPinState(status);
+#if HW_CAPABILITY & CAP_BDM
    Bdm::getPinState(status);
+#endif
 
    unpack16BE(status, commandBuffer+1);
    returnSize  = 3;
@@ -1167,7 +1177,7 @@ static void commandExec(void) {
  *       commandBuffer[0]    = error code               \n
  *       commandBuffer[1..N] = response/data
  */
-void commandLoop(void) {
+void commandLoop() {
    static uint8_t commandSequence = 0;
 
    for(;;) {

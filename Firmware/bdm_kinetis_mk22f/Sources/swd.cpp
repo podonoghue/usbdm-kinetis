@@ -29,12 +29,13 @@
    \endverbatim
  */
 #include "delay.h"
+#include "utilities.h"
+#include "interface.h"
 #include "resetInterface.h"
 #include "spi.h"
 #include "commands.h"
-#include "targetDefines.h"
-#include "configure.h"
 #include "console.h"
+#include "swd.h"
 
 using namespace USBDM;
 
@@ -52,14 +53,15 @@ using swdIn = GpioTable_T<SpiInfo, 1, ActiveHigh>;
 /** GPIO for SWD-DOUT pin */
 using swdOut = GpioTable_T<SpiInfo, 2, ActiveHigh>;
 
-/** GPIO for SWD enable pin */
-using swdDirection = GpioTable_T<SpiInfo, 5, ActiveHigh>;
-
 // Make sure pins have been assigned to SPI
 CheckSignal<SpiInfo, 0> sck_chk;
 CheckSignal<SpiInfo, 1> sin_chk;
 CheckSignal<SpiInfo, 2> sout_chk;
+
 CheckSignal<SpiInfo, 5> enable_chk;
+
+/** GPIO for manual SWD enable pin */
+using swdDirection = GpioTable_T<SpiInfo, 5, ActiveHigh>;
 
 // Masks for SPI CS which controls the SWDIO output drive
 static constexpr SpiPeripheralSelect SwdDriveEnable  = SpiPeripheralSelect_2;
@@ -494,8 +496,8 @@ USBDM_ErrorCode readReg(const SwdRead swdRead, uint32_t &data) {
    USBDM_ErrorCode rc    = BDM_RC_OK;
 
    do {
-      spi().PUSHR = swdRead   |SPI_PUSHR_CTAS(0)|SwdDriveEnable |SPI_PUSHR_CONT(0)|SPI_PUSHR_EOQ(0);
-      spi().PUSHR = SWD_ACK_OK|SPI_PUSHR_CTAS(1)|SwdDriveDisable|SPI_PUSHR_CONT(0)|SPI_PUSHR_EOQ(1);
+      spi().PUSHR = swdRead|SPI_PUSHR_CTAS(0)|SwdDriveEnable |SPI_PUSHR_CONT(0)|SPI_PUSHR_EOQ(0);
+      spi().PUSHR = 0b00000|SPI_PUSHR_CTAS(1)|SwdDriveDisable|SPI_PUSHR_CONT(0)|SPI_PUSHR_EOQ(1);
 
       // Wait until End of Transmission
       while ((spi().SR & SPI_SR_EOQF_MASK)==0) {

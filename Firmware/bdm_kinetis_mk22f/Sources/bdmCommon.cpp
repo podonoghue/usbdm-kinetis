@@ -32,7 +32,9 @@
 #include "configure.h"
 #include "bdmCommon.h"
 #include "swd.h"
+#if (HW_CAPABILITY&CAP_BDM)
 #include "bdm.h"
+#endif
 #include "resetInterface.h"
 #include "cmdProcessing.h"
 #include "commands.h"
@@ -44,8 +46,10 @@ static constexpr uint32_t VDD_RISE_TIMEms = 100;
 /** How long to wait for Target Vdd fall */
 static constexpr uint32_t VDD_FALL_TIMEms = 500;
 
+#if HW_CAPABILITY & CAP_RST_IN
 /** How long to wait for Reset rise after Vdd on etc */
 static constexpr uint32_t RESET_RISE_TIMEus = 100;
+#endif
 
 /** How long to wait for BKGD rise after Reset etc */
 static constexpr uint32_t BKGD_WAITus = 100;
@@ -163,8 +167,10 @@ USBDM_ErrorCode enableTargetVdd() {
 USBDM_ErrorCode cycleTargetVddOn(TargetMode_t mode) {
    USBDM_ErrorCode rc = BDM_RC_OK;
 
+#if (HW_CAPABILITY&CAP_BDM)
    // Used to indicate doing HCS power on sequence with BKGD low
    bool hcsPowerOn = false;
+#endif
 
    mode = (TargetMode_t)(mode&RESET_MODE_MASK);
 
@@ -231,10 +237,12 @@ USBDM_ErrorCode cycleTargetVddOn(TargetMode_t mode) {
       bdmcf_interfaceIdle();  // Release BKPT etc
    else
 #endif
+#if (HW_CAPABILITY&CAP_BDM)
       if (hcsPowerOn) {
          // Release BKGD
          Bdm::setPinState(PinLevelMasks_t::PIN_BKGD_3STATE);
       }
+#endif
    // Let processor start up
    USBDM::waitMS(RESET_RECOVERYms);
 
@@ -396,8 +404,9 @@ void suspend(void){
  */
 void interfaceOff( void ) {
    Swd::disable();
+#if (HW_CAPABILITY&CAP_BDM)
    Bdm::disable();
-
+#endif
    if (!bdm_option.leaveTargetPowered) {
       cycleTargetVddOff();
    }

@@ -876,7 +876,8 @@ public:
    }
 
    /**
-    *
+    * Calculates the timing aspects of a CTAR value based on frequency
+    
     * @param[in]  frequency      => Communication frequency in Hz
     *
     * @return Combined masks for CTAR.BR, CTAR.PBR, CTAR.PCSSCK, CTAR.CSSCK, CTAR.PDT, CTAR.DT, CTAR.PCSSCK and CTAR.CSSCK

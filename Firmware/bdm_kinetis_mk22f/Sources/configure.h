@@ -92,6 +92,8 @@
 #define TARGET_HARDWARE H_USBDM_MK22F12
 #elif defined  MCU_MK22D5
 #define TARGET_HARDWARE H_USBDM_MK20D5
+#else
+#define TARGET_HARDWARE H_USBDM_OPENSDA
 #endif
 
 //==========================================================================================
@@ -106,14 +108,41 @@
 #define HW_UF        0xC0
 #define HW_ARM       0x40
 
-//! Selected hardware platform
-#include "USBDM_MK.h"
+//==========================================================================================
+// USB Serial Number
+#ifdef UNIQUE_ID
+#define SERIAL_NO           "USBDM-MK-"
+#else
+#define SERIAL_NO           "USBDM-MK-0001"
+#endif
+
+#if defined(OPEN_SDA_V2_1)
+#define PRODUCT_DESCRIPTION "USBDM ARM-SWD for OpenSDAv2.1"
+#elif defined(OPEN_SDA_V2_0)
+#define PRODUCT_DESCRIPTION "USBDM ARM-SWD for OpenSDAv2.0"
+#elif defined(OPEN_SDA_V1)
+#define PRODUCT_DESCRIPTION "USBDM ARM-SWD for OpenSDAv1"
+#else
+#define PRODUCT_DESCRIPTION "USBDM ARM-SWD for MK"
+#endif
+
+#define MANUFACTURER        "pgo"
+
+//==========================================================================================
+// Capabilities of the hardware - used to enable/disable appropriate code
+//
+#define HW_CAPABILITY       (CAP_RST_OUT|CAP_RST_IN|CAP_CDC|CAP_SWD_HW|CAP_BDM|CAP_SWD_HW|CAP_CORE_REGS|CAP_VDDCONTROL|CAP_VDDSENSE)
+#define TARGET_CAPABILITY   (CAP_RST               |CAP_CDC|CAP_HCS08|CAP_HCS12|CAP_S12Z|CAP_CFV1|CAP_ARM_SWD|CAP_VDDCONTROL)
+
+#define CPU  MK20D5
+
+#define VERSION_HW  (HW_ARM+TARGET_HARDWARE)
 
 //==========================================================================================
 //! Software Version Information
 //
 #define VERSION_MAJOR 5
-#define VERSION_MINOR 2
+#define VERSION_MINOR 3
 #define VERSION_MICRO 0
 #define VERSION_SW  ((VERSION_MAJOR<<4)+VERSION_MINOR)
 
@@ -126,6 +155,5 @@
 #endif
 
 #define VERSION_ID       (VERSION_SW)   // Reported version (via USB)
-
 
 #endif /* SOURCES_CONFIGURE_H_ */

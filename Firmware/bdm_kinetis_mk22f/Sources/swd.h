@@ -34,7 +34,10 @@
 
 #include <stdint.h>
 #include "commands.h"
+
+#define NEED_ENDIAN_CONVERSIONS 1
 #include "utilities.h"
+#undef NEED_ENDIAN_CONVERSIONS
 
 namespace Swd {
 

@@ -27,7 +27,10 @@
 #define MS_COMPATIBLE_ID_FEATURE
 #include "usb_cdc_uart.h"
 
-#define UNIQUE_ID
+/** Causes a semi-unique serial number to be generated for each USB device */
+// Done on command line where needed
+//#define UNIQUE_ID 1
+
 #include "configure.h"
 
 #include "queue.h"
@@ -37,9 +40,6 @@ namespace USBDM {
 //======================================================================
 // Customise for each USB device
 //
-
-/** Causes a semi-unique serial number to be generated for each USB device */
-#define UNIQUE_ID
 
 #ifndef SERIAL_NO
 #ifdef UNIQUE_ID
@@ -62,7 +62,7 @@ namespace USBDM {
 #define PRODUCT_ID            (0xFFFF)    // Product ID
 #endif
 #ifndef VERSION_ID
-#define VERSION_ID (0x0100)
+#define VERSION_ID (0x0200)
 #endif
 
 //======================================================================

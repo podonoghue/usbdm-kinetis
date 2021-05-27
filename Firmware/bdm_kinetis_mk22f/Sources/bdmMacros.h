@@ -10,6 +10,8 @@
 #ifndef _BDMMACROS_H_
 #define _BDMMACROS_H_
 
+#include "utilities.h"
+
 namespace Bdm {
 
 // Hardware commands

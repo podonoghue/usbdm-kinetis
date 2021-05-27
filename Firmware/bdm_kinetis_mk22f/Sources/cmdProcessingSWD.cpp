@@ -31,9 +31,11 @@
  *  \endverbatim
  */
 #include <string>
+#include <math.h>
 #include "configure.h"
 #include "commands.h"
-#include "targetDefines.h"
+//#include "targetDefines.h"
+#include "cmdProcessing.h"
 #include "cmdProcessingSWD.h"
 #include "swd.h"
 #include "bdmCommon.h"
