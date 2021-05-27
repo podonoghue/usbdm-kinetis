@@ -553,19 +553,19 @@ void Usb0::sendBulkData(uint8_t size, const uint8_t *buffer) {
  */
 void Usb0::handleSetLineCoding() {
 //   console.WRITELN("handleSetLineCoding()");
-static LineCodingStructure lineCodingStructure;
 
    // Call-back to do after transaction complete
    static auto callback = [](EndpointState) {
       // The controlEndpoint buffer will contain the LineCodingStructure data at call-back time
-      Uart::setLineCoding(&lineCodingStructure);
+      Uart::setLineCoding((LineCodingStructure *)fControlEndpoint.getRxBuffer());
       fControlEndpoint.setCallback(nullptr);
       return EPIdle;
    };
    fControlEndpoint.setCallback(callback);
 
-   // Must use external buffer as EP) share IN/OUT buffer
-   fControlEndpoint.startRxStage(EPDataOut, sizeof(lineCodingStructure), (unsigned char*)&lineCodingStructure);
+   // Don't use external buffer - this requires response to fit in internal EP buffer
+   static_assert(sizeof(LineCodingStructure) < fControlEndpoint.BUFFER_SIZE, "Buffer insufficient size");
+   fControlEndpoint.startRxStage(EPDataOut, sizeof(LineCodingStructure));
 }
 
 /**

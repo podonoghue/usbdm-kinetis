@@ -12,7 +12,7 @@
 /**
  * GPIO for Activity LED
  */
-class UsbLed : public USBDM::GpioD<4, USBDM::ActiveLow> {
+class UsbLed : public USBDM::GpioD<7, USBDM::ActiveLow> {
 public:
    /** Initialise activity LED */
    static void initialise() {
@@ -21,7 +21,7 @@ public:
 };
 
 /**
- * GPIO for Debug pin
+ * GPIO for Debug pin PTB0 or PTB1
  */
 class Debug : public USBDM::GpioB<0, USBDM::ActiveHigh> {
 public:

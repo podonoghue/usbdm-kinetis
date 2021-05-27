@@ -673,7 +673,7 @@ public:
    }
 
    /**
-    * Gets pointer to USB data buffer
+    * Gets pointer to USB transmit data buffer
     *
     * @return Pointer to buffer
     */
@@ -682,11 +682,11 @@ public:
    }
 
    /**
-    * Gets pointer to USB data buffer
+    * Gets pointer to USB receive data buffer
     *
     * @return Pointer to buffer
     */
-   volatile uint8_t *getRxBuffer() {
+   volatile const uint8_t *getRxBuffer() {
       return fRxDataBuffer;
    }
 
@@ -763,7 +763,7 @@ uint8_t Endpoint2_T<Info, ENDPOINT_NUM, EP_MAXSIZE>::fAllocatedRxDataBuffer[EP_M
  * @tparam EP0_SIZE   Maximum size of DATA transaction
  */
 template<class Info, unsigned EP0_SIZE>
-class ControlEndpoint : public Endpoint2_T<Info, 0, EP0_SIZE> {
+class ControlEndpoint : public Endpoint_T<Info, 0, EP0_SIZE> {
 
 public:
    using Endpoint::fState;
@@ -781,7 +781,7 @@ public:
    /**
     * Constructor for CONTROL endpoint
     */
-   constexpr ControlEndpoint() : Endpoint2_T<Info, 0, EP0_SIZE>(EndPointType_Control, fEpControlValue) {
+   constexpr ControlEndpoint() : Endpoint_T<Info, 0, EP0_SIZE>(EndPointType_Control, fEpControlValue) {
    }
 
    /**
