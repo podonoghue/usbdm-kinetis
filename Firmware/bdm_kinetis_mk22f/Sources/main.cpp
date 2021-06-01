@@ -121,7 +121,7 @@ USBDM_ErrorCode testmem(uint32_t addressStart, uint32_t addrRange) {
       //                          SIZE     #BYTES   Address
       uint8_t operation[] = {0,0, opSize,   size,   (uint8_t)(address>>24), (uint8_t)(address>>16), (uint8_t)(address>>8), (uint8_t)address};
 
-      console.write("Testing [").WRITE(address,Radix_16).WRITE("..").WRITE(address+size-1,Radix_16).WRITE("]:").WRITELN("-BW-L"[opSize]);
+      console.WRITE("Testing [").WRITE(address,Radix_16).WRITE("..").WRITE(address+size-1,Radix_16).WRITE("]:").WRITELN("-BW-L"[opSize]);
 
       memcpy(commandBuffer, operation, sizeof(operation));
       memcpy(commandBuffer+sizeof(operation), randomData, size);
@@ -220,7 +220,7 @@ USBDM_ErrorCode testmem() {
       //                          SIZE     #BYTES   Address
       uint8_t operation[] = {0,0, opSize,   size,   (uint8_t)(address>>24), (uint8_t)(address>>16), (uint8_t)(address>>8), (uint8_t)address};
 
-      console.write("Testing [").WRITE(address,Radix_16).WRITE("..").WRITE(address+size-1,Radix_16).WRITE("]:").WRITELN("-BW-L"[opSize]);
+      console.WRITE("Testing [").WRITE(address,Radix_16).WRITE("..").WRITE(address+size-1,Radix_16).WRITE("]:").WRITELN("-BW-L"[opSize]);
 
       memcpy(commandBuffer, operation, sizeof(operation));
       memcpy(commandBuffer+sizeof(operation), randomData, size);
@@ -247,16 +247,16 @@ USBDM_ErrorCode checkIDcode() {
    uint32_t idcode;
    USBDM_ErrorCode rc = Swd::readReg(Swd::SWD_RD_DP_IDCODE, idcode);
    if (rc != BDM_RC_OK) {
-      console.WRITE("Failed SWD_RD_DP_IDCODE, rc = ").writeln(rc);
+      console.WRITE("Failed SWD_RD_DP_IDCODE, rc = ").WRITELN(rc);
       return rc;
    }
    else {
       if (idcode != 0x2BA01477) {
-         console.WRITE("Wrong IDCODE = 0x").writeln(idcode, Radix_16);
+         console.WRITE("Wrong IDCODE = 0x").WRITELN(idcode, Radix_16);
          return rc;
       }
       else {
-         console.WRITE("IDCODE = 0x").writeln(idcode, Radix_16);
+         console.WRITE("IDCODE = 0x").WRITELN(idcode, Radix_16);
       }
    }
    return BDM_RC_OK;
@@ -279,9 +279,9 @@ void hcs08Testing () {
    // Need to initialise for debug UART0
    ::initialise();
 
-   console.WRITE("SystemBusClock  = ").writeln(::SystemBusClock);
-   console.WRITE("SystemCoreClock = ").writeln(::SystemCoreClock);
-   console.WRITE("Target Vdd = ").writeln(TargetVdd::readVoltage());
+   console.WRITE("SystemBusClock  = ").WRITELN(::SystemBusClock);
+   console.WRITE("SystemCoreClock = ").WRITELN(::SystemCoreClock);
+   console.WRITE("Target Vdd = ").WRITELN(TargetVdd::readVoltage());
 
    USBDM_ErrorCode rc;
    do {
@@ -349,11 +349,11 @@ int main() {
    // Need to coldStart voltage monitoring etc
    ::coldStart();
 
-//   console.write("SystemBusClock  = ").write(::SystemBusClock/1000000.0).writeln(" MHz");
-//   console.write("SystemCoreClock = ").write(::SystemCoreClock/1000000.0).writeln(" MHz");
+//   console.WRITE("SystemBusClock  = ").WRITE(::SystemBusClock/1000000.0).WRITELN(" MHz");
+//   console.WRITE("SystemCoreClock = ").WRITE(::SystemCoreClock/1000000.0).WRITELN(" MHz");
 //
-//   console.write("HardwareId = ").writeln(HardwareId::getId());
-//   console.write("Target Vdd = ").write(TargetVddInterface::readVoltage()).writeln(" V");
+//   console.WRITE("HardwareId = ").WRITELN(HardwareId::getId());
+//   console.WRITE("Target Vdd = ").WRITE(TargetVddInterface::readVoltage()).WRITELN(" V");
 
    console.WRITELN("\n\nStarting");
 

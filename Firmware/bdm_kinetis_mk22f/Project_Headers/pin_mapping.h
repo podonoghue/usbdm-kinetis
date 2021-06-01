@@ -197,7 +197,7 @@ public:
    static constexpr uint32_t defaultPcrValue  = 0;
 
    //! Map all allocated pins on a peripheral when enabled
-   static constexpr bool mapPinsOnEnable = true;
+   static constexpr bool mapPinsOnEnable = false;
 
    //! Frequency of OSC Clock or Crystal
    static constexpr uint32_t osc_clock = 0UL;
@@ -207,7 +207,7 @@ public:
 
    //! Oscillator control register
    static constexpr uint32_t cr =
-      OSC_CR_ERCLKEN(1)  | // External Reference Enable
+      OSC_CR_ERCLKEN(0)  | // External Reference Enable
       OSC_CR_EREFSTEN(0) | // External Reference Stop Enable
       OSC_CR_SCP(0);       // Oscillator load capacitance
 
@@ -499,8 +499,7 @@ public:
    //! Not present on these devices
    static constexpr int ERRATA_E2448 = 0;
 
-   enum ClockMode {
-      ClockMode_None     = -1,
+   enum ClockMode : uint8_t {
       ClockMode_FEI      = 0,
       ClockMode_FEE,
       ClockMode_FBI,
@@ -6411,8 +6410,8 @@ using Gpio_p64             = const USBDM::GpioD<7>;
  *  DAC0_OUT                 | DAC0_OUT/CMP1_IN3/ADC0_SE23                 | p18                       | N/C       
  *  EXTAL32                  | EXTAL32                                     | p20                       | N/C       
  *  PTA0                     | JTAG_TCLK/SWD_CLK                           | p22                       | SWD_CLK       
- *  PTA1                     | UART0_RX                                    | p23                       | Console_Rx       
- *  PTA2                     | UART0_TX                                    | p24                       | Console_Tx       
+ *  PTA1                     | UART0_RX                                    | p23                       | SWD_Rx       
+ *  PTA2                     | UART0_TX                                    | p24                       | SWD_Tx       
  *  PTA3                     | JTAG_TMS/SWD_DIO                            | p25                       | SWD_DIO       
  *  PTA4                     | -                                           | p26                       | N/C       
  *  PTA5                     | -                                           | p27                       | N/C       
@@ -6496,8 +6495,8 @@ using Gpio_p64             = const USBDM::GpioD<7>;
  *  EXTAL32                  | EXTAL32                                     | p20                       | N/C       
  *  VBAT                     | VBAT                                        | p21                       | 3V3       
  *  PTA0                     | JTAG_TCLK/SWD_CLK                           | p22                       | SWD_CLK       
- *  PTA1                     | UART0_RX                                    | p23                       | Console_Rx       
- *  PTA2                     | UART0_TX                                    | p24                       | Console_Tx       
+ *  PTA1                     | UART0_RX                                    | p23                       | SWD_Rx       
+ *  PTA2                     | UART0_TX                                    | p24                       | SWD_Tx       
  *  PTA3                     | JTAG_TMS/SWD_DIO                            | p25                       | SWD_DIO       
  *  PTA4                     | -                                           | p26                       | N/C       
  *  PTA5                     | -                                           | p27                       | N/C       
@@ -6571,8 +6570,8 @@ using Gpio_p64             = const USBDM::GpioD<7>;
  *  PTC5                     | SPI0_SCK                                    | p50                       | SWCLK_O       
  *  PTD3                     | SPI0_SIN                                    | p60                       | BKGD/SWD_I       
  *  PTC6                     | SPI0_SOUT                                   | p51                       | BKGD/SWD_O       
- *  PTA1                     | UART0_RX                                    | p23                       | Console_Rx       
- *  PTA2                     | UART0_TX                                    | p24                       | Console_Tx       
+ *  PTA1                     | UART0_RX                                    | p23                       | SWD_Rx       
+ *  PTA2                     | UART0_TX                                    | p24                       | SWD_Tx       
  *  PTE1                     | UART1_RX                                    | p2                        | DBG_Rx       
  *  PTE0                     | UART1_TX                                    | p1                        | DBG_Tx       
  *  USB0_DM                  | USB0_DM                                     | p6                        | USB_DM       
