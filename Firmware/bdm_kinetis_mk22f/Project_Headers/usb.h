@@ -82,7 +82,7 @@
  * Any manual changes will be lost.
  */
 #include <cstring>
-#include "hardware.h"
+#include "pin_mapping.h"
 #include "usb_defs.h"
 #include "utilities.h"
 #include "usb_endpoint.h"
@@ -197,9 +197,9 @@ public:
    static const char *getTokenName(unsigned token);
 
    /**
-    * Get name of USB state
+    * Get name of USB end-point state
     *
-    * @param[in]   state USB state
+    * @param[in]  state End-point state
     *
     * @return Pointer to static string
     */
@@ -280,9 +280,9 @@ public:
 template <class Info, int EP0_SIZE>
 class UsbBase_T : public UsbBase {
 
-public:
+private:
    /** Hardware instance pointer */
-   static __attribute__((always_inline)) volatile USB_Type &fUsb() { return Info::usb(); }
+   static constexpr HardwarePtr<USB_Type> fUsb = Info::baseAddress;
 
 protected:
    /** USB Control endpoint - always EP0 */
@@ -330,23 +330,56 @@ protected:
    static SOFCallbackFunction fSofCallbackFunction;
 
 public:
+
+// Template _mapPinsOption_on.xml
+
    /**
-    * Configures all mapped pins associated with this peripheral
+    * Configures all mapped pins associated with USB
+    *
+    * @note Locked pins will be unaffected
     */
-   static void __attribute__((always_inline)) configureAllPins() {
-      // Configure pins
-      Info::initPCRs();
+   static void configureAllPins() {
+   
+      // Configure pins if selected and not already locked
+      if constexpr (Info::mapPinsOnEnable && !(MapAllPinsOnStartup && (ForceLockedPins == PinLock_Locked))) {
+         Info::initPCRs();
+      }
    }
 
    /**
-    * Initialise USB to default settings\n
-    * Configures all USB pins
+    * Disabled all mapped pins associated with USB
+    *
+    * @note Only the lower 16-bits of the PCR registers are modified
+    *
+    * @note Locked pins will be unaffected
+    */
+   static void disableAllPins() {
+   
+      // Disable pins if selected and not already locked
+      if constexpr (Info::mapPinsOnEnable && !(MapAllPinsOnStartup && (ForceLockedPins == PinLock_Locked))) {
+         Info::clearPCRs();
+      }
+   }
+
+   /**
+    * Basic enable of USB
+    * Includes enabling clock and configuring all mapped pins if mapPinsOnEnable is selected in configuration
     */
    static void enable() {
       Info::enableClock();
-
       configureAllPins();
    }
+
+   /**
+    * Disables the clock to USB and all mapped pins
+    */
+   static void disable() {
+      disableNvicInterrupts();
+      
+      disableAllPins();
+      Info::disableClock();
+   }
+// End Template _mapPinsOption_on.xml
 
    /**
     * Enable interrupts in NVIC
@@ -361,7 +394,7 @@ public:
     *
     * @param[in]  nvicPriority  Interrupt priority
     */
-   static void enableNvicInterrupts(uint32_t nvicPriority) {
+   static void enableNvicInterrupts(NvicPriority nvicPriority) {
       enableNvicInterrupt(Info::irqNums[0], nvicPriority);
    }
 
@@ -378,7 +411,7 @@ public:
     * @param[in]  mask Mask of interrupts to enable e.g. USB_INTEN_SOFTOKEN_MASK, USB_INTEN_STALLEN_MASK etc
     */
    static void setInterruptMask(uint8_t mask) {
-      fUsb().INTEN = mask;
+      fUsb->INTEN = mask;
    }
 
    /**
@@ -388,7 +421,7 @@ public:
     * @param[in]  mask Mask of interrupts to enable e.g. USB_ERREN_BTOERREN_MASK, USB_ERREN_PIDERREN_MASK etc
     */
    static void setErrorInterruptMask(uint8_t mask) {
-      fUsb().ERREN = mask;
+      fUsb->ERREN = mask;
    }
 
    /**
@@ -397,7 +430,7 @@ public:
     * @param[in]  mask Mask of interrupts to enable e.g. USB_OTGICR_IDEN_MASK, USB_OTGICR_ONEMSECEN_MASK etc
     */
    static void setOtgInterrupts(uint8_t mask=0xFF) {
-      fUsb().OTGICR = mask;
+      fUsb->OTGICR = mask;
    }
 
    /**
@@ -414,7 +447,9 @@ protected:
     * Callback used for EP0 data phase OR transfer complete
     *
     * @param[in]  state State active immediately before call-back\n
-    * (End-point state is currently EPIdle)
+    * (End-point state is currently EPIdle (defaulted))
+    *
+    * @return The endpoint state to set after call-back (EPIdle)
     */
    static EndpointState ep0DummyTransactionCallback(EndpointState state);
 
@@ -512,7 +547,7 @@ protected:
     */
    static void setUSBdefaultState() {
       fConnectionState      = USBdefault;
-      fUsb().ADDR           = 0;
+      fUsb->ADDR           = 0;
       fDeviceConfiguration  = 0;
    }
 
@@ -528,7 +563,7 @@ protected:
       }
       else {
          fConnectionState       = USBaddressed;
-         fUsb().ADDR            = address;
+         fUsb->ADDR            = address;
          fDeviceConfiguration   = 0;
       }
    }
@@ -544,7 +579,7 @@ protected:
    static bool setUSBconfiguredState( uint8_t config ) {
       if (config == 0) {
          // unconfigure
-         setUSBaddressedState(fUsb().ADDR);
+         setUSBaddressedState(fUsb->ADDR);
          return true;
       }
       bool changed = (fConnectionState != USBconfigured) || (fDeviceConfiguration != config);
@@ -589,7 +624,7 @@ protected:
     * Handler for Start of Frame Token interrupt (~1ms interval)
     */
    static void handleSOFToken() {
-      uint16_t frameNumber = (fUsb().FRMNUMH<<8)|fUsb().FRMNUML;
+      uint16_t frameNumber = (fUsb->FRMNUMH<<8)|fUsb->FRMNUML;
       fSofCallbackFunction(frameNumber);
    }
 
@@ -909,7 +944,7 @@ void UsbBase_T<Info, EP0_SIZE>::handleSetupToken() {
    fControlEndpoint.checkSetupReady();
 
    // Allow transactions post SETUP transaction (clear TXSUSPENDTOKENBUSY)
-   fUsb().CTL = USB_CTL_USBENSOFEN_MASK;
+   fUsb->CTL = USB_CTL_USBENSOFEN_MASK;
 }
 
 /**
@@ -988,15 +1023,15 @@ void UsbBase_T<Info, EP0_SIZE>::handleUSBReset() {
    setErrorInterruptMask(0x00);
 
    // Disable end-points
-   for (unsigned i=0; i<(sizeof(fUsb().ENDPOINT)/sizeof(fUsb().ENDPOINT[0])); i++) {
-      fUsb().ENDPOINT[i].ENDPT = 0;
+   for (unsigned i=0; i<(sizeof(fUsb->ENDPOINT)/sizeof(fUsb->ENDPOINT[0])); i++) {
+      fUsb->ENDPOINT[i].ENDPT = 0;
    }
 
    // Clear USB error flags
-   fUsb().ERRSTAT = ~0;
+   fUsb->ERRSTAT = ~0;
 
    // Clear USB interrupt flags
-   fUsb().ISTAT = ~0;
+   fUsb->ISTAT = ~0;
 
    // Set initial USB state
    setUSBdefaultState();
@@ -1031,10 +1066,10 @@ void UsbBase_T<Info, EP0_SIZE>::handleUSBSuspend() {
 
    // Asynchronous Resume Interrupt Enable (USB->CPU)
    // Only enable if transceiver is disabled
-   //   fUsb().USBTRC0  |= USB_USBTRC0_USBRESMEN_MASK;
+   //   fUsb->USBTRC0 = fUsb->USBTRC0 | USB_USBTRC0_USBRESMEN_MASK;
 
    // Enable resume detection or reset interrupts from the USB
-   fUsb().INTEN   |= (USB_INTEN_RESUMEEN_MASK|USB_INTEN_USBRSTEN_MASK);
+   fUsb->INTEN = fUsb->INTEN | (USB_INTEN_RESUMEEN_MASK|USB_INTEN_USBRSTEN_MASK);
    fConnectionState = USBsuspended;
 
    // Notify user level (to enter Low power later!!!)
@@ -1053,7 +1088,7 @@ void UsbBase_T<Info, EP0_SIZE>::handleUSBResume() {
 
 
    // Mask further resume interrupts
-   fUsb().INTEN &= ~USB_INTEN_RESUMEEN_MASK;
+   fUsb->INTEN = fUsb->INTEN & ~USB_INTEN_RESUMEEN_MASK;
 
    if (fConnectionState != USBsuspended) {
       // Ignore if not suspended
@@ -1071,7 +1106,7 @@ void UsbBase_T<Info, EP0_SIZE>::handleUSBResume() {
    UsbImplementation::initialiseEndpoints();
 
    // Enable the transmit or receive of packets
-   fUsb().CTL = USB_CTL_USBENSOFEN_MASK;
+   fUsb->CTL = USB_CTL_USBENSOFEN_MASK;
 }
 
 /**
@@ -1083,7 +1118,8 @@ void UsbBase_T<Info, EP0_SIZE>::handleUSBResume() {
  * @return The endpoint state to set after call-back (EPIdle)
  */
 template<class Info, int EP0_SIZE>
-EndpointState UsbBase_T<Info, EP0_SIZE>::ep0DummyTransactionCallback(EndpointState) {
+EndpointState UsbBase_T<Info, EP0_SIZE>::ep0DummyTransactionCallback(EndpointState state) {
+   (void) state;
    return EPIdle;
 }
 
@@ -1099,20 +1135,20 @@ void UsbBase_T<Info, EP0_SIZE>::initialise() {
    // Make sure no interrupt during setup
    disableNvicInterrupts();
 
-   fUsb().OTGISTAT = 0;
-   fUsb().OTGICR   = 0;
-   fUsb().OTGCTL   = 0;
-   fUsb().INTEN    = 0;
-   fUsb().ERRSTAT  = 0;
-   fUsb().ERREN    = 0;
-   fUsb().CTL      = 0;
-   fUsb().ADDR     = 0;
-   for (unsigned i=0; i<(sizeof(fUsb().ENDPOINT)/sizeof(fUsb().ENDPOINT[0])); i++) {
-      fUsb().ENDPOINT[i].ENDPT = 0;
+   fUsb->OTGISTAT = 0;
+   fUsb->OTGICR   = 0;
+   fUsb->OTGCTL   = 0;
+   fUsb->INTEN    = 0;
+   fUsb->ERRSTAT  = 0;
+   fUsb->ERREN    = 0;
+   fUsb->CTL      = 0;
+   fUsb->ADDR     = 0;
+   for (unsigned i=0; i<(sizeof(fUsb->ENDPOINT)/sizeof(fUsb->ENDPOINT[0])); i++) {
+      fUsb->ENDPOINT[i].ENDPT = 0;
    }
-   fUsb().USBCTRL = 0;
-   fUsb().CONTROL = 0;
-   fUsb().USBTRC0 = 0;
+   fUsb->USBCTRL = 0;
+   fUsb->CONTROL = 0;
+   fUsb->USBTRC0 = 0;
 
 #ifdef MPU_CESR_VLD_MASK
    // Disable MPU & clear errors
@@ -1121,52 +1157,52 @@ void UsbBase_T<Info, EP0_SIZE>::initialise() {
 
    // Enable USB regulator
    SIM->SOPT1CFG  = SIM_SOPT1CFG_URWE_MASK;
-   SIM->SOPT1    |= SIM_SOPT1_USBREGEN_MASK;
+   SIM->SOPT1     = SIM->SOPT1 | SIM_SOPT1_USBREGEN_MASK;
 
 #ifdef USB_CLK_RECOVER_IRC_EN_IRC_EN
    // IRC clock enable
-   fUsb().CLK_RECOVER_IRC_EN = Usb0Info::clk_recovery_irc_en;
+   fUsb->CLK_RECOVER_IRC_EN = Usb0Info::clk_recovery_irc_en;
 
    // Clock recovery options
-   fUsb().CLK_RECOVER_CTRL = Usb0Info::clk_recovery_ctrl;
+   fUsb->CLK_RECOVER_CTRL = Usb0Info::clk_recovery_ctrl;
 #endif
 
 #if 0
    // Enable in LP modes
    SIM->SOPT1CFG  = SIM_SOPT1CFG_URWE_MASK;
-   SIM->SOPT1    &= ~(SIM_SOPT1_USBSSTBY_MASK|SIM_SOPT1_USBVSTBY_MASK);
+   SIM->SOPT1     = SIM->SOPT1 & ~(SIM_SOPT1_USBSSTBY_MASK|SIM_SOPT1_USBVSTBY_MASK);
 #endif
 
 #if 0
    // Removed due to errata e5928: USBOTG: USBx_USBTRC0[USBRESET] bit does not operate as expected in all cases
    // Reset USB H/W
-   USB0_USBTRC0 |= USB_USBTRC0_USBRESET_MASK;
+   USB0_USBTRC0 = USB0_USBTRC0 | USB_USBTRC0_USBRESET_MASK;
    while ((USB0_USBTRC0&USB_USBTRC0_USBRESET_MASK) != 0) {
    }
 #endif
 
    // This bit is undocumented but seems to be necessary
-   fUsb().USBTRC0 = 0x40;
+   fUsb->USBTRC0 = 0x40;
 
    // Point USB at BDT array
-   fUsb().BDTPAGE3 = (uint8_t) (((unsigned)endPointBdts)>>24);
-   fUsb().BDTPAGE2 = (uint8_t) (((unsigned)endPointBdts)>>16);
-   fUsb().BDTPAGE1 = (uint8_t) (((unsigned)endPointBdts)>>8);
+   fUsb->BDTPAGE3 = (uint8_t) (((unsigned)endPointBdts)>>24);
+   fUsb->BDTPAGE2 = (uint8_t) (((unsigned)endPointBdts)>>16);
+   fUsb->BDTPAGE1 = (uint8_t) (((unsigned)endPointBdts)>>8);
 
    // Clear all pending interrupts
-   fUsb().ISTAT = ~0;
+   fUsb->ISTAT = ~0;
 
    // Enable fUsb reset interrupt
-   fUsb().INTEN = USB_INTEN_USBRSTEN_MASK|USB_INTEN_SLEEPEN_MASK;
+   fUsb->INTEN = USB_INTEN_USBRSTEN_MASK|USB_INTEN_SLEEPEN_MASK;
 
    // Weak pull downs
-   fUsb().USBCTRL = USB_USBCTRL_PDE_MASK;
+   fUsb->USBCTRL = USB_USBCTRL_PDE_MASK;
 
    // Enable Pull-up
-   fUsb().CONTROL = USB_CONTROL_DPPULLUPNONOTG_MASK;
+   fUsb->CONTROL = USB_CONTROL_DPPULLUPNONOTG_MASK;
 
    // Enable interface
-   fUsb().CTL = USB_CTL_USBENSOFEN_MASK;
+   fUsb->CTL = USB_CTL_USBENSOFEN_MASK;
 
    // Set initial USB state
    setUSBdefaultState();
@@ -1201,8 +1237,8 @@ void UsbBase_T<Info, EP0_SIZE>::initialiseEndpoints() {
    memset((uint8_t*)(endPointBdts), 0, sizeof(EndpointBdtEntry[UsbImplementation::NUMBER_OF_ENDPOINTS]));
 
    // Clear hardware odd/even buffer selection & enable USB device
-   fUsb().CTL = USB_CTL_USBENSOFEN_MASK|USB_CTL_ODDRST_MASK;
-   fUsb().CTL = USB_CTL_USBENSOFEN_MASK;
+   fUsb->CTL = USB_CTL_USBENSOFEN_MASK|USB_CTL_ODDRST_MASK;
+   fUsb->CTL = USB_CTL_USBENSOFEN_MASK;
 
    addEndpoint(&fControlEndpoint);
 
@@ -1244,7 +1280,7 @@ void UsbBase_T<Info, EP0_SIZE>::handleGetStatus() {
       case REQUEST_TYPE(UsbRequestDirection_IN, UsbRequestType_STANDARD, UsbRequestRecipient_ENDPOINT) : // Endpoint Status
       epNum = fEp0SetupBuffer.wIndex&0x07;
       if (epNum <= UsbImplementation::NUMBER_OF_ENDPOINTS) {
-         if (fUsb().ENDPOINT[epNum].ENDPT&USB_ENDPT_EPSTALL_MASK) {
+         if (fUsb->ENDPOINT[epNum].ENDPT&USB_ENDPT_EPSTALL_MASK) {
             dataPtr = (uint8_t*)&epStatusStalled;
          }
          else {
@@ -1460,7 +1496,7 @@ void UsbBase_T<Info, EP0_SIZE>::handleSetConfiguration() {
       return;
    }
    setUSBconfiguredState(fEp0SetupBuffer.wValue.lo());
-   
+
    // Initialise non-control end-points
 //   console.WRITE("RxOdd").WRITELN((bool)UsbImplementation::epBulkOut.fRxOdd);
    UsbImplementation::initialiseEndpoints();
@@ -1509,7 +1545,7 @@ void UsbBase_T<Info, EP0_SIZE>::irqHandler() {
 
    do {
       // Get active and enabled flags only
-      uint8_t pendingInterruptFlags = fUsb().ISTAT & fUsb().INTEN;
+      uint8_t pendingInterruptFlags = fUsb->ISTAT & fUsb->INTEN;
       if (pendingInterruptFlags == 0) {
          return;
       }
@@ -1525,7 +1561,7 @@ void UsbBase_T<Info, EP0_SIZE>::irqHandler() {
       }
       if ((pendingInterruptFlags&USB_ISTAT_TOKDNE_MASK) != 0) {
          // Get endpoint status
-         UsbStat usbStat = (UsbStat)fUsb().STAT;
+         UsbStat usbStat = (UsbStat)fUsb->STAT;
 //         console.WRITE("St ").WRITE(usbStat.endp).WRITE(',').WRITE((unsigned)usbStat.tx).WRITE(',').WRITELN((unsigned)usbStat.odd);
          // Token complete interrupt
          if (usbStat.endp == fControlEndpoint.fEndpointNumber) {
@@ -1558,10 +1594,10 @@ void UsbBase_T<Info, EP0_SIZE>::irqHandler() {
       }
       if ((pendingInterruptFlags&USB_ISTAT_ERROR_MASK) != 0) {
          // Any Error
-         console.WRITE("Error = 0b").WRITELN(fUsb().ERRSTAT, Radix_2);
-         fUsb().ERRSTAT = 0xFF;
+         console.WRITE("Error = 0b").WRITELN(fUsb->ERRSTAT, Radix_2);
+         fUsb->ERRSTAT = 0xFF;
       }
-      fUsb().ISTAT = pendingInterruptFlags;
+      fUsb->ISTAT = pendingInterruptFlags;
    } while(true);
 }
 

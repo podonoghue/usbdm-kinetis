@@ -48,12 +48,12 @@
    +=======================================================================================
    \endverbatim
 */
+#include <interfaceCommon.h>
 #include <string.h>
 #include "configure.h"
 #include "commands.h"
 #include "bdm.h"
 #include "bdmMacros.h"
-#include "bdmCommon.h"
 #include "targetDefines.h"
 #include "cmdProcessing.h"
 #include "cmdProcessingHCS.h"

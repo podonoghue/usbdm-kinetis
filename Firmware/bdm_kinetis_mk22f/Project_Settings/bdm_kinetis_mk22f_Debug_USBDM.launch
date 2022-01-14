@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <launchConfiguration type="net.sourceforge.usbdm.gdb.launchConfigurationType">
     <stringAttribute key="net.sourceforge.usbdm.gdb.autoReconnect" value="AUTOCONNECT_ALWAYS"/>
-    <stringAttribute key="net.sourceforge.usbdm.gdb.bdmSerialNumber" value="USBDM-MK-94D4EF6A"/>
+    <stringAttribute key="net.sourceforge.usbdm.gdb.bdmSerialNumber" value="USBDM-MK-9226EF6A"/>
     <booleanAttribute key="net.sourceforge.usbdm.gdb.bdmSerialNumberMatchRequired" value="false"/>
     <stringAttribute key="net.sourceforge.usbdm.gdb.buildToolId" value="net.sourceforge.usbdm.cdt.toolchain.processor.usbdmConfigure.armLtdGnuToolsForARM"/>
     <booleanAttribute key="net.sourceforge.usbdm.gdb.catchVLLSxEvents" value="false"/>
@@ -13,7 +13,7 @@
     <booleanAttribute key="net.sourceforge.usbdm.gdb.doResume" value="true"/>
     <booleanAttribute key="net.sourceforge.usbdm.gdb.doStopAtMain" value="true"/>
     <booleanAttribute key="net.sourceforge.usbdm.gdb.driveReset" value="true"/>
-    <stringAttribute key="net.sourceforge.usbdm.gdb.eraseMethod" value="ERASE_SELECTIVE"/>
+    <stringAttribute key="net.sourceforge.usbdm.gdb.eraseMethod" value="ERASE_MASS"/>
     <booleanAttribute key="net.sourceforge.usbdm.gdb.exitOnClose" value="false"/>
     <stringAttribute key="net.sourceforge.usbdm.gdb.externalFileName" value=""/>
     <stringAttribute key="net.sourceforge.usbdm.gdb.gdbBinPath" value="${usbdm_armLtd_arm_path}"/>
@@ -21,7 +21,7 @@
     <stringAttribute key="net.sourceforge.usbdm.gdb.initCommands" value=""/>
     <intAttribute key="net.sourceforge.usbdm.gdb.interfaceFrequency" value="12000000"/>
     <stringAttribute key="net.sourceforge.usbdm.gdb.interfaceType" value="T_ARM"/>
-    <booleanAttribute key="net.sourceforge.usbdm.gdb.loadImage" value="false"/>
+    <booleanAttribute key="net.sourceforge.usbdm.gdb.loadImage" value="true"/>
     <booleanAttribute key="net.sourceforge.usbdm.gdb.maskInterrupts" value="true"/>
     <stringAttribute key="net.sourceforge.usbdm.gdb.nvmClockTrimLocation" value="0"/>
     <stringAttribute key="net.sourceforge.usbdm.gdb.pcRegisterValue" value="__HardReset"/>
@@ -48,10 +48,10 @@
     <booleanAttribute key="net.sourceforge.usbdm.gdb.useSemiHosting" value="false"/>
     <stringAttribute key="org.eclipse.cdt.dsf.gdb.DEBUG_NAME" value="${usbdm_armLtd_arm_path}/${usbdm_armLtd_arm_prefix}gdb"/>
     <intAttribute key="org.eclipse.cdt.launch.ATTR_BUILD_BEFORE_LAUNCH_ATTR" value="2"/>
-    <stringAttribute key="org.eclipse.cdt.launch.PROGRAM_NAME" value="Release/bdm_kinetis_mk22f.elf"/>
+    <stringAttribute key="org.eclipse.cdt.launch.PROGRAM_NAME" value="Debug/bdm_kinetis_mk22f.elf"/>
     <stringAttribute key="org.eclipse.cdt.launch.PROJECT_ATTR" value="bdm_kinetis_mk22f"/>
-    <booleanAttribute key="org.eclipse.cdt.launch.PROJECT_BUILD_CONFIG_AUTO_ATTR" value="false"/>
-    <stringAttribute key="org.eclipse.cdt.launch.PROJECT_BUILD_CONFIG_ID_ATTR" value=""/>
+    <booleanAttribute key="org.eclipse.cdt.launch.PROJECT_BUILD_CONFIG_AUTO_ATTR" value="true"/>
+    <stringAttribute key="org.eclipse.cdt.launch.PROJECT_BUILD_CONFIG_ID_ATTR" value="net.sourceforge.usbdm.cdt.arm.exe.debug.configuration.419923959"/>
     <listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_PATHS">
         <listEntry value="/bdm_kinetis_mk22f"/>
     </listAttribute>

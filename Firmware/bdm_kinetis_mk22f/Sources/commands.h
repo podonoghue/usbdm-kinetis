@@ -892,6 +892,10 @@ enum PinLevelMasks_t {
    PIN_RELEASE        = -1,   //!< Release all pins (go to default for current target)
 };
 
+constexpr PinLevelMasks_t operator| (const PinLevelMasks_t &left, const PinLevelMasks_t &right) {
+   return static_cast<PinLevelMasks_t>((unsigned)left|(unsigned)right);
+}
+
 //! Debugging sub commands (used with CMD_USBDM_DEBUG )
 //! @note Not for general use! (Dangerous - don't try turning on VPP with the wrong chip!)
 enum DebugSubCommands {

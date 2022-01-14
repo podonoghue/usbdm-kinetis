@@ -38,12 +38,12 @@
    +============================================================================================
    \endverbatim
  */
+#include <interfaceCommon.h>
 #include <string.h>
 #include "utilities.h"
 #include "configure.h"
 #include "commands.h"
 #include "bdm.h"
-#include "bdmCommon.h"
 #include "bdmMacros.h"
 #include "cmdProcessing.h"
 #include "cmdProcessingHCS.h"
@@ -70,8 +70,9 @@ static USBDM_ErrorCode resetCFV1Interface(void) {
        */
       // Reset BDM interface & reconnect
       rc = connect();
-      if (rc != BDM_RC_OK)
+      if (rc != BDM_RC_OK) {
          return rc;
+      }
       switch(attempt) {
          case 0:
             break;

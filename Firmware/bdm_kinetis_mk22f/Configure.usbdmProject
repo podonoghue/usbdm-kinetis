@@ -8,82 +8,98 @@
    <item key="$$DeviceInfo_Device_Variant"                 value="MK22FN512VLH12" />
    <item key="$$DeviceInfo_SubFamily"                      value="MK22F51212" />
    <item key="$$Hardware_Source_Filename"                  value="MK22F51212.usbdmHardware" />
+   <item key="$peripheral$CMP0_codeIdentifier"             value="TVdd_Monitor" />
+   <item key="$peripheral$SPI0_codeIdentifier"             value="SwdSpi" />
+   <item key="$pin$PTA0_pcrSetting_7"                      value="700" />
+   <item key="$pin$PTA1_pcrSetting_2"                      value="200" />
+   <item key="$pin$PTA2_pcrSetting_2"                      value="200" />
+   <item key="$pin$PTA3_pcrSetting_7"                      value="700" />
+   <item key="$pin$PTB0_pcrSetting_1"                      value="100" />
+   <item key="$pin$PTB1_pcrSetting_1"                      value="100" />
+   <item key="$pin$PTB2_pcrSetting_0"                      value="0" />
+   <item key="$pin$PTB3_pcrSetting_1"                      value="100" />
+   <item key="$pin$PTC0_pcrSetting_1"                      value="100" />
+   <item key="$pin$PTC1_pcrSetting_1"                      value="100" />
+   <item key="$pin$PTC2_pcrSetting_2"                      value="200" />
+   <item key="$pin$PTC3_pcrSetting_4"                      value="400" />
+   <item key="$pin$PTC4_pcrSetting_1"                      value="100" />
+   <item key="$pin$PTC5_pcrSetting_2"                      value="200" />
+   <item key="$pin$PTC6_pcrSetting_2"                      value="200" />
+   <item key="$pin$PTC7_pcrSetting_0"                      value="0" />
+   <item key="$pin$PTD0_pcrSetting_1"                      value="100" />
+   <item key="$pin$PTD1_pcrSetting_1"                      value="100" />
+   <item key="$pin$PTD3_pcrSetting_2"                      value="200" />
+   <item key="$pin$PTD4_pcrSetting_4"                      value="400" />
+   <item key="$pin$PTD6_pcrSetting_4"                      value="400" />
+   <item key="$pin$PTD7_pcrSetting_1"                      value="100" />
+   <item key="$pin$PTE0_pcrSetting_3"                      value="300" />
+   <item key="$pin$PTE1_pcrSetting_3"                      value="300" />
    <item key="$signal$ADC0_DM0_descriptionSetting"         value="Id" />
    <item key="$signal$ADC0_DP0_descriptionSetting"         value="N/C" />
+   <item key="$signal$ADC0_SE12_codeIdentifier"            value="TVdd_Measure" />
+   <item key="$signal$ADC0_SE12_descriptionSetting"        value="Vbdm" />
+   <item key="$signal$ADC0_SE19_codeIdentifier"            value="Identify" />
    <item key="$signal$ADC1_DM0_descriptionSetting"         value="N/C" />
    <item key="$signal$ADC1_DP0_descriptionSetting"         value="N/C" />
+   <item key="$signal$CMP0_IN1_codeIdentifier"             value="TVdd_Mon" />
+   <item key="$signal$CMP0_IN1_descriptionSetting"         value="Vbdm" />
    <item key="$signal$DAC0_OUT_descriptionSetting"         value="N/C" />
    <item key="$signal$EXTAL32_descriptionSetting"          value="N/C" />
-   <item key="$signal$PTA0_descriptionSetting"             value="SWD_CLK" />
-   <item key="$signal$PTA0_muxSetting"                     value="mux7" />
-   <item key="$signal$PTA12_descriptionSetting"            value="N/C" />
-   <item key="$signal$PTA13_descriptionSetting"            value="N/C" />
-   <item key="$signal$PTA18_descriptionSetting"            value="N/C" />
-   <item key="$signal$PTA19_descriptionSetting"            value="N/C" />
-   <item key="$signal$PTA1_descriptionSetting"             value="SWD_Rx" />
-   <item key="$signal$PTA1_muxSetting"                     value="mux2" />
-   <item key="$signal$PTA2_descriptionSetting"             value="SWD_Tx" />
-   <item key="$signal$PTA2_muxSetting"                     value="mux2" />
-   <item key="$signal$PTA3_descriptionSetting"             value="SWD_DIO" />
-   <item key="$signal$PTA3_muxSetting"                     value="mux7" />
-   <item key="$signal$PTA4_descriptionSetting"             value="N/C" />
-   <item key="$signal$PTA5_descriptionSetting"             value="N/C" />
-   <item key="$signal$PTB0_descriptionSetting"             value="TPa" />
-   <item key="$signal$PTB0_muxSetting"                     value="mux1" />
-   <item key="$signal$PTB16_descriptionSetting"            value="N/C" />
-   <item key="$signal$PTB17_descriptionSetting"            value="N/C" />
-   <item key="$signal$PTB18_descriptionSetting"            value="N/C" />
-   <item key="$signal$PTB19_descriptionSetting"            value="N/C" />
-   <item key="$signal$PTB1_descriptionSetting"             value="TPa" />
-   <item key="$signal$PTB2_descriptionSetting"             value="Vbdm" />
-   <item key="$signal$PTB2_muxSetting"                     value="mux0" />
-   <item key="$signal$PTB3_descriptionSetting"             value="PWR_LED" />
-   <item key="$signal$PTB3_muxSetting"                     value="mux1" />
-   <item key="$signal$PTC0_descriptionSetting"             value="RST_DIR" />
-   <item key="$signal$PTC0_muxSetting"                     value="mux1" />
-   <item key="$signal$PTC10_descriptionSetting"            value="N/C" />
-   <item key="$signal$PTC11_descriptionSetting"            value="N/C" />
-   <item key="$signal$PTC1_descriptionSetting"             value="RST_IO" />
-   <item key="$signal$PTC1_muxSetting"                     value="mux1" />
-   <item key="$signal$PTC2_descriptionSetting"             value="BKGD/SWD_DIR" />
-   <item key="$signal$PTC2_muxSetting"                     value="mux2" />
-   <item key="$signal$PTC3_descriptionSetting"             value="BKGD/SWD_DIR" />
-   <item key="$signal$PTC3_muxSetting"                     value="mux4" />
-   <item key="$signal$PTC4_descriptionSetting"             value="SWD_EN" />
-   <item key="$signal$PTC4_muxSetting"                     value="mux1" />
-   <item key="$signal$PTC5_descriptionSetting"             value="SWCLK_O" />
-   <item key="$signal$PTC5_muxSetting"                     value="mux2" />
-   <item key="$signal$PTC6_descriptionSetting"             value="BKGD/SWD_O" />
-   <item key="$signal$PTC6_muxSetting"                     value="mux2" />
-   <item key="$signal$PTC7_descriptionSetting"             value="Vbdm" />
-   <item key="$signal$PTC7_muxSetting"                     value="mux0" />
-   <item key="$signal$PTC8_descriptionSetting"             value="N/C" />
-   <item key="$signal$PTC9_descriptionSetting"             value="N/C" />
-   <item key="$signal$PTD0_descriptionSetting"             value="VDD_FAULT" />
-   <item key="$signal$PTD0_muxSetting"                     value="mux1" />
-   <item key="$signal$PTD1_descriptionSetting"             value="VDD_EN" />
-   <item key="$signal$PTD1_muxSetting"                     value="mux1" />
-   <item key="$signal$PTD2_descriptionSetting"             value="N/C" />
-   <item key="$signal$PTD3_descriptionSetting"             value="BKGD/SWD_I" />
-   <item key="$signal$PTD3_muxSetting"                     value="mux2" />
-   <item key="$signal$PTD4_descriptionSetting"             value="BKGD/SWD_I" />
-   <item key="$signal$PTD4_muxSetting"                     value="mux4" />
-   <item key="$signal$PTD5_descriptionSetting"             value="N/C" />
-   <item key="$signal$PTD6_descriptionSetting"             value="BKGD/SWD_O" />
-   <item key="$signal$PTD6_muxSetting"                     value="mux4" />
-   <item key="$signal$PTD7_descriptionSetting"             value="USB_LED" />
-   <item key="$signal$PTD7_muxSetting"                     value="mux1" />
-   <item key="$signal$PTE0_descriptionSetting"             value="DBG_Tx" />
-   <item key="$signal$PTE0_muxSetting"                     value="mux3" />
-   <item key="$signal$PTE1_descriptionSetting"             value="DBG_Rx" />
-   <item key="$signal$PTE1_muxSetting"                     value="mux3" />
-   <item key="$signal$RESET_b_descriptionSetting"          value="Resetb" />
+   <item key="$signal$FTM0_CH2_descriptionSetting"         value="BKGD/SWD_DIR" />
+   <item key="$signal$FTM0_CH6_descriptionSetting"         value="BKGD/SWD_I" />
+   <item key="$signal$GPIOB_0_codeIdentifier"              value="TPa1" />
+   <item key="$signal$GPIOB_0_descriptionSetting"          value="TPa1" />
+   <item key="$signal$GPIOB_1_codeIdentifier"              value="TPa2" />
+   <item key="$signal$GPIOB_1_descriptionSetting"          value="TPa2" />
+   <item key="$signal$GPIOB_3_codeIdentifier"              value="TVdd_Led" />
+   <item key="$signal$GPIOB_3_descriptionSetting"          value="TVddLed" />
+   <item key="$signal$GPIOC_0_codeIdentifier"              value="Reset_Dir" />
+   <item key="$signal$GPIOC_0_descriptionSetting"          value="RST_DIR" />
+   <item key="$signal$GPIOC_1_codeIdentifier"              value="Reset_IO" />
+   <item key="$signal$GPIOC_1_descriptionSetting"          value="RST_IO" />
+   <item key="$signal$GPIOC_2_codeIdentifier"              value="Bkgd_Swd_Dir" />
+   <item key="$signal$GPIOC_2_descriptionSetting"          value="BKGD/SD_DIR" />
+   <item key="$signal$GPIOC_3_codeIdentifier"              value="Bkgd_Swd_Dir" />
+   <item key="$signal$GPIOC_3_descriptionSetting"          value="BKGD/SD_DIR" />
+   <item key="$signal$GPIOC_4_codeIdentifier"              value="Swd_Enable" />
+   <item key="$signal$GPIOC_4_descriptionSetting"          value="SWD_EN" />
+   <item key="$signal$GPIOC_5_codeIdentifier"              value="SwdClk_O" />
+   <item key="$signal$GPIOC_5_descriptionSetting"          value="SWCLK_O" />
+   <item key="$signal$GPIOC_6_codeIdentifier"              value="Bkgd_Swd_O" />
+   <item key="$signal$GPIOC_6_descriptionSetting"          value="BKGD/SWD_O" />
+   <item key="$signal$GPIOC_7_descriptionSetting"          value="Vbdm" />
+   <item key="$signal$GPIOD_0_codeIdentifier"              value="TVdd_Fault" />
+   <item key="$signal$GPIOD_0_descriptionSetting"          value="Vdd_Flt" />
+   <item key="$signal$GPIOD_1_codeIdentifier"              value="TVdd_Enable" />
+   <item key="$signal$GPIOD_1_descriptionSetting"          value="Vdd_En" />
+   <item key="$signal$GPIOD_3_codeIdentifier"              value="Bkgd_Swd_I" />
+   <item key="$signal$GPIOD_3_descriptionSetting"          value="BKGD/SWD_I" />
+   <item key="$signal$GPIOD_4_codeIdentifier"              value="Bkgd_Swd_I" />
+   <item key="$signal$GPIOD_4_descriptionSetting"          value="BKGD/SWD_I" />
+   <item key="$signal$GPIOD_6_codeIdentifier"              value="Bkgd_Swd_O" />
+   <item key="$signal$GPIOD_6_descriptionSetting"          value="BKGD/SWD_O" />
+   <item key="$signal$GPIOD_7_codeIdentifier"              value="Usb_Led" />
+   <item key="$signal$GPIOD_7_descriptionSetting"          value="USB_LED" />
+   <item key="$signal$RESET_b_descriptionSetting"          value="RESETb" />
+   <item key="$signal$SPI0_PCS2_codeIdentifier"            value="SwdDir" />
+   <item key="$signal$SPI0_PCS2_descriptionSetting"        value="BKGD/SWD_DIR" />
+   <item key="$signal$SPI0_SCK_codeIdentifier"             value="SwdClk" />
+   <item key="$signal$SPI0_SCK_descriptionSetting"         value="SWCLK_O" />
+   <item key="$signal$SPI0_SIN_codeIdentifier"             value="SwdDin" />
+   <item key="$signal$SPI0_SIN_descriptionSetting"         value="BKGD/SWD_I" />
+   <item key="$signal$SPI0_SOUT_codeIdentifier"            value="SwdDout" />
+   <item key="$signal$SPI0_SOUT_descriptionSetting"        value="BKGD/SWD_O" />
+   <item key="$signal$SWD_CLK_descriptionSetting"          value="SWDCLK" />
+   <item key="$signal$SWD_DIO_descriptionSetting"          value="SWDIO" />
+   <item key="$signal$UART0_RX_descriptionSetting"         value="Debug_Rx" />
+   <item key="$signal$UART0_TX_descriptionSetting"         value="Debug_Tx" />
+   <item key="$signal$UART1_RX_descriptionSetting"         value="DBG_Rx" />
+   <item key="$signal$UART1_TX_descriptionSetting"         value="DBG_Tx" />
    <item key="$signal$USB0_DM_descriptionSetting"          value="USB_DM" />
    <item key="$signal$USB0_DP_descriptionSetting"          value="USB_DP" />
    <item key="$signal$VBAT_descriptionSetting"             value="3V3" />
    <item key="$signal$VDD1_descriptionSetting"             value="3V3" />
    <item key="$signal$VDD3_descriptionSetting"             value="3V3" />
-   <item key="$signal$VDD5_descriptionSetting"             value="3V3" />
    <item key="$signal$VDDA_descriptionSetting"             value="3V3" />
    <item key="$signal$VOUT33_descriptionSetting"           value="3V3" />
    <item key="$signal$VREFH_descriptionSetting"            value="3V3" />
@@ -91,7 +107,6 @@
    <item key="$signal$VREGIN_descriptionSetting"           value="5V" />
    <item key="$signal$VSS1_descriptionSetting"             value="Vss" />
    <item key="$signal$VSS3_descriptionSetting"             value="Vss" />
-   <item key="$signal$VSS5_descriptionSetting"             value="Vss" />
    <item key="$signal$VSSA_descriptionSetting"             value="Vss" />
    <item key="$signal$XTAL32_descriptionSetting"           value="N/C" />
    <item key="/CMP0/cmp_cr0_filter_cnt"                    value="4" />
@@ -103,14 +118,20 @@
    <item key="/CMP0/cmp_scr_ief"                           value="true" />
    <item key="/CMP0/cmp_scr_ier"                           value="true" />
    <item key="/CMP0/irqHandlingMethod"                     value="$ClassMethod" />
-   <item key="/FTFA/peripheral_file"                       value="ftfa" />
    <item key="/GPIOA/irqHandlingMethod"                    value="$ClassMethod" />
    <item key="/GPIOC/irqHandlingMethod"                    value="$ClassMethod" />
    <item key="/GPIOD/irqHandlingMethod"                    value="$ClassMethod" />
+   <item key="/HARDWARE/lockMappedPins"                    value="false" />
+   <item key="/HARDWARE/useTypeSystemForTimers"            value="true" />
+   <item key="/HARDWARE/warnMultipleSignalsOnPin"          value="true" />
+   <item key="/LLWU/device_list"                           value="LPTMR0;CMP0;CMP1;;;RTC_Alarm;;RTC_Seconds" />
    <item key="/LPTMR0/lptmr_cmr"                           value="0" />
    <item key="/MCG/ClockConfig[0]"                         value="ClockConfig_PEE_60MHz" />
    <item key="/MCG/ClockConfig[1]"                         value="ClockConfig_BLPE_4MHz" />
    <item key="/MCG/ClockConfig[2]"                         value="ClockConfig_PEE_120MHz" />
+   <item key="/MCG/DummyClockConfig[0]"                    value="ClockConfig_0" />
+   <item key="/MCG/DummyClockConfig[1]"                    value="ClockConfig_1" />
+   <item key="/MCG/DummyClockConfig[2]"                    value="ClockConfig_2" />
    <item key="/MCG/clock_mode[0]"                          value="ClockMode_PEE" />
    <item key="/MCG/clock_mode[1]"                          value="ClockMode_BLPE" />
    <item key="/MCG/clock_mode[2]"                          value="ClockMode_PEE" />
@@ -131,11 +152,11 @@
    <item key="/SIM/coreFreq"                               value="120MHz" />
    <item key="/SIM/flashFreq"                              value="25MHz" />
    <item key="/SIM/flexFreq"                               value="50MHz" />
-   <item key="/SIM/sim_clkdiv2_usb"                        value="0" />
+   <item key="/SIM/sim_clkdiv2_usb"                        value="9" />
    <item key="/SIM/sim_sopt1_osc32ksel"                    value="3" />
    <item key="/SIM/sim_sopt2_clkoutsel"                    value="6" />
    <item key="/SIM/sim_sopt2_lpuartsrc"                    value="2" />
-   <item key="/SIM/sim_sopt2_pllfllsel[0]"                 value="3" />
+   <item key="/SIM/sim_sopt2_pllfllsel[0]"                 value="1" />
    <item key="/SIM/sim_sopt2_pllfllsel[1]"                 value="3" />
    <item key="/SIM/sim_sopt2_pllfllsel[2]"                 value="3" />
    <item key="/SIM/system_bus_clock[0]"                    value="60000000" />

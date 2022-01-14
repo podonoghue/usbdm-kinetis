@@ -32,7 +32,7 @@ void initialise();
  *
  * Note: Reset is not affected
  */
-void disable();
+void disableInterface();
 
 /**
  * Set pin state
@@ -42,11 +42,11 @@ void disable();
 void setPinState(PinLevelMasks_t pins);
 
 /**
- * Get pin state
+ * Get pin status
  *
- * @param [INOUT] status Updated with pin status from this interface
+ * return Status from this interface
  */
-void getPinState(PinLevelMasks_t &status);
+PinLevelMasks_t getPinState();
 
 /**
  * Determine connection speed using sync pulse

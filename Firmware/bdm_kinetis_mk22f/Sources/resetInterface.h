@@ -16,8 +16,12 @@
 class ResetInterface {
 
 private:
-   using Direction = USBDM::GpioC<0>;
-   using Data      = USBDM::GpioC<1>;
+
+   // Controls direction of transceiver
+   using Direction = USBDM::Reset_Dir; //USBDM::GpioC<0>;
+
+   // Transceiver data (in/out)
+   using Data      = USBDM::Reset_IO; // USBDM::GpioC<1>;
 
    static bool  fResetActivity;
 
@@ -27,8 +31,9 @@ private:
     * @param status
     */
    static void callback(uint32_t status) {
-      // Check if RESET pin event and gone low
-      if ((Data::MASK & status) && isLow()) {
+
+      // Check if RESET pin event and pin is low
+      if ((Data::BITMASK & status) && isLow()) {
          fResetActivity = true;
       }
    }
@@ -38,20 +43,22 @@ public:
     * Initialise Transceiver
     *
     * Initial state:
-    *    Input/HighZ
+    *    Reset signal Input/HighZ
+    *    Reset monitoring enabled
     */
    static void initialise() {
 
-      // Set pin as input
+      // Enable pins
       Data::setInput();
-
-      // Initially Direction low => input
       Direction::setOutput();
+
+      // Initially target reset is not driven
+      highZ();
 
       // IRQ on falling edge - reset detection
       Data::setPinAction(USBDM::PinAction_IrqFalling);
-      Data::setCallback(callback);
-      Data::enableNvicInterrupts(true);
+      Data::setPinCallback(callback);
+      Data::enableNvicInterrupts(USBDM::NvicPriority_Normal);
 
       fResetActivity = false;
    }
@@ -62,14 +69,6 @@ public:
       Data::low();
       Data::setOut();
       Direction::high();
-   }
-   /**
-    * Drive signal low
-    *
-    * @note Assumes driver already enabled
-    */
-   static void _low() {
-      Data::low();
    }
    /**
     * Disable Transceiver (high-impedance)\n

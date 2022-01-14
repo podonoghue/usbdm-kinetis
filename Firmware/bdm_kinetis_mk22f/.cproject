@@ -60,6 +60,7 @@
 									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/Project_Headers&quot;"/>
 								</option>
 								<option id="net.sourceforge.usbdm.gnu.cpp.compiler.option.misc.other.1175228252" name="Other flags" superClass="net.sourceforge.usbdm.gnu.cpp.compiler.option.misc.other" useByScannerDiscovery="false" value="-c -fmessage-length=0 -MT&quot;$@&quot; -Wimplicit-fallthrough=3" valueType="string"/>
+								<option id="net.sourceforge.usbdm.gnu.cpp.compiler.option.misc.language.872585051" name="Language standard:" superClass="net.sourceforge.usbdm.gnu.cpp.compiler.option.misc.language" useByScannerDiscovery="true" value="net.sourceforge.usbdm.gnu.cpp.compiler.option.misc.language.cpp20" valueType="enumerated"/>
 								<inputType id="net.sourceforge.usbdm.cdt.arm.toolchain.cpp.compiler.input.2021588286" superClass="net.sourceforge.usbdm.cdt.arm.toolchain.cpp.compiler.input"/>
 							</tool>
 							<tool id="net.sourceforge.usbdm.cdt.arm.toolchain.archiver.1892937010" name="ARM Archiver" superClass="net.sourceforge.usbdm.cdt.arm.toolchain.archiver"/>
@@ -70,7 +71,7 @@
 								</option>
 							</tool>
 							<tool id="net.sourceforge.usbdm.cdt.arm.toolchain.cpp.linker.488238132" name="ARM C++ Linker" superClass="net.sourceforge.usbdm.cdt.arm.toolchain.cpp.linker">
-								<option id="net.sourceforge.usbdm.cdt.toolchain.cpp.linker.linkerFile.1046574806" name="Linker File (-T option):" superClass="net.sourceforge.usbdm.cdt.toolchain.cpp.linker.linkerFile" useByScannerDiscovery="false" value="MemoryMap-Debug.ld" valueType="string"/>
+								<option id="net.sourceforge.usbdm.cdt.toolchain.cpp.linker.linkerFile.1046574806" name="Linker File (-T option):" superClass="net.sourceforge.usbdm.cdt.toolchain.cpp.linker.linkerFile" useByScannerDiscovery="false" value="MemoryMap.ld" valueType="string"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.link.option.paths.1266246088" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" useByScannerDiscovery="false" valueType="libPaths">
 									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/Project_Settings/Linker_Files&quot;"/>
 								</option>
@@ -108,7 +109,7 @@
 					<folderInfo id="net.sourceforge.usbdm.cdt.arm.exe.release.configuration.962518623." name="/" resourcePath="">
 						<toolChain id="net.sourceforge.usbdm.cdt.arm.exe.release.toolchain.59949107" name="ARM-USBDM ToolChain" superClass="net.sourceforge.usbdm.cdt.arm.exe.release.toolchain">
 							<option defaultValue="net.sourceforge.usbdm.cdt.toolchain.debug.debugLevel.none" id="net.sourceforge.usbdm.cdt.toolchain.debug.debugLevel.1554396964" name="Debug level" superClass="net.sourceforge.usbdm.cdt.toolchain.debug.debugLevel" useByScannerDiscovery="false" value="net.sourceforge.usbdm.cdt.toolchain.debug.debugLevel.max" valueType="enumerated"/>
-							<option defaultValue="net.sourceforge.usbdm.gnu.c.optimization.level.most" id="net.sourceforge.usbdm.cdt.toolchain.optimization.level.1270605825" name="Optimization level" superClass="net.sourceforge.usbdm.cdt.toolchain.optimization.level" useByScannerDiscovery="false" value="net.sourceforge.usbdm.gnu.c.optimization.level.none" valueType="enumerated"/>
+							<option defaultValue="net.sourceforge.usbdm.gnu.c.optimization.level.most" id="net.sourceforge.usbdm.cdt.toolchain.optimization.level.1270605825" name="Optimization level" superClass="net.sourceforge.usbdm.cdt.toolchain.optimization.level" useByScannerDiscovery="false" value="net.sourceforge.usbdm.gnu.c.optimization.level.size" valueType="enumerated"/>
 							<option id="net.sourceforge.usbdm.cdt.arm.toolchain.mcpu.1169747115" name="Cpu (-mcpu=)" superClass="net.sourceforge.usbdm.cdt.arm.toolchain.mcpu" useByScannerDiscovery="false" value="net.sourceforge.usbdm.cdt.arm.toolchain.mcpu.cortexM4" valueType="enumerated"/>
 							<option id="net.sourceforge.usbdm.cdt.arm.toolchain.mthumb.1842847334" name="Thumb Instruction set (-mthumb)" superClass="net.sourceforge.usbdm.cdt.arm.toolchain.mthumb" useByScannerDiscovery="false" value="true" valueType="boolean"/>
 							<option id="net.sourceforge.usbdm.cdt.arm.toolchain.mfloat-abi.655186957" name="Floating point ABI" superClass="net.sourceforge.usbdm.cdt.arm.toolchain.mfloat-abi" useByScannerDiscovery="false" value="net.sourceforge.usbdm.cdt.toolchain.processor.option.misc.mfloat.hard" valueType="enumerated"/>
@@ -148,6 +149,7 @@
 									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/Sources&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/Project_Headers&quot;"/>
 								</option>
+								<option id="net.sourceforge.usbdm.gnu.cpp.compiler.option.misc.language.2082859112" name="Language standard:" superClass="net.sourceforge.usbdm.gnu.cpp.compiler.option.misc.language" value="net.sourceforge.usbdm.gnu.cpp.compiler.option.misc.language.cpp20" valueType="enumerated"/>
 								<inputType id="net.sourceforge.usbdm.cdt.arm.toolchain.cpp.compiler.input.973406398" superClass="net.sourceforge.usbdm.cdt.arm.toolchain.cpp.compiler.input"/>
 							</tool>
 							<tool id="net.sourceforge.usbdm.cdt.arm.toolchain.archiver.685428533" name="ARM Archiver" superClass="net.sourceforge.usbdm.cdt.arm.toolchain.archiver"/>
@@ -158,7 +160,7 @@
 								</option>
 							</tool>
 							<tool id="net.sourceforge.usbdm.cdt.arm.toolchain.cpp.linker.744069536" name="ARM C++ Linker" superClass="net.sourceforge.usbdm.cdt.arm.toolchain.cpp.linker">
-								<option id="net.sourceforge.usbdm.cdt.toolchain.cpp.linker.linkerFile.726832817" name="Linker File (-T option):" superClass="net.sourceforge.usbdm.cdt.toolchain.cpp.linker.linkerFile" useByScannerDiscovery="false" value="MemoryMap-Release.ld" valueType="string"/>
+								<option id="net.sourceforge.usbdm.cdt.toolchain.cpp.linker.linkerFile.726832817" name="Linker File (-T option):" superClass="net.sourceforge.usbdm.cdt.toolchain.cpp.linker.linkerFile" useByScannerDiscovery="false" value="MemoryMap.ld" valueType="string"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.link.option.paths.1899769080" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" useByScannerDiscovery="false" valueType="libPaths">
 									<listOptionValue builtIn="false" value="&quot;${ProjDirPath}/Project_Settings/Linker_Files&quot;"/>
 								</option>

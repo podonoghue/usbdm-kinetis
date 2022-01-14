@@ -131,7 +131,7 @@
 //==========================================================================================
 // Capabilities of the hardware - used to enable/disable appropriate code
 //
-#define HW_CAPABILITY       (CAP_RST_OUT|CAP_RST_IN|CAP_CDC|CAP_SWD_HW|CAP_BDM|CAP_SWD_HW|CAP_CORE_REGS|CAP_VDDCONTROL|CAP_VDDSENSE)
+#define HW_CAPABILITY       (CAP_RST_OUT|CAP_RST_IN|CAP_CDC|CAP_SWD_HW|CAP_BDM|CAP_CORE_REGS|CAP_VDDCONTROL|CAP_VDDSENSE)
 #define TARGET_CAPABILITY   (CAP_RST               |CAP_CDC|CAP_HCS08|CAP_HCS12|CAP_S12Z|CAP_CFV1|CAP_ARM_SWD|CAP_VDDCONTROL)
 
 #define CPU  MK20D5
@@ -142,13 +142,12 @@
 //! Software Version Information
 //
 #define VERSION_MAJOR 5
-#define VERSION_MINOR 3
+#define VERSION_MINOR 4
 #define VERSION_MICRO 0
 #define VERSION_SW  ((VERSION_MAJOR<<4)+VERSION_MINOR)
 
 #define VENDOR_ID        (0x16D0)       // Vendor (actually MCS)
 #if (HW_CAPABILITY&CAP_CDC)
-//#define PRODUCT_ID       (0xFF01)       // CDC versions
 #define PRODUCT_ID       (0x06A5)       // CDC versions
 #else
 #define PRODUCT_ID       (0x0567)       // Non-CDC versions

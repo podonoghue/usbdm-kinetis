@@ -8,22 +8,23 @@
 #ifndef SOURCES_INTERFACE_H_
 #define SOURCES_INTERFACE_H_
 #include "hardware.h"
+#include "smc.h"
 
 /**
  * GPIO for Activity LED
  */
-class UsbLed : public USBDM::GpioD<7, USBDM::ActiveLow> {
+class UsbLed : public USBDM::Usb_Led { // public USBDM::GpioD<7, USBDM::ActiveLow> {
 public:
    /** Initialise activity LED */
    static void initialise() {
-      setOutput();
+     setOutput();
    }
 };
 
 /**
- * GPIO for Debug pin PTB0 or PTB1
+ * GPIO for Debug pin
  */
-class Debug : public USBDM::GpioB<0, USBDM::ActiveHigh> {
+class Debug : public USBDM::TPa1 { // USBDM::GpioB<0, USBDM::ActiveHigh> {
 public:
    /** Initialise debug pin */
    static void initialise() {
@@ -34,11 +35,16 @@ public:
 /**
  * GPIO controlling some interface signals (SWD, UART-TX)
  */
-class InterfaceEnable : public USBDM::GpioC<4, USBDM::ActiveHigh> {
+class InterfaceEnable : public USBDM::Swd_Enable { // public USBDM::GpioC<4, USBDM::ActiveHigh> {
 public:
-   /** Initialise activity LED */
+   /** Initialise pin as output driving inactive level */
    static void initialise() {
-      setOutput();
+     setOutput();
+   }
+      // Todo - fix after removing const on typedefs
+   /** Initialise pin as output driving inactive level */
+   static void on() {
+      USBDM::Swd_Enable::on();
    }
 };
 
@@ -47,7 +53,7 @@ public:
  *
  * This uses the ADC to measure an external voltage divider
  */
-class HardwareId : USBDM::Adc0::Channel<12> {
+class HardwareId : public USBDM::Identify { // USBDM::Adc0::Channel<19> {
 public:
    /**
     * Get hardware ID
@@ -77,8 +83,9 @@ public:
     * 15 = 0R/100K or 0R/open
     */
    static int getId() {
-      Adc::setResolution(USBDM::AdcResolution_8bit_se);
-      return round(readAnalogue()/17.0);
+      // Todo - fix after removing const on typedefs
+      USBDM::Identify::OwningAdc::setResolution(USBDM::AdcResolution_8bit_se);
+      return round(USBDM::Identify::readAnalogue()/17.0);
    }
 };
 

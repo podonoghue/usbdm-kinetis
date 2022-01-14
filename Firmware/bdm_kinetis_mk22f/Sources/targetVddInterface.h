@@ -73,27 +73,27 @@ private:
    /**
     * GPIO for Target Vdd enable pin
     */
-   using Control = USBDM::GpioD<1, USBDM::ActiveHigh>;
+   using Control = USBDM::TVdd_Enable; // USBDM::GpioD<1, USBDM::ActiveHigh>;
 
    /**
     * GPIO for Target Vdd LED
     */
-   using Led = USBDM::GpioB<3, USBDM::ActiveHigh>;
+   using Led = USBDM::TVdd_Led; // USBDM::GpioB<3, USBDM::ActiveHigh>;
 
    /**
     * ADC channel for Target Vdd measurement
     */
-   using VddMeasure = USBDM::Adc0::Channel<12>;
+   using VddMeasure = USBDM::TVdd_Measure; // USBDM::Adc0::Channel<12>;
 
    /**
     * Comparator to monitor Vdd level
     */
-   using VddMonitor = USBDM::Cmp0;
+   using VddMonitor = USBDM::TVdd_Monitor; // USBDM::Cmp0;
 
    /**
     * GPIO used to monitor power switch error indicator
     */
-   using VddPowerFaultMonitor = USBDM::GpioD<0, USBDM::ActiveHigh>;
+   using VddPowerFaultMonitor = USBDM::TVdd_Fault; // USBDM::GpioD<0, USBDM::ActiveHigh>;
 
    /**
     * Callback for Vdd changes
@@ -164,7 +164,7 @@ public:
     */
    static void powerFaultCallback(uint32_t status) {
 
-      if ((VddPowerFaultMonitor::MASK & status) != 0) {
+      if ((VddPowerFaultMonitor::BITMASK & status) != 0) {
 
          // In case Vdd overload
          Control::off();
@@ -198,8 +198,8 @@ public:
       Control::setOutput();
 
       // Do default calibration for 8-bits
-      VddMeasure::Adc::configure(USBDM::AdcResolution_8bit_se);
-      VddMeasure::Adc::calibrate();
+      VddMeasure::OwningAdc::configure(USBDM::AdcResolution_8bit_se);
+      VddMeasure::OwningAdc::calibrate();
 
       Led::setOutput(
             USBDM::PinDriveStrength_High,
@@ -216,11 +216,11 @@ public:
       VddMonitor::configureDac(
             powerOnResetThresholdDac,
             USBDM::CmpDacSource_Vdda);
-      VddMonitor::selectInputs(USBDM::Cmp0Input_1, USBDM::Cmp0Input_Cmp0Dac);
+      VddMonitor::selectInputs(USBDM::TVdd_Monitor::Input_TVdd_Mon, USBDM::TVdd_Monitor::Input_CmpDac);
       VddMonitor::enableInterrupts(USBDM::CmpInterrupt_Both);
-      VddMonitor::enableNvicInterrupts(true);
+      VddMonitor::enableNvicInterrupts(USBDM::NvicPriority_Normal);
 
-      VddPowerFaultMonitor::setCallback(powerFaultCallback);
+      VddPowerFaultMonitor::setPinCallback(powerFaultCallback);
       VddPowerFaultMonitor::setInput(
             USBDM::PinPull_Up,
             USBDM::PinAction_IrqFalling,
@@ -285,7 +285,7 @@ public:
     * @return Target Vdd as an integer in the range 0-255 => 0-5V
     */
    static int readRawVoltage() {
-      VddMeasure::Adc::setResolution(USBDM::AdcResolution_8bit_se);
+      VddMeasure::OwningAdc::setResolution(USBDM::AdcResolution_8bit_se);
       return round(VddMeasure::readAnalogue()*externalDivider*5/Vref);
    }
 
@@ -295,7 +295,7 @@ public:
     * @return Target Vdd in volts as a float
     */
    static float readVoltage() {
-      VddMeasure::Adc::setResolution(USBDM::AdcResolution_8bit_se);
+      VddMeasure::OwningAdc::setResolution(USBDM::AdcResolution_8bit_se);
       return VddMeasure::readAnalogue()*Vref*externalDivider/((1<<8)-1);
    }
 
@@ -312,7 +312,7 @@ public:
       if (vddState == VddState_Error) {
          return false;
       }
-      VddMeasure::Adc::setResolution(USBDM::AdcResolution_8bit_se);
+      VddMeasure::OwningAdc::setResolution(USBDM::AdcResolution_8bit_se);
       int value = VddMeasure::readAnalogue();
       if (value>voltage) {
          Led::on();
@@ -350,7 +350,7 @@ public:
     * Also updates Target Vdd LED
     */
    static bool isVddLow() {
-      VddMeasure::Adc::setResolution(USBDM::AdcResolution_8bit_se);
+      VddMeasure::OwningAdc::setResolution(USBDM::AdcResolution_8bit_se);
       if (VddMeasure::readAnalogue()<powerOnResetThresholdAdc) {
          Led::off();
          return true;
