@@ -1189,7 +1189,10 @@ void commandLoop() {
    static uint8_t commandSequence = 0;
 
    for(;;) {
-      (void)USBDM::UsbImplementation::receiveBulkData(MAX_COMMAND_SIZE, commandBuffer);
+      int receivedSize = USBDM::UsbImplementation::receiveBulkData(MAX_COMMAND_SIZE, commandBuffer);
+      if (receivedSize <= 0) {
+         continue;
+      }
       commandSequence = commandBuffer[1] & 0xC0;
       commandBuffer[1] &= 0x3F;
       commandExec();
