@@ -10,30 +10,30 @@
    <item key="$$Hardware_Source_Filename"                  value="MK22F51212.usbdmHardware" />
    <item key="$peripheral$CMP0_codeIdentifier"             value="TVdd_Monitor" />
    <item key="$peripheral$SPI0_codeIdentifier"             value="SwdSpi" />
-   <item key="$pin$PTA0_pcrSetting_7"                      value="700" />
-   <item key="$pin$PTA1_pcrSetting_2"                      value="200" />
-   <item key="$pin$PTA2_pcrSetting_2"                      value="200" />
-   <item key="$pin$PTA3_pcrSetting_7"                      value="700" />
-   <item key="$pin$PTB0_pcrSetting_1"                      value="100" />
-   <item key="$pin$PTB1_pcrSetting_1"                      value="100" />
-   <item key="$pin$PTB2_pcrSetting_0"                      value="0" />
-   <item key="$pin$PTB3_pcrSetting_1"                      value="100" />
-   <item key="$pin$PTC0_pcrSetting_1"                      value="100" />
-   <item key="$pin$PTC1_pcrSetting_1"                      value="100" />
+   <item key="$pin$PTA0_pcrSetting_7"                      value="8700" />
+   <item key="$pin$PTA1_pcrSetting_2"                      value="8200" />
+   <item key="$pin$PTA2_pcrSetting_2"                      value="8200" />
+   <item key="$pin$PTA3_pcrSetting_7"                      value="8700" />
+   <item key="$pin$PTB0_pcrSetting_1"                      value="8100" />
+   <item key="$pin$PTB1_pcrSetting_1"                      value="8100" />
+   <item key="$pin$PTB2_pcrSetting_0"                      value="8000" />
+   <item key="$pin$PTB3_pcrSetting_1"                      value="8100" />
+   <item key="$pin$PTC0_pcrSetting_1"                      value="8100" />
+   <item key="$pin$PTC1_pcrSetting_1"                      value="8100" />
    <item key="$pin$PTC2_pcrSetting_2"                      value="200" />
    <item key="$pin$PTC3_pcrSetting_4"                      value="400" />
-   <item key="$pin$PTC4_pcrSetting_1"                      value="100" />
+   <item key="$pin$PTC4_pcrSetting_1"                      value="8100" />
    <item key="$pin$PTC5_pcrSetting_2"                      value="200" />
    <item key="$pin$PTC6_pcrSetting_2"                      value="200" />
-   <item key="$pin$PTC7_pcrSetting_0"                      value="0" />
-   <item key="$pin$PTD0_pcrSetting_1"                      value="100" />
-   <item key="$pin$PTD1_pcrSetting_1"                      value="100" />
+   <item key="$pin$PTC7_pcrSetting_0"                      value="8000" />
+   <item key="$pin$PTD0_pcrSetting_1"                      value="8100" />
+   <item key="$pin$PTD1_pcrSetting_1"                      value="8100" />
    <item key="$pin$PTD3_pcrSetting_2"                      value="200" />
    <item key="$pin$PTD4_pcrSetting_4"                      value="400" />
    <item key="$pin$PTD6_pcrSetting_4"                      value="400" />
-   <item key="$pin$PTD7_pcrSetting_1"                      value="100" />
-   <item key="$pin$PTE0_pcrSetting_3"                      value="300" />
-   <item key="$pin$PTE1_pcrSetting_3"                      value="300" />
+   <item key="$pin$PTD7_pcrSetting_1"                      value="8100" />
+   <item key="$pin$PTE0_pcrSetting_3"                      value="8300" />
+   <item key="$pin$PTE1_pcrSetting_3"                      value="8300" />
    <item key="$signal$ADC0_DM0_descriptionSetting"         value="Id" />
    <item key="$signal$ADC0_DP0_descriptionSetting"         value="N/C" />
    <item key="$signal$ADC0_SE12_codeIdentifier"            value="TVdd_Measure" />
@@ -44,9 +44,14 @@
    <item key="$signal$CMP0_IN1_codeIdentifier"             value="TVdd_Mon" />
    <item key="$signal$CMP0_IN1_descriptionSetting"         value="Vbdm" />
    <item key="$signal$DAC0_OUT_descriptionSetting"         value="N/C" />
+   <item key="$signal$EXTAL0_descriptionSetting"           value="N/C" />
    <item key="$signal$EXTAL32_descriptionSetting"          value="N/C" />
+   <item key="$signal$FTM0_CH2_codeIdentifier"             value="BkgdDir" />
    <item key="$signal$FTM0_CH2_descriptionSetting"         value="BKGD/SWD_DIR" />
-   <item key="$signal$FTM0_CH6_descriptionSetting"         value="BKGD/SWD_I" />
+   <item key="$signal$FTM0_CH4_codeIdentifier"             value="BkgdIn" />
+   <item key="$signal$FTM0_CH4_descriptionSetting"         value="BKGD/SWD_I" />
+   <item key="$signal$FTM0_CH6_codeIdentifier"             value="BkgdOut" />
+   <item key="$signal$FTM0_CH6_descriptionSetting"         value="BKGD/SWD_O" />
    <item key="$signal$GPIOB_0_codeIdentifier"              value="TPa1" />
    <item key="$signal$GPIOB_0_descriptionSetting"          value="TPa1" />
    <item key="$signal$GPIOB_1_codeIdentifier"              value="TPa2" />
@@ -108,6 +113,7 @@
    <item key="$signal$VSS1_descriptionSetting"             value="Vss" />
    <item key="$signal$VSS3_descriptionSetting"             value="Vss" />
    <item key="$signal$VSSA_descriptionSetting"             value="Vss" />
+   <item key="$signal$XTAL0_descriptionSetting"            value="N/C" />
    <item key="$signal$XTAL32_descriptionSetting"           value="N/C" />
    <item key="/CMP0/cmp_cr0_filter_cnt"                    value="4" />
    <item key="/CMP0/cmp_cr0_hystctr"                       value="3" />
