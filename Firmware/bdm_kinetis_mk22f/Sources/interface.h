@@ -41,11 +41,6 @@ public:
    static void initialise() {
      setOutput();
    }
-      // Todo - fix after removing const on typedefs
-   /** Initialise pin as output driving inactive level */
-   static void on() {
-      USBDM::Swd_Enable::on();
-   }
 };
 
 /**
@@ -83,8 +78,7 @@ public:
     * 15 = 0R/100K or 0R/open
     */
    static int getId() {
-      // Todo - fix after removing const on typedefs
-      USBDM::Identify::OwningAdc::setResolution(USBDM::AdcResolution_8bit_se);
+      OwningAdc::setResolution(USBDM::AdcResolution_8bit_se);
       return round(USBDM::Identify::readAnalogue()/17.0);
    }
 };

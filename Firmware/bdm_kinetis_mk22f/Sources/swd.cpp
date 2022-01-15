@@ -108,7 +108,7 @@ public:
     */
    static bool peek()  {
       // GPIO PDIR always reflects digital value even when not configured as GPIO
-      return swdIn::readState();
+      return swdIn::readBit();
    }
 };
 

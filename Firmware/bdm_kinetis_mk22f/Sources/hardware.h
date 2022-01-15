@@ -29,6 +29,7 @@
 #include "adc.h"
 #include "spi.h"
 #include "cmp.h"
+#include "ftm.h"
 
 
 namespace USBDM {
@@ -43,42 +44,51 @@ namespace USBDM {
 extern void mapAllPins();
 
 /// Vbdm
-typedef const Adc0::Channel<12>                              TVdd_Measure;                                 // PTB2(p37)
+typedef Adc0::Channel<12>                                    TVdd_Measure;                                 // PTB2(p37)
 
-typedef const Adc0::Channel<19>                              Identify;                                     // ADC0_DM0(p10)
+typedef Adc0::Channel<19>                                    Identify;                                     // ADC0_DM0(p10)
 
 /// CMP, Analogue Comparator
-typedef const Cmp0                                           TVdd_Monitor;                                 
+typedef Cmp0                                                 TVdd_Monitor;                                 
 
 /// Vbdm
-typedef const Cmp0::Pin<Cmp0::Input_Ptc7>                    TVdd_Mon;                                     // PTC7(p52)
+typedef Cmp0::Pin<Cmp0::Input_Ptc7>                          TVdd_Mon;                                     // PTC7(p52)
+
+/// BKGD/SWD_DIR
+typedef Ftm0::Channel<2>                                     BkgdDir;                                      // PTC3(p46)
+
+/// BKGD/SWD_I
+typedef Ftm0::Channel<4>                                     BkgdIn;                                       // PTD4(p61)
+
+/// BKGD/SWD_O
+typedef Ftm0::Channel<6>                                     BkgdOut;                                      // PTD6(p63)
 
 /// TPa2
-typedef const GpioTable_T<GpioBInfo, 1, ActiveHigh>          TPa2;                                         // PTB1(p36)
+typedef GpioTable_T<GpioBInfo, 1, ActiveHigh>                TPa2;                                         // PTB1(p36)
 
 /// TPa1
-typedef const GpioTable_T<GpioBInfo, 0, ActiveHigh>          TPa1;                                         // PTB0(p35)
+typedef GpioTable_T<GpioBInfo, 0, ActiveHigh>                TPa1;                                         // PTB0(p35)
 
 /// TVddLed
-typedef const GpioTable_T<GpioBInfo, 3, ActiveHigh>          TVdd_Led;                                     // PTB3(p38)
+typedef GpioTable_T<GpioBInfo, 3, ActiveHigh>                TVdd_Led;                                     // PTB3(p38)
 
 /// RST_DIR
-typedef const GpioTable_T<GpioCInfo, 0, ActiveHigh>          Reset_Dir;                                    // PTC0(p43)
+typedef GpioTable_T<GpioCInfo, 0, ActiveHigh>                Reset_Dir;                                    // PTC0(p43)
 
 /// RST_IO
-typedef const GpioTable_T<GpioCInfo, 1, ActiveHigh>          Reset_IO;                                     // PTC1(p44)
+typedef GpioTable_T<GpioCInfo, 1, ActiveHigh>                Reset_IO;                                     // PTC1(p44)
 
 /// SWD_EN
-typedef const GpioTable_T<GpioCInfo, 4, ActiveHigh>          Swd_Enable;                                   // PTC4(p49)
+typedef GpioTable_T<GpioCInfo, 4, ActiveHigh>                Swd_Enable;                                   // PTC4(p49)
 
 /// Vdd_En
-typedef const GpioTable_T<GpioDInfo, 1, ActiveHigh>          TVdd_Enable;                                  // PTD1(p58)
+typedef GpioTable_T<GpioDInfo, 1, ActiveHigh>                TVdd_Enable;                                  // PTD1(p58)
 
 /// USB_LED
-typedef const GpioTable_T<GpioDInfo, 7, ActiveHigh>          Usb_Led;                                      // PTD7(p64)
+typedef GpioTable_T<GpioDInfo, 7, ActiveHigh>                Usb_Led;                                      // PTD7(p64)
 
 /// Vdd_Flt
-typedef const GpioTable_T<GpioDInfo, 0, ActiveHigh>          TVdd_Fault;                                   // PTD0(p57)
+typedef GpioTable_T<GpioDInfo, 0, ActiveHigh>                TVdd_Fault;                                   // PTD0(p57)
 
 /// SPI, Serial Peripheral Interface
 typedef Spi0                                                 SwdSpi;                                       

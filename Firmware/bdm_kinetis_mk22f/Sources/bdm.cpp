@@ -85,13 +85,13 @@ static constexpr unsigned SPEEDUP_PULSE_WIDTH_ticks = 1;
 using FtmInfo = Ftm0Info;
 
 /** FTM channel for BKGD out D6(ch6) */
-constexpr int bkgdOutChannel = 6;
+constexpr int bkgdOutChannel = BkgdOut::CHANNEL; // 6
 
 /** FTM channel for BKGD enable C3(ch2) */
-constexpr int bkgdEnChannel = 2;
+constexpr int bkgdEnChannel = BkgdDir::CHANNEL; // 2
 
 /** FTM channel for BKGD in D4(ch4) */
-constexpr int bkgdInChannel = 4;
+constexpr int bkgdInChannel = BkgdIn::CHANNEL; // 4
 
 /* Make sure pins have been configured for FTM operation */
 CheckSignalMapping<FtmInfo, bkgdOutChannel> bkgdOutChannel_chk;
@@ -106,7 +106,8 @@ using bkgdInGpio = GpioTable_T<FtmInfo, bkgdInChannel, ActiveHigh>;
 static constexpr HardwarePtr<FTM_Type> ftm = FtmInfo::baseAddress;
 
 /**
- * Create mask to force control of BKGD output via FTM->SWOCTRL
+ * Create mask to force control of BKGD output via FTM->SWOCTRL.
+ * This mask forces control of BKGD_O and BKGD_DIR
  *
  * @param enable     Whether to enable buffer (enabled/3-state)
  * @param level      What level to force on pin if enabled
@@ -119,6 +120,7 @@ consteval uint32_t SwoCtrlMask(bool enable, bool level) {
 
 /**
  * Create mask to force control of BKGD output via FTM->SWOCTRL
+ * This mask may be used to forces control of BKGD_O and BKGD_DIR
  *
  * @param pins PinLevelMasks_t control value
  *
@@ -139,18 +141,20 @@ constexpr uint32_t SwoCtrlMask(PinLevelMasks_t pins) {
    }
 }
 /**
- * Disable FTM control of BKGD
+ * Disable FTM channel control of BKGD
+ * This forces control of BKGD_O and BKGD_DIR via ftm->SWOCTRL
  */
 inline
-static void disablePins() {
+static void forcePins() {
    ftm->SWOCTRL = SwoCtrlMask(PIN_BKGD_3STATE); // Disable buffer + Force pin high
 }
 
 /**
- * Enable FTM control of BKGD
+ * Disable FTM channel control of BKGD
+ * This releases control of BKGD_O and BKGD_DIR via ftm->SWOCTRL
  */
 inline
-static void enablePins() {
+static void releasePins() {
    ftm->SWOCTRL = 0; // Release pin control
 }
 
@@ -196,26 +200,8 @@ static void disableFtmCounter() {
    ftm->SC = 0;
 }
 
-///** PCR for BKGD in pin used by timer */
-//using BkgdInPcr        = PcrTable_T<FtmInfo, bkgdInChannel>;
-//
-///** PCR for BKGD enable pin used by timer */
-//using BkgdEnPcr        = PcrTable_T<FtmInfo, bkgdEnChannel>;
-//
-///** PCR for BKGD in pin used by timer */
-//using BkgdOutPcr       = PcrTable_T<FtmInfo, bkgdOutChannel>;
-//
 /** GPIO for BKGD in pin */
-using BkgdIn           = GpioTable_T<FtmInfo, bkgdInChannel, ActiveHigh>;
-
-///** GPIO for BKGD enable pin used by timer */
-//using BkgdEn = GpioTable_T<FtmInfo, bkgdEnChannel>;
-//
-///** GPIO for BKGD in pin used by timer */
-//using BkgdOut = GpioTable_T<FtmInfo, bkgdOutChannel>;
-//
-///** Transceiver for BKGD */
-//using Bkgd = Lvc1t45<BkgdEn, BkgdOut>;
+using BkgdInGpio   = GpioTable_T<FtmInfo, BkgdIn::CHANNEL, ActiveHigh>;
 
 /** Measured Target SYNC width (Timer Ticks) */
 static unsigned targetSyncWidth;
@@ -316,7 +302,7 @@ void initialise() {
 
    enableFtmCounter();
 
-   disablePins();
+   forcePins();
    ftm->CONTROLS[bkgdEnChannel].CnSC  = FtmChMode_OutputCompareClear;
    ftm->CONTROLS[bkgdOutChannel].CnSC = FtmChMode_OutputCompareSet;
 
@@ -396,7 +382,7 @@ USBDM_ErrorCode sync(uint16_t &syncLength) {
    ftm->CONTROLS[bkgdInChannel+1].CnSC  = FtmChMode_InputCaptureRisingEdge;
 
    // Release force pin control
-   enablePins();
+   forcePins();
 
    // Start counter from 0
    ftm->CNT = 0;
@@ -427,7 +413,7 @@ USBDM_ErrorCode sync(uint16_t &syncLength) {
    volatile uint16_t e2 = ftm->CONTROLS[bkgdInChannel+1].CnV;
 
    // Release force pin control
-   disablePins();
+   forcePins();
 
    // Disable dual-edge capture (in case timeout)
    ftm->COMBINE = 0;
@@ -618,7 +604,7 @@ void transactionStart() {
    ftm->SYNCONF = FTM_SYNCONF_SYNCMODE(1)|FTM_SYNCONF_SWWRBUF(1);
 
    __disable_irq();
-   enablePins();
+   releasePins();
 }
 
 /**
@@ -627,7 +613,7 @@ void transactionStart() {
 inline
 void transactionComplete() {
 //   disableFtmCounter();
-   disablePins();
+   forcePins();
    __enable_irq();
 }
 
@@ -1500,7 +1486,7 @@ USBDM_ErrorCode physicalConnect() {
       }
    }
    // Wait with timeout until BKGD is high
-   if (!waitMS(RESET_RELEASE_WAIT_ms, BkgdIn::isHigh)) {
+   if (!waitMS(RESET_RELEASE_WAIT_ms, BkgdInGpio::isHigh)) {
       // BKGD timeout
       return(BDM_RC_BKGD_TIMEOUT);
    }
@@ -1684,7 +1670,7 @@ USBDM_ErrorCode softwareReset(uint8_t mode) {
    waitMS(RESET_RECOVERY_ms);
 
    // Place interface in idle state
-   disablePins();
+   forcePins();
 
    //  bdm_halt();  // For RS08?
    return BDM_RC_OK;

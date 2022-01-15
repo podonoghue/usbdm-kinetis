@@ -11,7 +11,9 @@
 #include "hardware.h"
 
 /**
- * 3-State I/O for reset signal
+ * Reset signal
+ * Bidirection control
+ * Reset event detection
  */
 class ResetInterface {
 
@@ -62,6 +64,7 @@ public:
 
       fResetActivity = false;
    }
+
    /**
     * Drive signal low
     */
@@ -78,6 +81,7 @@ public:
       Direction::low();
       Data::setIn();
    }
+
    /**
     * Read value from receiver
     *
@@ -88,6 +92,7 @@ public:
    static bool read() {
       return Data::read();
    }
+
    /**
     * Check if receiver input is low
     *
@@ -98,6 +103,7 @@ public:
    static bool isLow() {
       return !Data::read();
    }
+
    /**
     * Check if receiver input is high
     *

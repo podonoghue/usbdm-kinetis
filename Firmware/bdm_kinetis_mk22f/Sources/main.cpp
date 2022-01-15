@@ -335,8 +335,10 @@ void coldStart() {
 
    TargetVddInterface::initialise(targetVddSense);
 
-   // Board starts with Target Vdd on
+#if TARGET_HARDWARE == H_USBDM_OPENSDA
+   // FRDM board starts with Target Vdd on
    TargetVddInterface::vddOn();
+#endif
 
    // Wait for Vbdm stable
    wait(10_ms);
