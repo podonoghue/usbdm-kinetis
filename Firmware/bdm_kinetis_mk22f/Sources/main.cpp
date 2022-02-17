@@ -311,7 +311,7 @@ void hcs08Testing () {
  *  Dummy callback function servicing the interrupt from Vdd changes
  */
 static void targetVddSense(VddState) {
-   console.writeln("Target Vdd Change");
+   console.WRITELN("Target Vdd Change");
 }
 
 void warmStart() {
