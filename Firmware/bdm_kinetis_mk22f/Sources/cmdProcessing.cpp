@@ -271,6 +271,8 @@ USBDM_ErrorCode f_CMD_DEBUG(void) {
             return rc;
          }
          commandBuffer[1] = (uint8_t)makeStatusWord(); // return the status byte
+
+         // ToDo - Consider conversion from timer ticks to standard HCS12 sync value. On this processor they are equal
          (*(uint16_t*)(commandBuffer+2)) = cable_status.sync_length;
          returnSize = 4;
       }

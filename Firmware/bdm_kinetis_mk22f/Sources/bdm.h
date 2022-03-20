@@ -15,6 +15,13 @@
 #include "targetVddInterface.h"
 
 namespace Bdm {
+
+// Length of the expected sync response in target processor clock cycles
+static constexpr unsigned SYNC_LENGTH_IN_TARGET_CLOCK_CYCLES = 128;
+
+// Sync values are expressed in timer ticks (60MHz timer) e.g. 15 ticks = 25us, 1 tick ~ 12.7 ns
+static constexpr unsigned SYNC_MEASUREMENT_TICK_FREQUENCY = 60000000;
+
 /**
  *  Interrupt callback function servicing the interrupt from Vdd changes
  *  This routine has several purposes:

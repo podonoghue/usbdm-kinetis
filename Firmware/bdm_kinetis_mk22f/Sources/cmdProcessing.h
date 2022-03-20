@@ -46,7 +46,7 @@ struct CableStatus_t {
    SpeedMode_t         speed:8;        //!< Target speed determination method, see SpeedMode_t
    TargetVddState_t    yyyyy:8;        //!< Not used
    TargetVppSelect_t   flashState:8;   //!< State of RS08 Flash programming,  see FlashState_t
-   uint16_t            sync_length;    //!< Length of the target SYNC pulse in 60MHz ticks
+   uint16_t            sync_length;    //!< Length of the target SYNC pulse in timer ticks (60MHz)
    uint16_t            wait150_cnt;    //!< Time for 150 BDM cycles in bus cycles of the MCU divided by N
    uint16_t            wait64_cnt;     //!< Time for 64 BDM cycles in bus cycles of the MCU divided by N
    uint8_t             bdmpprValue;    //!< BDMPPR value for HCS12

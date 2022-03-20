@@ -43,13 +43,13 @@ private:
     * Minimum working input 5V voltage as an ADC reading \n
     * 5V-5% as ADC reading i.e. 0-255
     */
-   static constexpr int onThreshold5VAdc = (int)((4.75/(externalDivider*Vref))*((1<<8)-1));
+   static constexpr int onThreshold5VAdc = (int)((4.75/(externalDivider*Vref))*(USBDM::Adc::getSingleEndedMaximum(USBDM::AdcResolution_8bit_se)));
 
    /**
     * Minimum working input 3.3V voltage as an ADC reading \n
     * 3.3-5% as ADC reading i.e. 0-255
     */
-   static constexpr int onThreshold3V3Adc = (int)((3.15/(externalDivider*Vref))*((1<<8)-1));
+   static constexpr int onThreshold3V3Adc = (int)((3.15/(externalDivider*Vref))*(USBDM::Adc::getSingleEndedMaximum(USBDM::AdcResolution_8bit_se)));
 
    /**
     * Minimum working voltage as an DAC value. \n
@@ -68,7 +68,7 @@ private:
     * This is the voltage needed to ensure a power-on-reset of the target. \n
     * 0.8 V as ADC reading
     */
-   static constexpr int powerOnResetThresholdAdc = (int)((0.8/(externalDivider*Vref))*((1<<8)-1));
+   static constexpr int powerOnResetThresholdAdc = (int)((0.8/(externalDivider*Vref))*(USBDM::Adc::getSingleEndedMaximum(USBDM::AdcResolution_8bit_se)));
 
    /**
     * GPIO for Target Vdd enable pin
@@ -198,7 +198,11 @@ public:
       Control::setOutput();
 
       // Do default calibration for 8-bits
-      VddMeasure::OwningAdc::configure(USBDM::AdcResolution_8bit_se);
+      VddMeasure::OwningAdc::configure(
+            USBDM::AdcResolution_8bit_se,
+            USBDM::AdcClockSource_Bus,
+            USBDM::AdcSample_Normal,
+            USBDM::AdcPower_Normal);
       VddMeasure::OwningAdc::calibrate();
 
       Led::setOutput(

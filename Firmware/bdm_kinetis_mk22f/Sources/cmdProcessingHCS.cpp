@@ -157,8 +157,11 @@ USBDM_ErrorCode f_CMD_SET_SPEED(void) {
       // Try to connect
       return f_CMD_CONNECT();
    }
+
+   // ToDo - Consider conversion from timer ticks to standard HCS12 sync value. On this processor they are equal
    cable_status.sync_length = syncValue;
    setSyncLength(syncValue);
+
    // User told us (even if it doesn't work!)
    cable_status.speed = SPEED_USER_SUPPLIED;
 
@@ -187,7 +190,7 @@ USBDM_ErrorCode f_CMD_SET_SPEED(void) {
  *  @return != BDM_RC_OK => error
  */
 USBDM_ErrorCode f_CMD_GET_SPEED(void) {
-   // Standard uses 60MHz tick which happens to be the same as the internal FTM ticks.
+   // ToDo - Consider conversion from timer ticks to standard HCS12 sync value. On this processor they are equal
    unpack16BE(cable_status.sync_length, commandBuffer+1);
    returnSize = 3;
    return BDM_RC_OK;

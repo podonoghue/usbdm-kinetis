@@ -348,14 +348,14 @@ void setSyncLength(uint16_t syncLength) {
 /**
  *  Determine connection speed using sync pulse
  *
- *  @param [out] syncLength Sync length in timer ticks (48MHz)
+ *  @param [out] syncLength Sync length in timer ticks
  *
  *  @return Error code, BDM_RC_OK indicates success
  */
 USBDM_ErrorCode sync(uint16_t &syncLength) {
 
    /** Time to set up Timer - This varies with optimisation! */
-   static constexpr unsigned TMR_SETUP_TIME = 40;
+   static constexpr unsigned TMR_SETUP_TIME = 100;
 
    /* SYNC pulse width */
    const uint32_t syncPulseWidthInTicks = convertMicrosecondsToTicks(SYNC_WIDTH_us);
@@ -382,7 +382,7 @@ USBDM_ErrorCode sync(uint16_t &syncLength) {
    ftm->CONTROLS[bkgdInChannel+1].CnSC  = FtmChMode_InputCaptureRisingEdge;
 
    // Release force pin control
-   forcePins();
+   releasePins();
 
    // Start counter from 0
    ftm->CNT = 0;
@@ -1474,6 +1474,10 @@ USBDM_ErrorCode physicalConnect() {
    if (rc != BDM_RC_OK) {
       return rc;
    }
+
+   // Release force pin control
+   releasePins();
+
    if (bdm_option.useResetSignal) {
       // Wait with timeout until RESET is high
       if (ResetInterface::isLow()) {
@@ -1768,6 +1772,8 @@ USBDM_ErrorCode step() {
   *  Confirm communication at given Sync value.
   *  Only works on HC12 (and maybe only 1 of 'em!)
   *
+  * @param syncLength in timer ticks
+  *
   *  @return
   *    == \ref BDM_RC_OK  => Success \n
   *    != \ref BDM_RC_OK  => Various errors
@@ -1863,15 +1869,29 @@ USBDM_ErrorCode hc12confirmSpeed(unsigned syncLength) {
    cable_status.ackn         = WAIT;    // Clear indication of ACKN feature
    return rc;
 }
+
 /**
- * Converts a frequency to the expected sync value from a HCS target
+ * Converts target frequency to the expected sync value from a HCS target in timer ticks
  *
- * @param frequency
+ * @param frequency in Hz
  *
- * @return Sync value in microseconds
+ * @return Sync value in timer 'ticks'
  */
-constexpr uint32_t convertFrequencyToSyncValue(uint32_t frequency) {
-   return (125*1000000)/frequency;
+constexpr uint32_t convertTargetFrequencyToSyncValue(uint32_t frequency) {
+   constexpr unsigned SCALE = 10;
+   return SCALE*((SYNC_LENGTH_IN_TARGET_CLOCK_CYCLES*(SYNC_MEASUREMENT_TICK_FREQUENCY/SCALE))/frequency);
+}
+
+/**
+ * Converts target frequency to the expected sync value from a HCS target
+ *
+ * @param syncValue Sync value in timer 'ticks'
+ *
+ * @return Frequency in Hz
+ */
+constexpr uint32_t convertSyncValueToTargetFrequency(uint32_t syncValue) {
+   constexpr unsigned SCALE = 10;
+   return SCALE*((SYNC_LENGTH_IN_TARGET_CLOCK_CYCLES*(SYNC_MEASUREMENT_TICK_FREQUENCY/SCALE))/syncValue);
 }
 
 /**  Attempt to determine target speed by trial and error
@@ -1891,37 +1911,37 @@ static const uint32_t typicalSpeeds[] = {
       16000000,
    0
    };
-static uint16_t lastGuess1 = convertFrequencyToSyncValue(8000000);  // Used to remember last 2 guesses
-static uint16_t lastGuess2 = convertFrequencyToSyncValue(16000000); // Common situation to change between 2 speeds (reset,running)
+static uint16_t lastGuessInTicks1 = convertTargetFrequencyToSyncValue(8000000);  // Used to remember last 2 guesses
+static uint16_t lastGuessInTicks2 = convertTargetFrequencyToSyncValue(16000000); // Common situation to change between 2 speeds (reset,running)
 int sub;
-uint16_t currentGuess;
+uint16_t currentGuessInTicks;
 USBDM_ErrorCode  rc;
 
    // Try last used speed #1
-   if (hc12confirmSpeed(lastGuess1) == BDM_RC_OK) {
+   if (hc12confirmSpeed(lastGuessInTicks1) == BDM_RC_OK) {
       cable_status.speed = SPEED_GUESSED;  // Speed found by trial and error
       return BDM_RC_OK;
    }
    // Try last used speed #2
-   currentGuess = lastGuess2;
-   rc = hc12confirmSpeed(lastGuess2);
+   currentGuessInTicks = lastGuessInTicks2;
+   rc = hc12confirmSpeed(lastGuessInTicks2);
    if (rc != BDM_RC_OK) {
       // TODO This may take a while
 //      setBDMBusy();
    }
    // Try some likely numbers!
    for (sub=0; typicalSpeeds[sub]>0; sub++) {
-      rc = hc12confirmSpeed(lastGuess1);
+      rc = hc12confirmSpeed(lastGuessInTicks1);
       if (rc == BDM_RC_OK) {
          break;
       }
-      currentGuess = convertFrequencyToSyncValue(typicalSpeeds[sub]);
-      rc           = hc12confirmSpeed(currentGuess);
+      currentGuessInTicks = convertTargetFrequencyToSyncValue(typicalSpeeds[sub]);
+      rc                  = hc12confirmSpeed(currentGuessInTicks);
       }
    if (rc == BDM_RC_OK) {
       // Update speed cache (LRU)
-      lastGuess2         = lastGuess1;
-      lastGuess1         = currentGuess;
+      lastGuessInTicks2         = lastGuessInTicks1;
+      lastGuessInTicks1         = currentGuessInTicks;
       cable_status.speed = SPEED_GUESSED;  // Speed found by trial and error
       return BDM_RC_OK;
    }
