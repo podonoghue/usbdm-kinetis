@@ -62,8 +62,8 @@ enum FtmChMode {
    FtmChMode_DualEdgeCaptureContinuousRisingEdge   = FTM_CnSC_MS(1)|FTM_CnSC_ELS(1), //!< Dual edge input capture continuous - CHn configuration
    FtmChMode_DualEdgeCaptureOneShotFallingEdge     = FTM_CnSC_MS(0)|FTM_CnSC_ELS(2), //!< Dual edge input capture one shot - CHn configuration
    FtmChMode_DualEdgeCaptureContinuousFallingEdge  = FTM_CnSC_MS(1)|FTM_CnSC_ELS(2), //!< Dual edge input capture continuous - CHn configuration
-   FtmChMode_CombinePositivePulse                  = FTM_CnSC_MS(0)|FTM_CnSC_ELS(2), //!< Combine mode - CHn high pulse from CHn.CNv until CHn+1.CNv
-   FtmChMode_CombineNegativePulse                  = FTM_CnSC_MS(0)|FTM_CnSC_ELS(1), //!< Combine mode - CHn low pulse from CHn.CNv until CHn+1.CNv
+   FtmChMode_CombinePositivePulse                  = FTM_CnSC_MS(0)|FTM_CnSC_ELS(2), //!< Combine mode - CHn configuration
+   FtmChMode_CombineNegativePulse                  = FTM_CnSC_MS(0)|FTM_CnSC_ELS(1), //!< Combine mode - CHn configuration
 };
 
 /**
@@ -1292,11 +1292,11 @@ public:
    /** @return Base address of FTM.MOD register as uint32_t */
    static constexpr uint32_t ftmMOD() { return ftmBase() + offsetof(FTM_Type, MOD); }
    /** @return Base address of FTM.CONTROL[n] struct as uint32_t */
-   static constexpr uint32_t ftmCONTROL(int index) { return ftmBase() + offsetof(FTM_Type, CONTROLS[index]); }
+   static constexpr uint32_t ftmCONTROL(int index) { return ftmBase() + offsetof(FTM_Type, CONTROLS) + index*sizeof(FTM_Type::CONTROLS[0]); }
    /** @return Base address of FTM.CONTROL[n].CnSC struct as uint32_t */
-   static constexpr uint32_t ftmCnSC(int index) { return ftmBase() + offsetof(FTM_Type, CONTROLS[index])+0; }
+   static constexpr uint32_t ftmCnSC(int index) { return ftmBase() + offsetof(FTM_Type, CONTROLS) + index*sizeof(FTM_Type::CONTROLS[0])+0; }
    /** @return Base address of FTM.CONTROL[n].CnV struct as uint32_t */
-   static constexpr uint32_t ftmCnV(int index) { return ftmBase() + offsetof(FTM_Type, CONTROLS[index])+sizeof(uint32_t); }
+   static constexpr uint32_t ftmCnV(int index) { return ftmBase() + offsetof(FTM_Type, CONTROLS) + index*sizeof(FTM_Type::CONTROLS[0])+sizeof(uint32_t); }
 
 private:
    /** Callback function for TOI ISR */

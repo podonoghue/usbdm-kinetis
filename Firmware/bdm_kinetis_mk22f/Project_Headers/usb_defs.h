@@ -419,7 +419,7 @@ enum DataToggle : bool {
  * @return Toggled value
  */
 inline DataToggle __attribute__((always_inline)) operator!(DataToggle volatile const& data0_1) {
-   return (DataToggle)!(bool)data0_1;
+    return data0_1==DataToggle::DataToggle_0?DataToggle::DataToggle_1:DataToggle::DataToggle_0;
 }
 
 // Data packet odd/even indicator
@@ -453,29 +453,35 @@ enum BdtOwner : bool {
 // Little-endian on Kinetis
 struct BdtEntry {
    union {
-      uint8_t raw:8;    //!< Access as bit masks
+      volatile uint8_t raw:8;    //!< Access as bit masks
       struct {          //!< BDT setup access
          uint8_t     :2;
-         bool        bdt_stall:1;  //!< Stall End point
-         bool        dts:1;        //!< Enable Data toggle
-         bool        ninc:1;       //!< Disable DMA address increment
-         bool        keep:1;       //!< BDT is 'kept' by SIE, used for FIFO w/o MCU intervention
+         volatile bool        bdt_stall:1;  //!< Stall End point
+         volatile bool        dts:1;        //!< Enable Data toggle
+         volatile bool        ninc:1;       //!< Disable DMA address increment
+         volatile bool        keep:1;       //!< BDT is 'kept' by SIE, used for FIFO w/o MCU intervention
          uint8_t     :2;
       } setup;
       struct {          //!< BDT result access
          uint8_t     :2;
-         UsbPids     tok_pid:4;  //!< Token PID is written back by SIE
+         volatile UsbPids     tok_pid:4;  //!< Token PID is written back by SIE
          uint8_t     :2;
       } result;
       struct {          //!< BDT common access
          uint8_t     :6;
-         DataToggle  data0_1:1;  //!< Data 0/1 toggle
-         BdtOwner    own:1;      //!< Ownership of the BDT.  MCU only modifies BDT if owned.
+         volatile DataToggle  data0_1:1;  //!< Data 0/1 toggle
+         volatile BdtOwner    own:1;      //!< Ownership of the BDT.  MCU only modifies BDT if owned.
       };
    };
-   uint8_t  rsvd:8;
-   uint16_t bc;          //!< Byte count for transaction
-   uint32_t addr;        //!< Buffer address for transaction
+   volatile uint8_t  :8;
+   volatile uint16_t bc;          //!< Byte count for transaction
+   volatile uint32_t addr;        //!< Buffer address for transaction
+
+   constexpr BdtEntry() :
+      raw(0), bc(0), addr(0) {};
+
+   constexpr BdtEntry(uint8_t value, uint16_t byteCount, uint32_t address) :
+      raw(value), bc(byteCount), addr(address) {};
 
    void initialise(uint8_t value, uint16_t byteCount, uint32_t address) volatile {
       raw  = value;
@@ -523,14 +529,11 @@ struct BdtEntry {
 };
 #endif
 
-union EndpointBdtEntry {
-   BdtEntry bdts[4];
-   struct {
-      BdtEntry rxEven;
-      BdtEntry rxOdd;
-      BdtEntry txEven;
-      BdtEntry txOdd;
-   };
+struct EndpointBdtEntry {
+   BdtEntry rxEven;
+   BdtEntry rxOdd;
+   BdtEntry txEven;
+   BdtEntry txOdd;
 } ;
 
 // Bit masks for fields in BdtEntry
