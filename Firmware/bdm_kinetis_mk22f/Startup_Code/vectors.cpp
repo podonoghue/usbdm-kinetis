@@ -208,8 +208,6 @@ void SPI1_IRQHandler(void)                    WEAK_DEFAULT_HANDLER;
 void I2S0_Tx_IRQHandler(void)                 WEAK_DEFAULT_HANDLER;
 void I2S0_Rx_IRQHandler(void)                 WEAK_DEFAULT_HANDLER;
 void LPUART0_IRQHandler(void)                 WEAK_DEFAULT_HANDLER;
-void UART0_RxTx_IRQHandler(void)              WEAK_DEFAULT_HANDLER;
-void UART0_Error_IRQHandler(void)             WEAK_DEFAULT_HANDLER;
 void UART2_RxTx_IRQHandler(void)              WEAK_DEFAULT_HANDLER;
 void UART2_Error_IRQHandler(void)             WEAK_DEFAULT_HANDLER;
 void ADC0_IRQHandler(void)                    WEAK_DEFAULT_HANDLER;
@@ -294,8 +292,8 @@ VectorTable const __vector_table = {
       I2S0_Tx_IRQHandler,                      /*   44,   28  Synchronous Serial Interface                                                     */
       I2S0_Rx_IRQHandler,                      /*   45,   29  Synchronous Serial Interface                                                     */
       LPUART0_IRQHandler,                      /*   46,   30  Serial Communication Interface                                                   */
-      UART0_RxTx_IRQHandler,                   /*   47,   31  Serial Communication Interface                                                   */
-      UART0_Error_IRQHandler,                  /*   48,   32  Serial Communication Interface                                                   */
+      USBDM::Uart0::irqRxTxHandler,            /*   47,   31  Serial Communication Interface                                                   */
+      USBDM::Uart0::irqErrorHandler,           /*   48,   32  Serial Communication Interface                                                   */
       USBDM::Uart1::irqRxTxHandler,            /*   49,   33  Serial Communication Interface                                                   */
       USBDM::Uart1::irqErrorHandler,           /*   50,   34  Serial Communication Interface                                                   */
       UART2_RxTx_IRQHandler,                   /*   51,   35  Serial Communication Interface                                                   */

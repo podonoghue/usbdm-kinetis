@@ -23,6 +23,8 @@
 #include "bdm.h"
 #endif
 
+#include "Names.h"
+
 using namespace USBDM;
 
 /** Buffer for USB command in, result out */
@@ -1103,7 +1105,7 @@ static void commandExec(void) {
    BDMCommands command    = (BDMCommands)commandBuffer[1];  // Command is 1st byte
    FunctionPtr commandPtr = f_CMD_ILLEGAL;                  // Default to illegal command
 
-   USBDM::console.WRITE("Command = ").WRITELN(command);
+   USBDM::console.WRITE("Command = ").WRITELN(getCommandName(command));
 
    if (((uint8_t)command >= CMD_USBDM_CONTROL_PINS) && (currentFunctions == nullptr)) {
       // Command greater than this require the interface to have been set up i.e.

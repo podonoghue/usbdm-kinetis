@@ -6820,10 +6820,10 @@ public:
    static constexpr uint32_t irqCount  = sizeofArray(irqNums);
 
    //! Class based callback handler has been installed in vector table
-   static constexpr bool irqHandlerInstalled = 0;
+   static constexpr bool irqHandlerInstalled = 1;
 
    //! Default IRQ level
-   static constexpr NvicPriority irqLevel =  NvicPriority_NotInstalled;
+   static constexpr NvicPriority irqLevel =  NvicPriority_Normal;
 
    /** 
     *  Enable clock to Uart0
@@ -6854,10 +6854,10 @@ public:
    static constexpr uint32_t defaultBaudRate = 115200;
 
    //! Default buffer size for receive queue when interrupt driven
-   static constexpr unsigned receiveBufferSize = 50;
+   static constexpr unsigned receiveBufferSize = 20;
 
    //! Default buffer size for transmit queue when interrupt driven
-   static constexpr unsigned transmitBufferSize = 50;
+   static constexpr unsigned transmitBufferSize = 1000;
 
    /**
     * Get input clock frequency
@@ -7201,7 +7201,7 @@ public:
    static constexpr bool irqHandlerInstalled = 1;
 
    //! Default IRQ level
-   static constexpr NvicPriority irqLevel =  NvicPriority_Normal;
+   static constexpr NvicPriority irqLevel =  NvicPriority_High;
 
    /** 
     *  Enable clock to Usb0

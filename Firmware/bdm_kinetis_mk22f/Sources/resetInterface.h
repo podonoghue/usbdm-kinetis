@@ -74,10 +74,23 @@ public:
       Direction::high();
    }
    /**
+    * Drive signal high
+    */
+   static void high() {
+      Data::high();
+      Data::setOut();
+      Direction::high();
+   }
+   /**
     * Disable Transceiver (high-impedance)\n
     * Actually sets to input
     */
    static void highZ() {
+      // Pulse RST=H (speed-up)
+      Data::high();
+      Data::setOut();
+      Direction::high();
+      // 3-state
       Direction::low();
       Data::setIn();
    }

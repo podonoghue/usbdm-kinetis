@@ -142,7 +142,7 @@
 //! Software Version Information
 //
 #define VERSION_MAJOR 5
-#define VERSION_MINOR 5
+#define VERSION_MINOR 6
 #define VERSION_MICRO 0
 #define VERSION_SW  ((VERSION_MAJOR<<4)+VERSION_MINOR)
 

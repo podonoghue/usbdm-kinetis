@@ -88,12 +88,7 @@ class Usb0 : public UsbBase_T<Usb0Info, CONTROL_EP_MAXSIZE> {
    // Select UART to use
    using Uart = CdcUart<Uart1Info>;
 
-   // Allow superclass to access handleTokenComplete(void);
-   friend UsbBase_T<Usb0Info, CONTROL_EP_MAXSIZE>;
-
 public:
-
-   using UsbBase_T<Usb0Info, CONTROL_EP_MAXSIZE>::setUserCallback;
 
    /**
     * String indexes
@@ -169,28 +164,6 @@ public:
     */
    static const uint8_t *const stringDescriptors[];
 
-protected:
-   /* end-points */
-
-   /** Out end-point for Bulk */
-   static OutEndpoint <Usb0Info, Usb0::BULK_OUT_ENDPOINT, BULK_OUT_EP_MAXSIZE> epBulkOut;
-
-   /** In end-point for Bulk */
-   static InEndpoint  <Usb0Info, Usb0::BULK_IN_ENDPOINT,  BULK_IN_EP_MAXSIZE>  epBulkIn;
-
-   /** In end-point for CDC notifications */
-   static InEndpoint  <Usb0Info, Usb0::CDC_NOTIFICATION_ENDPOINT, CDC_NOTIFICATION_EP_MAXSIZE>  epCdcNotification;
-
-   /** Out end-point for CDC data out */
-   static OutEndpoint <Usb0Info, Usb0::CDC_DATA_OUT_ENDPOINT,     CDC_DATA_OUT_EP_MAXSIZE>      epCdcDataOut;
-
-   /** In end-point for CDC data in */
-   static InEndpoint  <Usb0Info, Usb0::CDC_DATA_IN_ENDPOINT,      CDC_DATA_IN_EP_MAXSIZE>       epCdcDataIn;
-   /*
-    * TODO Add additional End-points here
-    */
-
-public:
    /**
     * Device Descriptor
     */
@@ -305,6 +278,26 @@ public:
    static void initialise();
 
 protected:
+   /* end-points */
+
+   /** Out end-point for Bulk */
+   static OutEndpoint <Usb0Info, Usb0::BULK_OUT_ENDPOINT, BULK_OUT_EP_MAXSIZE> epBulkOut;
+
+   /** In end-point for Bulk */
+   static InEndpoint  <Usb0Info, Usb0::BULK_IN_ENDPOINT,  BULK_IN_EP_MAXSIZE>  epBulkIn;
+
+   /** In end-point for CDC notifications */
+   static InEndpoint  <Usb0Info, Usb0::CDC_NOTIFICATION_ENDPOINT, CDC_NOTIFICATION_EP_MAXSIZE>  epCdcNotification;
+
+   /** Out end-point for CDC data out */
+   static OutEndpoint <Usb0Info, Usb0::CDC_DATA_OUT_ENDPOINT,     CDC_DATA_OUT_EP_MAXSIZE>      epCdcDataOut;
+
+   /** In end-point for CDC data in */
+   static InEndpoint  <Usb0Info, Usb0::CDC_DATA_IN_ENDPOINT,      CDC_DATA_IN_EP_MAXSIZE>       epCdcDataIn;
+   /*
+    * TODO Add additional End-points here
+    */
+    
    static bool forceCommandHandlerInitialise;
 
    /**
