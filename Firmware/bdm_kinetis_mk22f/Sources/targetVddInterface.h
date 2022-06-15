@@ -12,15 +12,16 @@
 #include "hardware.h"
 #include "cmp.h"
 #include "console.h"
+#include "commands.h"
 
 /**
  * State of VDD control interface
  */
 enum VddState {
-   VddState_None,       //!< Vdd Off
-   VddState_Internal,   //!< Vdd Internal
-   VddState_External,   //!< Vdd External
-   VddState_Error,      //!< Vdd in Error (overloaded & off)
+   VddState_None,         //!< Vdd Off
+   VddState_Internal,     //!< Vdd Internal
+   VddState_External,     //!< Vdd External
+   VddState_Overloaded,   //!< Internal Vdd overloaded & off)
 };
 
 /**
@@ -43,13 +44,31 @@ private:
     * Minimum working input 5V voltage as an ADC reading \n
     * 5V-5% as ADC reading i.e. 0-255
     */
-   static constexpr int onThreshold5VAdc = (int)((4.75/(externalDivider*Vref))*(USBDM::Adc::getSingleEndedMaximum(USBDM::AdcResolution_8bit_se)));
+   static constexpr int onMinThreshold5VAdc = (int)((4.75/(externalDivider*Vref))*(USBDM::Adc::getSingleEndedMaximum(USBDM::AdcResolution_8bit_se)));
+
+   /**
+    * Maximum working input 5V voltage as an ADC reading \n
+    * 5V-5% as ADC reading i.e. 0-255
+    */
+   static constexpr int onMaxThreshold5VAdc = (int)((5.25/(externalDivider*Vref))*(USBDM::Adc::getSingleEndedMaximum(USBDM::AdcResolution_8bit_se)));
 
    /**
     * Minimum working input 3.3V voltage as an ADC reading \n
     * 3.3-5% as ADC reading i.e. 0-255
     */
-   static constexpr int onThreshold3V3Adc = (int)((3.15/(externalDivider*Vref))*(USBDM::Adc::getSingleEndedMaximum(USBDM::AdcResolution_8bit_se)));
+   static constexpr int onMinThreshold3V3Adc = (int)((3.153/(externalDivider*Vref))*(USBDM::Adc::getSingleEndedMaximum(USBDM::AdcResolution_8bit_se)));
+
+   /**
+    * Maximum working input 3.3V voltage as an ADC reading \n
+    * 3.3+5% as ADC reading i.e. 0-255
+    */
+   static constexpr int onMaxThreshold3V3Adc = (int)((3.47/(externalDivider*Vref))*(USBDM::Adc::getSingleEndedMaximum(USBDM::AdcResolution_8bit_se)));
+
+   /**
+    * Minimum working input 1.5V voltage as an ADC reading \n
+    * 1.5-5% as ADC reading i.e. 0-255
+    */
+   static constexpr int onMinThreshold1V5Adc = (int)((1.4/(externalDivider*Vref))*(USBDM::Adc::getSingleEndedMaximum(USBDM::AdcResolution_8bit_se)));
 
    /**
     * Minimum working voltage as an DAC value. \n
@@ -122,7 +141,7 @@ public:
       if (status.event == USBDM::CmpEvent_Falling) {
          // Falling edge
          switch(vddState) {
-            case VddState_Error:
+            case VddState_Overloaded:
             case VddState_None:
                break;
             case VddState_External:
@@ -131,7 +150,7 @@ public:
                break;
             case VddState_Internal:
                // Fault (overload) detected
-               vddState = VddState_Error;
+               vddState = VddState_Overloaded;
                break;
          }
          // In case Vdd overload
@@ -143,7 +162,7 @@ public:
          switch(vddState) {
             case VddState_Internal:
                break;
-            case VddState_Error:
+            case VddState_Overloaded:
             case VddState_External:
             case VddState_None:
                // External power supplied
@@ -170,7 +189,7 @@ public:
          Control::off();
 
          // Fault (overload) detected
-         vddState = VddState_Error;
+         vddState = VddState_Overloaded;
 
          // Notify callback
          fCallback(vddState);
@@ -243,7 +262,7 @@ public:
     * @note This has no effect if in error state
     */
    static void vddOn() {
-      if (vddState == VddState_Error) {
+      if (vddState == VddState_Overloaded) {
          return;
       }
       vddState  = VddState_Internal;
@@ -278,9 +297,6 @@ public:
    static void vddOff() {
       Control::off();
       vddState  = VddState_None;
-      if (isVddOK_3V3()) {
-         vddState = VddState_External;
-      }
    }
 
    /**
@@ -304,23 +320,23 @@ public:
    }
 
    /**
-    * Check if target Vdd is present. \n
+    * Check if target Vdd is present in acceptable range. \n
     * Also updates Target Vdd LED
     *
     * @param voltage Target voltage to check as ADC value (8-resolution)
     *
-    * @return true  => Target Vdd >= voltage
-    * @return false => Target Vdd < voltage
+    * @return true  => Target Vdd in given range
+    * @return false => Target Vdd not in given or interface in error state (overload etc.)
     */
-   static bool isVddOK(int voltage) {
-      if (vddState == VddState_Error) {
+   static bool isVddOK(int vmin, int vmax) {
+      if (vddState == VddState_Overloaded) {
          return false;
       }
       VddMeasure::OwningAdc::setResolution(USBDM::AdcResolution_8bit_se);
       int value = VddMeasure::readAnalogue();
-      if (value>voltage) {
+      if (value>=vmin) {
          Led::on();
-         return true;
+         return (value<=vmax);
       }
       else {
          Led::off();
@@ -331,22 +347,41 @@ public:
     * Check if target Vdd is present \n
     * Also updates Target Vdd LED
     *
-    * @return true  => Target Vdd >= 3V3
-    * @return false => Target Vdd < 3V3
+    * @return true  => Target Vdd =  ~3V3
+    * @return false => Target Vdd != ~3V3
     */
    static bool isVddOK_3V3() {
-      return isVddOK(onThreshold3V3Adc);
+      return isVddOK(onMinThreshold3V3Adc, onMaxThreshold3V3Adc);
    }
 
    /**
     * Check if target Vdd is present \n
     * Also updates Target Vdd LED
     *
-    * @return true  => Target Vdd >= 5V
-    * @return false => Target Vdd < 5V
+    * @return true  => Target Vdd =  ~5V
+    * @return false => Target Vdd != ~5V
     */
    static bool isVddOK_5V() {
-      return isVddOK(onThreshold5VAdc);
+      return isVddOK(onMinThreshold5VAdc, onMaxThreshold5VAdc);
+   }
+
+   /**
+    * Check if target Vdd is present \n
+    * Also updates Target Vdd LED
+    *
+    * @return true  => Target Vdd >= ~1.5V
+    * @return false => Target Vdd <  ~1.5V
+    */
+   static bool isVddPresent() {
+      VddMeasure::OwningAdc::setResolution(USBDM::AdcResolution_8bit_se);
+      if (VddMeasure::readAnalogue()<onMinThreshold1V5Adc) {
+         Led::off();
+         return false;
+      }
+      else {
+         Led::on();
+         return true;
+      }
    }
 
    /**
@@ -375,7 +410,7 @@ public:
 //   /**
 //    * Get Vdd state
 //    *
-//    * @return Vdd state as VddState_None, VddState_Internal, VddState_External or VddState_Error
+//    * @return Vdd state as VddState_None, VddState_Internal, VddState_External or VddState_Overloaded
 //    */
 //   static VddState getState() {
 //      return vddState;
@@ -384,18 +419,20 @@ public:
    /**
     * Update Vdd state
     *
-    * @return Vdd state as VddState_None, VddState_Internal, VddState_External or VddState_Error
+    * @return Vdd state as VddState_None, VddState_Internal, VddState_External or VddState_Overloaded
     */
    static VddState checkVddState() {
       switch(vddState) {
-         case VddState_Error    :
+         case VddState_Overloaded    :
             // No change - requires Vdd to be turned off to clear
             break;
 
          case VddState_Internal :
-            if (!isVddOK_3V3()) {
-               // Power should be present!
-               vddState = VddState_Error;
+            if (!isVddOK_3V3() && !isVddOK_5V()) {
+               // In case Vdd overload
+               Control::off();
+               // Power should be present in expected range!
+               vddState = VddState_Overloaded;
             }
             break;
 
