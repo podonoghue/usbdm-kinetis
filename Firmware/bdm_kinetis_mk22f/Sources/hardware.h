@@ -54,13 +54,13 @@ typedef Cmp0                                                 TVdd_Monitor;
 /// Vbdm
 typedef Cmp0::Pin<Cmp0::Input_Ptc7>                          TVdd_Mon;                                     // PTC7(p52)
 
-/// BKGD/SWD_DIR
+/// BKGD/SWD_DIR output from FTM.CH2 (bdm)
 typedef Ftm0::Channel<2>                                     BkgdDir;                                      // PTC3(p46)
 
-/// BKGD/SWD_I
+/// BKGD/SWD_I input to FTM.CH4 (bdm)
 typedef Ftm0::Channel<4>                                     BkgdIn;                                       // PTD4(p61)
 
-/// BKGD/SWD_O
+/// BKGD/SWD_O output from FTM.CH6 (bdm)
 typedef Ftm0::Channel<6>                                     BkgdOut;                                      // PTD6(p63)
 
 /// TPa2

@@ -412,12 +412,12 @@ public:
    static void initPCRs() {
 
 #if defined(PCC_PCCn_CGC_MASK)
-PCC->PCC_PORTB = PCC_PCCn_CGC_MASK;
+   PCC->PCC_PORTB = PCC_PCCn_CGC_MASK;
 #else
-enablePortClocks(PORTB_CLOCK_MASK);
+   enablePortClocks(PORTB_CLOCK_MASK);
 #endif
 
-PORTB->GPCLR = 0x8100UL|PORT_GPCLR_GPWE(0x000BUL);
+   PORTB->GPCLR = 0x8100UL|PORT_GPCLR_GPWE(0x000BUL);
    }
 
    /**
@@ -428,12 +428,12 @@ PORTB->GPCLR = 0x8100UL|PORT_GPCLR_GPWE(0x000BUL);
    static void clearPCRs() {
 
 #if defined(PCC_PCCn_CGC_MASK)
-PCC->PCC_PORTB = PCC_PCCn_CGC_MASK;
+   PCC->PCC_PORTB = PCC_PCCn_CGC_MASK;
 #else
-enablePortClocks(PORTB_CLOCK_MASK);
+   enablePortClocks(PORTB_CLOCK_MASK);
 #endif
 
-PORTB->GPCLR = PinMux_Disabled|PORT_GPCLR_GPWE(0x0U);
+   PORTB->GPCLR = PinMux_Disabled|PORT_GPCLR_GPWE(0x000BUL);
    }
 
 };
@@ -502,12 +502,12 @@ public:
    static void initPCRs() {
 
 #if defined(PCC_PCCn_CGC_MASK)
-PCC->PCC_PORTC = PCC_PCCn_CGC_MASK;
+   PCC->PCC_PORTC = PCC_PCCn_CGC_MASK;
 #else
-enablePortClocks(PORTC_CLOCK_MASK);
+   enablePortClocks(PORTC_CLOCK_MASK);
 #endif
 
-PORTC->GPCLR = 0x8100UL|PORT_GPCLR_GPWE(0x0013UL);
+   PORTC->GPCLR = 0x8100UL|PORT_GPCLR_GPWE(0x0013UL);
    }
 
    /**
@@ -518,12 +518,12 @@ PORTC->GPCLR = 0x8100UL|PORT_GPCLR_GPWE(0x0013UL);
    static void clearPCRs() {
 
 #if defined(PCC_PCCn_CGC_MASK)
-PCC->PCC_PORTC = PCC_PCCn_CGC_MASK;
+   PCC->PCC_PORTC = PCC_PCCn_CGC_MASK;
 #else
-enablePortClocks(PORTC_CLOCK_MASK);
+   enablePortClocks(PORTC_CLOCK_MASK);
 #endif
 
-PORTC->GPCLR = PinMux_Disabled|PORT_GPCLR_GPWE(0x0U);
+   PORTC->GPCLR = PinMux_Disabled|PORT_GPCLR_GPWE(0x0013UL);
    }
 
 };
@@ -588,12 +588,12 @@ public:
    static void initPCRs() {
 
 #if defined(PCC_PCCn_CGC_MASK)
-PCC->PCC_PORTD = PCC_PCCn_CGC_MASK;
+   PCC->PCC_PORTD = PCC_PCCn_CGC_MASK;
 #else
-enablePortClocks(PORTD_CLOCK_MASK);
+   enablePortClocks(PORTD_CLOCK_MASK);
 #endif
 
-PORTD->GPCLR = 0x8100UL|PORT_GPCLR_GPWE(0x0083UL);
+   PORTD->GPCLR = 0x8100UL|PORT_GPCLR_GPWE(0x0083UL);
    }
 
    /**
@@ -604,12 +604,12 @@ PORTD->GPCLR = 0x8100UL|PORT_GPCLR_GPWE(0x0083UL);
    static void clearPCRs() {
 
 #if defined(PCC_PCCn_CGC_MASK)
-PCC->PCC_PORTD = PCC_PCCn_CGC_MASK;
+   PCC->PCC_PORTD = PCC_PCCn_CGC_MASK;
 #else
-enablePortClocks(PORTD_CLOCK_MASK);
+   enablePortClocks(PORTD_CLOCK_MASK);
 #endif
 
-PORTD->GPCLR = PinMux_Disabled|PORT_GPCLR_GPWE(0x0U);
+   PORTD->GPCLR = PinMux_Disabled|PORT_GPCLR_GPWE(0x0083UL);
    }
 
 };
@@ -2859,12 +2859,12 @@ public:
    static void initPCRs() {
 
 #if defined(PCC_PCCn_CGC_MASK)
-PCC->PCC_PORTB = PCC_PCCn_CGC_MASK;
+   PCC->PCC_PORTB = PCC_PCCn_CGC_MASK;
 #else
-enablePortClocks(PORTB_CLOCK_MASK);
+   enablePortClocks(PORTB_CLOCK_MASK);
 #endif
 
-PORTB->GPCLR = 0x8000UL|PORT_GPCLR_GPWE(0x0004UL);
+   PORTB->GPCLR = 0x8000UL|PORT_GPCLR_GPWE(0x0004UL);
    }
 
    /**
@@ -2875,12 +2875,12 @@ PORTB->GPCLR = 0x8000UL|PORT_GPCLR_GPWE(0x0004UL);
    static void clearPCRs() {
 
 #if defined(PCC_PCCn_CGC_MASK)
-PCC->PCC_PORTB = PCC_PCCn_CGC_MASK;
+   PCC->PCC_PORTB = PCC_PCCn_CGC_MASK;
 #else
-enablePortClocks(PORTB_CLOCK_MASK);
+   enablePortClocks(PORTB_CLOCK_MASK);
 #endif
 
-PORTB->GPCLR = PinMux_Disabled|PORT_GPCLR_GPWE(0x0U);
+   PORTB->GPCLR = PinMux_Disabled|PORT_GPCLR_GPWE(0x0004UL);
    }
 
 #define USBDM_ADC0_INFODP_IS_DEFINED
@@ -3365,12 +3365,12 @@ public:
    static void initPCRs() {
 
 #if defined(PCC_PCCn_CGC_MASK)
-PCC->PCC_PORTC = PCC_PCCn_CGC_MASK;
+   PCC->PCC_PORTC = PCC_PCCn_CGC_MASK;
 #else
-enablePortClocks(PORTC_CLOCK_MASK);
+   enablePortClocks(PORTC_CLOCK_MASK);
 #endif
 
-PORTC->GPCLR = 0x8000UL|PORT_GPCLR_GPWE(0x0080UL);
+   PORTC->GPCLR = 0x8000UL|PORT_GPCLR_GPWE(0x0080UL);
    }
 
    /**
@@ -3381,12 +3381,12 @@ PORTC->GPCLR = 0x8000UL|PORT_GPCLR_GPWE(0x0080UL);
    static void clearPCRs() {
 
 #if defined(PCC_PCCn_CGC_MASK)
-PCC->PCC_PORTC = PCC_PCCn_CGC_MASK;
+   PCC->PCC_PORTC = PCC_PCCn_CGC_MASK;
 #else
-enablePortClocks(PORTC_CLOCK_MASK);
+   enablePortClocks(PORTC_CLOCK_MASK);
 #endif
 
-PORTC->GPCLR = PinMux_Disabled|PORT_GPCLR_GPWE(0x0U);
+   PORTC->GPCLR = PinMux_Disabled|PORT_GPCLR_GPWE(0x0080UL);
    }
 
 };
@@ -3575,12 +3575,12 @@ public:
    static void initPCRs() {
 
 #if defined(PCC_PCCn_CGC_MASK)
-PCC->PCC_PORTA = PCC_PCCn_CGC_MASK;
+   PCC->PCC_PORTA = PCC_PCCn_CGC_MASK;
 #else
-enablePortClocks(PORTA_CLOCK_MASK);
+   enablePortClocks(PORTA_CLOCK_MASK);
 #endif
 
-PORTA->GPCLR = 0x8700UL|PORT_GPCLR_GPWE(0x0009UL);
+   PORTA->GPCLR = 0x8700UL|PORT_GPCLR_GPWE(0x0009UL);
    }
 
    /**
@@ -3591,12 +3591,12 @@ PORTA->GPCLR = 0x8700UL|PORT_GPCLR_GPWE(0x0009UL);
    static void clearPCRs() {
 
 #if defined(PCC_PCCn_CGC_MASK)
-PCC->PCC_PORTA = PCC_PCCn_CGC_MASK;
+   PCC->PCC_PORTA = PCC_PCCn_CGC_MASK;
 #else
-enablePortClocks(PORTA_CLOCK_MASK);
+   enablePortClocks(PORTA_CLOCK_MASK);
 #endif
 
-PORTA->GPCLR = PinMux_Disabled|PORT_GPCLR_GPWE(0x0U);
+   PORTA->GPCLR = PinMux_Disabled|PORT_GPCLR_GPWE(0x0009UL);
    }
 
 };
@@ -4597,14 +4597,14 @@ public:
    static void initPCRs() {
 
 #if defined(PCC_PCCn_CGC_MASK)
-PCC->PCC_PORTC = PCC_PCCn_CGC_MASK;
-PCC->PCC_PORTD = PCC_PCCn_CGC_MASK;
+   PCC->PCC_PORTC = PCC_PCCn_CGC_MASK;
+   PCC->PCC_PORTD = PCC_PCCn_CGC_MASK;
 #else
-enablePortClocks(PORTC_CLOCK_MASK|PORTD_CLOCK_MASK);
+   enablePortClocks(PORTC_CLOCK_MASK|PORTD_CLOCK_MASK);
 #endif
 
-PORTC->GPCLR = 0x0400UL|PORT_GPCLR_GPWE(0x0008UL);
-PORTD->GPCLR = 0x0400UL|PORT_GPCLR_GPWE(0x0050UL);
+   PORTC->GPCLR = 0x0400UL|PORT_GPCLR_GPWE(0x0008UL);
+   PORTD->GPCLR = 0x0400UL|PORT_GPCLR_GPWE(0x0050UL);
    }
 
    /**
@@ -4615,14 +4615,14 @@ PORTD->GPCLR = 0x0400UL|PORT_GPCLR_GPWE(0x0050UL);
    static void clearPCRs() {
 
 #if defined(PCC_PCCn_CGC_MASK)
-PCC->PCC_PORTC = PCC_PCCn_CGC_MASK;
-PCC->PCC_PORTD = PCC_PCCn_CGC_MASK;
+   PCC->PCC_PORTC = PCC_PCCn_CGC_MASK;
+   PCC->PCC_PORTD = PCC_PCCn_CGC_MASK;
 #else
-enablePortClocks(PORTC_CLOCK_MASK|PORTD_CLOCK_MASK);
+   enablePortClocks(PORTC_CLOCK_MASK|PORTD_CLOCK_MASK);
 #endif
 
-PORTC->GPCLR = PinMux_Disabled|PORT_GPCLR_GPWE(0x0U);
-PORTD->GPCLR = PinMux_Disabled|PORT_GPCLR_GPWE(0x0U);
+   PORTC->GPCLR = PinMux_Disabled|PORT_GPCLR_GPWE(0x0008UL);
+   PORTD->GPCLR = PinMux_Disabled|PORT_GPCLR_GPWE(0x0050UL);
    }
 
 #define USBDM_FTM0_INFOFAULT_IS_DEFINED
@@ -5666,16 +5666,16 @@ public:
    static void initPCRs() {
 
 #if defined(PCC_PCCn_CGC_MASK)
-PCC->PCC_PORTB = PCC_PCCn_CGC_MASK;
-PCC->PCC_PORTC = PCC_PCCn_CGC_MASK;
-PCC->PCC_PORTD = PCC_PCCn_CGC_MASK;
+   PCC->PCC_PORTB = PCC_PCCn_CGC_MASK;
+   PCC->PCC_PORTC = PCC_PCCn_CGC_MASK;
+   PCC->PCC_PORTD = PCC_PCCn_CGC_MASK;
 #else
-enablePortClocks(PORTB_CLOCK_MASK|PORTC_CLOCK_MASK|PORTD_CLOCK_MASK);
+   enablePortClocks(PORTB_CLOCK_MASK|PORTC_CLOCK_MASK|PORTD_CLOCK_MASK);
 #endif
 
-PORTB->GPCLR = 0x8100UL|PORT_GPCLR_GPWE(0x0001UL);
-PORTC->GPCLR = 0x8100UL|PORT_GPCLR_GPWE(0x0012UL);
-PORTD->GPCLR = 0x8100UL|PORT_GPCLR_GPWE(0x0001UL);
+   PORTB->GPCLR = 0x8100UL|PORT_GPCLR_GPWE(0x0001UL);
+   PORTC->GPCLR = 0x8100UL|PORT_GPCLR_GPWE(0x0012UL);
+   PORTD->GPCLR = 0x8100UL|PORT_GPCLR_GPWE(0x0001UL);
    }
 
    /**
@@ -5686,16 +5686,16 @@ PORTD->GPCLR = 0x8100UL|PORT_GPCLR_GPWE(0x0001UL);
    static void clearPCRs() {
 
 #if defined(PCC_PCCn_CGC_MASK)
-PCC->PCC_PORTB = PCC_PCCn_CGC_MASK;
-PCC->PCC_PORTC = PCC_PCCn_CGC_MASK;
-PCC->PCC_PORTD = PCC_PCCn_CGC_MASK;
+   PCC->PCC_PORTB = PCC_PCCn_CGC_MASK;
+   PCC->PCC_PORTC = PCC_PCCn_CGC_MASK;
+   PCC->PCC_PORTD = PCC_PCCn_CGC_MASK;
 #else
-enablePortClocks(PORTB_CLOCK_MASK|PORTC_CLOCK_MASK|PORTD_CLOCK_MASK);
+   enablePortClocks(PORTB_CLOCK_MASK|PORTC_CLOCK_MASK|PORTD_CLOCK_MASK);
 #endif
 
-PORTB->GPCLR = PinMux_Disabled|PORT_GPCLR_GPWE(0x0U);
-PORTC->GPCLR = PinMux_Disabled|PORT_GPCLR_GPWE(0x0U);
-PORTD->GPCLR = PinMux_Disabled|PORT_GPCLR_GPWE(0x0U);
+   PORTB->GPCLR = PinMux_Disabled|PORT_GPCLR_GPWE(0x0001UL);
+   PORTC->GPCLR = PinMux_Disabled|PORT_GPCLR_GPWE(0x0012UL);
+   PORTD->GPCLR = PinMux_Disabled|PORT_GPCLR_GPWE(0x0001UL);
    }
 
 };
@@ -6637,14 +6637,14 @@ public:
    static void initPCRs() {
 
 #if defined(PCC_PCCn_CGC_MASK)
-PCC->PCC_PORTC = PCC_PCCn_CGC_MASK;
-PCC->PCC_PORTD = PCC_PCCn_CGC_MASK;
+   PCC->PCC_PORTC = PCC_PCCn_CGC_MASK;
+   PCC->PCC_PORTD = PCC_PCCn_CGC_MASK;
 #else
-enablePortClocks(PORTC_CLOCK_MASK|PORTD_CLOCK_MASK);
+   enablePortClocks(PORTC_CLOCK_MASK|PORTD_CLOCK_MASK);
 #endif
 
-PORTC->GPCLR = 0x0200UL|PORT_GPCLR_GPWE(0x0064UL);
-PORTD->GPCLR = 0x0200UL|PORT_GPCLR_GPWE(0x0008UL);
+   PORTC->GPCLR = 0x0200UL|PORT_GPCLR_GPWE(0x0064UL);
+   PORTD->GPCLR = 0x0200UL|PORT_GPCLR_GPWE(0x0008UL);
    }
 
    /**
@@ -6655,14 +6655,14 @@ PORTD->GPCLR = 0x0200UL|PORT_GPCLR_GPWE(0x0008UL);
    static void clearPCRs() {
 
 #if defined(PCC_PCCn_CGC_MASK)
-PCC->PCC_PORTC = PCC_PCCn_CGC_MASK;
-PCC->PCC_PORTD = PCC_PCCn_CGC_MASK;
+   PCC->PCC_PORTC = PCC_PCCn_CGC_MASK;
+   PCC->PCC_PORTD = PCC_PCCn_CGC_MASK;
 #else
-enablePortClocks(PORTC_CLOCK_MASK|PORTD_CLOCK_MASK);
+   enablePortClocks(PORTC_CLOCK_MASK|PORTD_CLOCK_MASK);
 #endif
 
-PORTC->GPCLR = PinMux_Disabled|PORT_GPCLR_GPWE(0x0U);
-PORTD->GPCLR = PinMux_Disabled|PORT_GPCLR_GPWE(0x0U);
+   PORTC->GPCLR = PinMux_Disabled|PORT_GPCLR_GPWE(0x0064UL);
+   PORTD->GPCLR = PinMux_Disabled|PORT_GPCLR_GPWE(0x0008UL);
    }
 
 };
@@ -6889,12 +6889,12 @@ public:
    static void initPCRs() {
 
 #if defined(PCC_PCCn_CGC_MASK)
-PCC->PCC_PORTA = PCC_PCCn_CGC_MASK;
+   PCC->PCC_PORTA = PCC_PCCn_CGC_MASK;
 #else
-enablePortClocks(PORTA_CLOCK_MASK);
+   enablePortClocks(PORTA_CLOCK_MASK);
 #endif
 
-PORTA->GPCLR = 0x8200UL|PORT_GPCLR_GPWE(0x0006UL);
+   PORTA->GPCLR = 0x8200UL|PORT_GPCLR_GPWE(0x0006UL);
    }
 
    /**
@@ -6905,12 +6905,12 @@ PORTA->GPCLR = 0x8200UL|PORT_GPCLR_GPWE(0x0006UL);
    static void clearPCRs() {
 
 #if defined(PCC_PCCn_CGC_MASK)
-PCC->PCC_PORTA = PCC_PCCn_CGC_MASK;
+   PCC->PCC_PORTA = PCC_PCCn_CGC_MASK;
 #else
-enablePortClocks(PORTA_CLOCK_MASK);
+   enablePortClocks(PORTA_CLOCK_MASK);
 #endif
 
-PORTA->GPCLR = PinMux_Disabled|PORT_GPCLR_GPWE(0x0U);
+   PORTA->GPCLR = PinMux_Disabled|PORT_GPCLR_GPWE(0x0006UL);
    }
 
 };
@@ -7013,12 +7013,12 @@ public:
    static void initPCRs() {
 
 #if defined(PCC_PCCn_CGC_MASK)
-PCC->PCC_PORTE = PCC_PCCn_CGC_MASK;
+   PCC->PCC_PORTE = PCC_PCCn_CGC_MASK;
 #else
-enablePortClocks(PORTE_CLOCK_MASK);
+   enablePortClocks(PORTE_CLOCK_MASK);
 #endif
 
-PORTE->GPCLR = 0x8300UL|PORT_GPCLR_GPWE(0x0003UL);
+   PORTE->GPCLR = 0x8300UL|PORT_GPCLR_GPWE(0x0003UL);
    }
 
    /**
@@ -7029,12 +7029,12 @@ PORTE->GPCLR = 0x8300UL|PORT_GPCLR_GPWE(0x0003UL);
    static void clearPCRs() {
 
 #if defined(PCC_PCCn_CGC_MASK)
-PCC->PCC_PORTE = PCC_PCCn_CGC_MASK;
+   PCC->PCC_PORTE = PCC_PCCn_CGC_MASK;
 #else
-enablePortClocks(PORTE_CLOCK_MASK);
+   enablePortClocks(PORTE_CLOCK_MASK);
 #endif
 
-PORTE->GPCLR = PinMux_Disabled|PORT_GPCLR_GPWE(0x0U);
+   PORTE->GPCLR = PinMux_Disabled|PORT_GPCLR_GPWE(0x0003UL);
    }
 
 };
@@ -7443,17 +7443,17 @@ public:
 ///  PTB3           | TVdd_Led                      | GPIOB_3                                            | p38                       | TVddLed
 ///  PTC0           | Reset_Dir                     | GPIOC_0                                            | p43                       | RST_DIR
 ///  PTC1           | Reset_IO                      | GPIOC_1                                            | p44                       | RST_IO
-///  PTC2           | SwdDir                        | SPI0_PCS2                                          | p45                       | BKGD/SWD_DIR
-///  PTC3           | BkgdDir                       | FTM0_CH2                                           | p46                       | BKGD/SWD_DIR
+///  PTC2           | SwdDir                        | SPI0_PCS2                                          | p45                       | BKGD/SWD_DIR output from SPI.PCS (swd)
+///  PTC3           | BkgdDir                       | FTM0_CH2                                           | p46                       | BKGD/SWD_DIR output from FTM.CH2 (bdm)
 ///  PTC4           | Swd_Enable                    | GPIOC_4                                            | p49                       | SWD_EN
-///  PTC5           | SwdClk                        | SPI0_SCK                                           | p50                       | SWCLK_O
-///  PTC6           | SwdDout                       | SPI0_SOUT                                          | p51                       | BKGD/SWD_O
+///  PTC5           | SwdClk                        | SPI0_SCK                                           | p50                       | SWCLK_O output from SPI.SCK (swd)
+///  PTC6           | SwdDout                       | SPI0_SOUT                                          | p51                       | BKGD/SWD_O output from SPI.SOUT (swd)
 ///  PTC7           | TVdd_Mon                      | CMP0_IN1                                           | p52                       | Vbdm
 ///  PTD0           | TVdd_Fault                    | GPIOD_0                                            | p57                       | Vdd_Flt
 ///  PTD1           | TVdd_Enable                   | GPIOD_1                                            | p58                       | Vdd_En
-///  PTD3           | SwdDin                        | SPI0_SIN                                           | p60                       | BKGD/SWD_I
-///  PTD4           | BkgdIn                        | FTM0_CH4                                           | p61                       | BKGD/SWD_I
-///  PTD6           | BkgdOut                       | FTM0_CH6                                           | p63                       | BKGD/SWD_O
+///  PTD3           | SwdDin                        | SPI0_SIN                                           | p60                       | BKGD/SWD_I input to SPI.SIN (swd)
+///  PTD4           | BkgdIn                        | FTM0_CH4                                           | p61                       | BKGD/SWD_I input to FTM.CH4 (bdm)
+///  PTD6           | BkgdOut                       | FTM0_CH6                                           | p63                       | BKGD/SWD_O output from FTM.CH6 (bdm)
 ///  PTD7           | Usb_Led                       | GPIOD_7                                            | p64                       | USB_LED
 ///  PTE0           | -                             | UART1_TX                                           | p1                        | DBG_Tx
 ///  PTE1           | -                             | UART1_RX                                           | p2                        | DBG_Rx
@@ -7512,17 +7512,17 @@ public:
 ///  PTB3           | TVdd_Led                      | GPIOB_3                                            | p38                       | TVddLed
 ///  PTC0           | Reset_Dir                     | GPIOC_0                                            | p43                       | RST_DIR
 ///  PTC1           | Reset_IO                      | GPIOC_1                                            | p44                       | RST_IO
-///  PTC2           | SwdDir                        | SPI0_PCS2                                          | p45                       | BKGD/SWD_DIR
-///  PTC3           | BkgdDir                       | FTM0_CH2                                           | p46                       | BKGD/SWD_DIR
+///  PTC2           | SwdDir                        | SPI0_PCS2                                          | p45                       | BKGD/SWD_DIR output from SPI.PCS (swd)
+///  PTC3           | BkgdDir                       | FTM0_CH2                                           | p46                       | BKGD/SWD_DIR output from FTM.CH2 (bdm)
 ///  PTC4           | Swd_Enable                    | GPIOC_4                                            | p49                       | SWD_EN
-///  PTC5           | SwdClk                        | SPI0_SCK                                           | p50                       | SWCLK_O
-///  PTC6           | SwdDout                       | SPI0_SOUT                                          | p51                       | BKGD/SWD_O
+///  PTC5           | SwdClk                        | SPI0_SCK                                           | p50                       | SWCLK_O output from SPI.SCK (swd)
+///  PTC6           | SwdDout                       | SPI0_SOUT                                          | p51                       | BKGD/SWD_O output from SPI.SOUT (swd)
 ///  PTC7           | TVdd_Mon                      | CMP0_IN1                                           | p52                       | Vbdm
 ///  PTD0           | TVdd_Fault                    | GPIOD_0                                            | p57                       | Vdd_Flt
 ///  PTD1           | TVdd_Enable                   | GPIOD_1                                            | p58                       | Vdd_En
-///  PTD3           | SwdDin                        | SPI0_SIN                                           | p60                       | BKGD/SWD_I
-///  PTD4           | BkgdIn                        | FTM0_CH4                                           | p61                       | BKGD/SWD_I
-///  PTD6           | BkgdOut                       | FTM0_CH6                                           | p63                       | BKGD/SWD_O
+///  PTD3           | SwdDin                        | SPI0_SIN                                           | p60                       | BKGD/SWD_I input to SPI.SIN (swd)
+///  PTD4           | BkgdIn                        | FTM0_CH4                                           | p61                       | BKGD/SWD_I input to FTM.CH4 (bdm)
+///  PTD6           | BkgdOut                       | FTM0_CH6                                           | p63                       | BKGD/SWD_O output from FTM.CH6 (bdm)
 ///  PTD7           | Usb_Led                       | GPIOD_7                                            | p64                       | USB_LED
 ///
 ///
@@ -7539,9 +7539,9 @@ public:
 ///  PTC7           | TVdd_Mon                      | CMP0_IN1                                           | p52                       | Vbdm
 ///  DAC0_OUT       | -                             | DAC0_OUT                                           | p18                       | N/C
 ///  EXTAL32        | -                             | EXTAL32                                            | p20                       | N/C
-///  PTC3           | BkgdDir                       | FTM0_CH2                                           | p46                       | BKGD/SWD_DIR
-///  PTD4           | BkgdIn                        | FTM0_CH4                                           | p61                       | BKGD/SWD_I
-///  PTD6           | BkgdOut                       | FTM0_CH6                                           | p63                       | BKGD/SWD_O
+///  PTC3           | BkgdDir                       | FTM0_CH2                                           | p46                       | BKGD/SWD_DIR output from FTM.CH2 (bdm)
+///  PTD4           | BkgdIn                        | FTM0_CH4                                           | p61                       | BKGD/SWD_I input to FTM.CH4 (bdm)
+///  PTD6           | BkgdOut                       | FTM0_CH6                                           | p63                       | BKGD/SWD_O output from FTM.CH6 (bdm)
 ///  PTB0           | TPa1                          | GPIOB_0                                            | p35                       | TPa1
 ///  PTB1           | TPa2                          | GPIOB_1                                            | p36                       | TPa2
 ///  PTB3           | TVdd_Led                      | GPIOB_3                                            | p38                       | TVddLed
@@ -7552,10 +7552,10 @@ public:
 ///  PTD1           | TVdd_Enable                   | GPIOD_1                                            | p58                       | Vdd_En
 ///  PTD7           | Usb_Led                       | GPIOD_7                                            | p64                       | USB_LED
 ///  RESET_b        |                               | RESET_b                                            | p34                       | RESETb
-///  PTC2           | SwdDir                        | SPI0_PCS2                                          | p45                       | BKGD/SWD_DIR
-///  PTC5           | SwdClk                        | SPI0_SCK                                           | p50                       | SWCLK_O
-///  PTD3           | SwdDin                        | SPI0_SIN                                           | p60                       | BKGD/SWD_I
-///  PTC6           | SwdDout                       | SPI0_SOUT                                          | p51                       | BKGD/SWD_O
+///  PTC2           | SwdDir                        | SPI0_PCS2                                          | p45                       | BKGD/SWD_DIR output from SPI.PCS (swd)
+///  PTC5           | SwdClk                        | SPI0_SCK                                           | p50                       | SWCLK_O output from SPI.SCK (swd)
+///  PTD3           | SwdDin                        | SPI0_SIN                                           | p60                       | BKGD/SWD_I input to SPI.SIN (swd)
+///  PTC6           | SwdDout                       | SPI0_SOUT                                          | p51                       | BKGD/SWD_O output from SPI.SOUT (swd)
 ///  PTA0           |                               | SWD_CLK                                            | p22                       | SWDCLK
 ///  PTA3           |                               | SWD_DIO                                            | p25                       | SWDIO
 ///  PTA1           | -                             | UART0_RX                                           | p23                       | Debug_Rx

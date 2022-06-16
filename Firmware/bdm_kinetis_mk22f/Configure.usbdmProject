@@ -47,11 +47,11 @@
    <item key="$signal$EXTAL0_descriptionSetting"           value="N/C" />
    <item key="$signal$EXTAL32_descriptionSetting"          value="N/C" />
    <item key="$signal$FTM0_CH2_codeIdentifier"             value="BkgdDir" />
-   <item key="$signal$FTM0_CH2_descriptionSetting"         value="BKGD/SWD_DIR" />
+   <item key="$signal$FTM0_CH2_descriptionSetting"         value="BKGD/SWD_DIR output from FTM.CH2 (bdm)" />
    <item key="$signal$FTM0_CH4_codeIdentifier"             value="BkgdIn" />
-   <item key="$signal$FTM0_CH4_descriptionSetting"         value="BKGD/SWD_I" />
+   <item key="$signal$FTM0_CH4_descriptionSetting"         value="BKGD/SWD_I input to FTM.CH4 (bdm)" />
    <item key="$signal$FTM0_CH6_codeIdentifier"             value="BkgdOut" />
-   <item key="$signal$FTM0_CH6_descriptionSetting"         value="BKGD/SWD_O" />
+   <item key="$signal$FTM0_CH6_descriptionSetting"         value="BKGD/SWD_O output from FTM.CH6 (bdm)" />
    <item key="$signal$GPIOB_0_codeIdentifier"              value="TPa1" />
    <item key="$signal$GPIOB_0_descriptionSetting"          value="TPa1" />
    <item key="$signal$GPIOB_1_codeIdentifier"              value="TPa2" />
@@ -87,13 +87,13 @@
    <item key="$signal$GPIOD_7_descriptionSetting"          value="USB_LED" />
    <item key="$signal$RESET_b_descriptionSetting"          value="RESETb" />
    <item key="$signal$SPI0_PCS2_codeIdentifier"            value="SwdDir" />
-   <item key="$signal$SPI0_PCS2_descriptionSetting"        value="BKGD/SWD_DIR" />
+   <item key="$signal$SPI0_PCS2_descriptionSetting"        value="BKGD/SWD_DIR output from SPI.PCS (swd)" />
    <item key="$signal$SPI0_SCK_codeIdentifier"             value="SwdClk" />
-   <item key="$signal$SPI0_SCK_descriptionSetting"         value="SWCLK_O" />
+   <item key="$signal$SPI0_SCK_descriptionSetting"         value="SWCLK_O output from SPI.SCK (swd)" />
    <item key="$signal$SPI0_SIN_codeIdentifier"             value="SwdDin" />
-   <item key="$signal$SPI0_SIN_descriptionSetting"         value="BKGD/SWD_I" />
+   <item key="$signal$SPI0_SIN_descriptionSetting"         value="BKGD/SWD_I input to SPI.SIN (swd)" />
    <item key="$signal$SPI0_SOUT_codeIdentifier"            value="SwdDout" />
-   <item key="$signal$SPI0_SOUT_descriptionSetting"        value="BKGD/SWD_O" />
+   <item key="$signal$SPI0_SOUT_descriptionSetting"        value="BKGD/SWD_O output from SPI.SOUT (swd)" />
    <item key="$signal$SWD_CLK_descriptionSetting"          value="SWDCLK" />
    <item key="$signal$SWD_DIO_descriptionSetting"          value="SWDIO" />
    <item key="$signal$UART0_RX_descriptionSetting"         value="Debug_Rx" />

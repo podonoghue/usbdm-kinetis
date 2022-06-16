@@ -1342,8 +1342,8 @@ template<class Info> SpiCallbackFunction SpiBase_T<Info>::sCallback = Spi::unhan
  */
 class Spi0 : public SpiBase_T<Spi0Info> {
 public:
-static constexpr SpiPeripheralSelect Pcs_Ptc2             = SpiPeripheralSelect_2;    ///< BKGD/SWD_DIR (PTC2(p45))
-static constexpr SpiPeripheralSelect Pcs_SwdDir           = SpiPeripheralSelect_2;    ///< BKGD/SWD_DIR (PTC2(p45))
+static constexpr SpiPeripheralSelect Pcs_Ptc2             = SpiPeripheralSelect_2;    ///< BKGD/SWD_DIR output from SPI.PCS (swd) (PTC2(p45))
+static constexpr SpiPeripheralSelect Pcs_SwdDir           = SpiPeripheralSelect_2;    ///< BKGD/SWD_DIR output from SPI.PCS (swd) (PTC2(p45))
 
 };
 #endif
