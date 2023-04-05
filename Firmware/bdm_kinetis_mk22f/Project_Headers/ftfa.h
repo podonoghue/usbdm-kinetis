@@ -75,7 +75,7 @@ protected:
    /**
     * Launch & wait for Flash command to complete.
     */
-   static void executeFlashCommand_asm();
+   static void executeFlashCommand_ram();
 
    /**
     * Launch & wait for Flash command to complete.
@@ -96,6 +96,12 @@ protected:
 
 public:
 
+   static void Command_irqHandler() {
+   }
+   
+   static void ReadCollision_irqHandler() {
+   }
+   
    /**
     * Hardware instance pointer
     *

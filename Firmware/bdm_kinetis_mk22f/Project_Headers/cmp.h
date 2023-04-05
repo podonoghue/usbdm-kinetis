@@ -28,128 +28,6 @@ namespace USBDM {
  */
 
 /**
- * Filter Sample Count
- *
- * Represents the number of consecutive samples that must agree
- * prior to the comparator output filter accepting a new output state
- */
-enum CmpFilterSamples {
-   CmpFilterSamples_2    = CMP_CR0_FILTER_CNT(2), //!< 2 samples must agree
-   CmpFilterSamples_3    = CMP_CR0_FILTER_CNT(3), //!< 3 samples must agree
-   CmpFilterSamples_4    = CMP_CR0_FILTER_CNT(4), //!< 4 samples must agree
-   CmpFilterSamples_5    = CMP_CR0_FILTER_CNT(5), //!< 5 samples must agree
-   CmpFilterSamples_6    = CMP_CR0_FILTER_CNT(6), //!< 6 samples must agree
-   CmpFilterSamples_7    = CMP_CR0_FILTER_CNT(7), //!< 7 samples must agree
-};
-
-/**
- * Determines hysteresis of comparator
- */
-enum CmpHysteresis {
-   CmpHysteresis_0 = CMP_CR0_HYSTCTR(0), //!< Minimum.
-   CmpHysteresis_1 = CMP_CR0_HYSTCTR(1), //!< Middle-low
-   CmpHysteresis_2 = CMP_CR0_HYSTCTR(2), //!< Middle-high
-   CmpHysteresis_3 = CMP_CR0_HYSTCTR(3), //!< Maximum.
-};
-
-/**
- * Comparator interrupt selection
- */
-enum CmpInterrupt {
-   CmpInterrupt_None    = CMP_SCR_IER(0)|CMP_SCR_IEF(0),  //!< Neither edge
-   CmpInterrupt_Rising  = CMP_SCR_IER(1)|CMP_SCR_IEF(0),  //!< Rising edge
-   CmpInterrupt_Falling = CMP_SCR_IER(0)|CMP_SCR_IEF(1),  //!< Falling edge
-   CmpInterrupt_Both    = CMP_SCR_IER(1)|CMP_SCR_IEF(1),  //!< Rising or falling edge
-};
-
-/**
- * Comparator event identification
- */
-enum CmpEvent : uint8_t {
-   CmpEvent_None    = CMP_SCR_CFR(0)|CMP_SCR_CFF(0),  //!< Neither edge
-   CmpEvent_Rising  = CMP_SCR_CFR(1)|CMP_SCR_CFF(0),  //!< Rising edge
-   CmpEvent_Falling = CMP_SCR_CFR(0)|CMP_SCR_CFF(1),  //!< Falling edge
-   CmpEvent_Both    = CMP_SCR_CFR(1)|CMP_SCR_CFF(1),  //!< Rising or falling edge
-};
-
-/**
- * Used to represent the comparator status for interrupt handler
- */
-struct CmpStatus {
-   CmpEvent event;   //!< Event triggering handler
-   uint8_t  state;   //!< State of CMPO at event
-
-   constexpr CmpStatus(CmpEvent event, uint8_t  state) : event(event), state(state) {}
-};
-
-/**
- * Comparator mode
- */
-enum CmpFilterClockSource {
-   CmpFilterClockSource_Internal = CMP_CR1_SE(0),  //!< Internal filter clock
-   CmpFilterClockSource_BusClock = CmpFilterClockSource_Internal, //!< Internal filter clock = Bus clock
-   CmpFilterClockSource_External = CMP_CR1_SE(1),  //!< External filter clock
-};
-
-/**
- * Comparator mode
- */
-enum CmpWindow {
-   CmpWindow_Disabled = CMP_CR1_WE(0),  //!< Windowing disabled
-   CmpWindow_Enabled  = CMP_CR1_WE(1),  //!< Windowing enabled
-};
-
-/**
- * Comparator power select
- */
-enum CmpPower {
-   CmpPower_LowPower    = CMP_CR1_PMODE(0), //!< Low power
-   CmpPower_HighSpeed   = CMP_CR1_PMODE(1), //!< High speed
-};
-
-/**
- * Comparator invert
- */
-enum CmpPolarity {
-   CmpPolarity_Noninverted  = CMP_CR1_INV(0), //!< Not inverted
-   CmpPolarity_Inverted     = CMP_CR1_INV(1), //!< Inverted
-};
-
-/**
- * Comparator output select
- */
-enum CmpOutput {
-   CmpOutput_Disabled  = CMP_CR1_OPE(0)|CMP_CR1_COS(0), //!< Disabled
-   CmpOutput_Direct    = CMP_CR1_OPE(1)|CMP_CR1_COS(1), //!< Direct (unfiltered) output
-   CmpOutput_Filtered  = CMP_CR1_OPE(1)|CMP_CR1_COS(0), //!< Filtered output
-};
-
-/**
- * Comparator mode
- */
-enum CmpMode {
-   CmpMode_Disabled    = CMP_CR1_EN(0),  //!< Disabled
-   CmpMode_Enabled     = CMP_CR1_EN(1),  //!< Continuous
-};
-
-/**
- * DAC reference source
- */
-enum CmpDacSource {
-   CmpDacSource_Vin1 = CMP_DACCR_VRSEL(0), //!< Select Vrin1
-   CmpDacSource_Vin2 = CMP_DACCR_VRSEL(1), //!< Select Vrin2
-   CmpDacSource_Vdda = CmpDacSource_Vin2,  //!< Select Vrin2 = VddA
-   CmpDacSource_Vref = CmpDacSource_Vin1,  //!< Select Vrin1 = Vref_out
-};
-
-/**
- * Type definition for CMP interrupt call back
- *
- * @param[in]  status Struct indicating interrupt source and state
- */
-typedef void (*CmpCallbackFunction)(CmpStatus status);
-
-/**
  * Template class representing a Analogue Comparator
  *
  * @tparam info      Information class for CMP
@@ -164,12 +42,12 @@ typedef void (*CmpCallbackFunction)(CmpStatus status);
  * using CmpPositiveInput = Cmp::Pin<4>;
  *
  * // Callback to handle comparator
- * void cmpCallback(CmpStatus status) {
+ * void cmpCallback(const CmpStatus &status) {
  *    switch (status.event) {
- *       case CmpEvent_Rising  : console.write("Cmp rising  = ").writeln(Cmp::getCmpOutput()); break;
- *       case CmpEvent_Falling : console.write("Cmp falling = ").writeln(Cmp::getCmpOutput()); break;
- *       case CmpEvent_Both    : console.write("Cmp both    = ").writeln(Cmp::getCmpOutput()); break;
- *       case CmpEvent_None    : console.write("Cmp none    = ").writeln(Cmp::getCmpOutput()); break;
+ *       case CmpEvent_Rising  : console.write("Cmp rising, state = ",  status.state); break;
+ *       case CmpEvent_Falling : console.write("Cmp falling, state = ", status.state); break;
+ *       case CmpEvent_Both    : console.write("Cmp both, state = ",    status.state); break;
+ *       case CmpEvent_None    : console.write("Cmp none, state = ",    status.state); break;
  *    }
  * }
  *
@@ -183,7 +61,7 @@ typedef void (*CmpCallbackFunction)(CmpStatus status);
  *    Cmp::enableNvicInterrupts(NvicPriority_Normal);
  *    Cmp::enableInterrupts(CmpInterrupt_Both);
  *
- *    Cmp::configureDac(Cmp::MAXIMUM_DAC_VALUE/2, CmpDacSource_Vdda);
+ *    Cmp::configureDac(Cmp::MAXIMUM_DAC_VALUE/2, CmpDacrefSel_Vdda);
  *    for(;;) {
  *       // Sleep between interrupts
  *       Smc::enterWaitMode();
@@ -192,9 +70,16 @@ typedef void (*CmpCallbackFunction)(CmpStatus status);
  * @endcode
  */
 template<class Info>
-class CmpBase_T {
+class CmpBase_T : public Info {
 
 protected:
+   /**
+    * Type definition for CMP interrupt call back
+    *
+    * @param[in]  status Struct indicating interrupt source and state
+    */
+   typedef typename Info::CallbackFunction CmpCallbackFunction;
+
    /**
     * Limit index to permitted pin index range
     * Used to prevent noise from static assertion checks that detect a condition already detected in a more useful fashion.
@@ -251,13 +136,13 @@ protected:
     *
     * @param[in] status Struct indicating interrupt source and state
     */
-   static void unhandledCallback(CmpStatus status) {
+   static void unhandledCallback(const CmpStatus &status) {
       (void)status;
       setAndCheckErrorCode(E_NO_HANDLER);
    }
 
    /** Callback function for ISR */
-   static CmpCallbackFunction sCallback;
+   static typename Info::CallbackFunction sCallback;
 
 public:
    /// Pin mapped to CMP output
@@ -280,7 +165,7 @@ public:
       cmp->SCR = cmp->SCR | status;
 
       // Create status from snapshot
-      CmpStatus cmpStatus{(CmpEvent)(status&(CMP_SCR_CFR_MASK|CMP_SCR_CFF_MASK)),(bool)(status&CMP_SCR_COUT_MASK)};
+      CmpStatus cmpStatus{(CmpEventId)(status&(CMP_SCR_CFR_MASK|CMP_SCR_CFF_MASK)),(bool)(status&CMP_SCR_COUT_MASK)};
 
       // Call handler
       sCallback(cmpStatus);
@@ -390,7 +275,7 @@ public:
    static void configureAllPins() {
    
       // Configure pins if selected and not already locked
-      if constexpr (Info::mapPinsOnEnable && !(MapAllPinsOnStartup && (ForceLockedPins == PinLock_Locked))) {
+      if constexpr (Info::mapPinsOnEnable) {
          Info::initPCRs();
       }
    }
@@ -405,7 +290,7 @@ public:
    static void disableAllPins() {
    
       // Disable pins if selected and not already locked
-      if constexpr (Info::mapPinsOnEnable && !(MapAllPinsOnStartup && (ForceLockedPins == PinLock_Locked))) {
+      if constexpr (Info::mapPinsOnEnable) {
          Info::clearPCRs();
       }
    }
@@ -431,22 +316,40 @@ public:
 // End Template _mapPinsOption.xml
 
    /**
-    * Enable with default settings\n
-    * Includes configuring all pins
+    * Configure CMP from values specified in init
+   
+    * @param init Class containing initialisation values
+    */
+   static void configure(const typename Info::Init &init) {
+   
+      enable();
+   
+      cmp->FPR = 0;
+   
+      if constexpr (Info::irqHandlerInstalled) {
+         // Only set call-backs if feature enabled
+         setCallback(init.callback);
+         enableNvicInterrupts(init.irqlevel);
+      }
+   
+      uint8_t fpr = init.fpr;
+   
+      cmp->DACCR = init.daccr;
+      cmp->MUXCR = init.muxcr;
+      cmp->CR0 = init.cr0;
+      cmp->SCR = init.scr;
+      cmp->FPR = fpr;
+      cmp->CR1 = init.cr1;
+   }
+   
+   /**
+    * Configure CMP from default values as specified in Configure.usbdmProject
     */
    static void defaultConfigure() {
-      enable();
-
-      // Initialise hardware
-      cmp->CR0   = Info::cr0;
-      cmp->CR1   = Info::cr1 | CMP_CR1_EN_MASK;
-      cmp->FPR   = Info::fpr;
-      cmp->SCR   = Info::scr;
-      cmp->DACCR = Info::daccr;
-      cmp->MUXCR = Info::muxcr;
-
-      enableNvicInterrupts(Info::irqLevel);
+   
+      configure(Info::DefaultInitValue);
    }
+
 
    /**
     * Configure all input pins associated with this CMP
@@ -458,28 +361,54 @@ public:
    }
 
    /**
-    * Enable comparator output pin as output.\n
-    * Pin control parameters default to values usually appropriate for the function being used.\n
+    * @brief
+    * Enable comparator output pin as output.
+    * Mux value is set appropriately for the pin function being used.
     * The clock to the port will be enabled before changing the PCR.
     *
-    * @param[in] pinDriveStrength One of PinDriveStrength_Low, PinDriveStrength_High
-    * @param[in] pinDriveMode     One of PinDriveMode_PushPull, PinDriveMode_OpenDrain (defaults to PinPushPull)
-    * @param[in] pinSlewRate      One of PinSlewRate_Slow, PinSlewRate_Fast (defaults to PinSlewRate_Fast)
+    * @param pcrValue PCR value to use
+    *
     */
-   static void setOutput(
-         PinDriveStrength  pinDriveStrength  = OutputPin::defaultPcrValue,
-         PinDriveMode      pinDriveMode      = OutputPin::defaultPcrValue,
-         PinSlewRate       pinSlewRate       = OutputPin::defaultPcrValue
-         ) {
-
+   static void setOutput(PcrValue pcrValue) {
       CheckOutputIsMapped<Info::outputPin>::check();
-
+   
       // Enable CMP_OUT
       cmp->CR1 = cmp->CR1 | CMP_CR1_OPE_MASK;
-
+   
       // Map CMP_OUT to pin
-      OutputPin::setPCR(pinDriveStrength|pinDriveMode|pinSlewRate);
+      OutputPin::setPCR(pcrValue);
    }
+   
+   /**
+    * @brief
+    * Enable comparator output pin as output.
+
+    * The Pin Control Register Attributes are set to the default values determined by Configure.usbdmProject.
+    * The clock to the port will be enabled before changing the PCR.
+    */
+   static void setOutput() {
+      setOutput(OutputPin::defaultPcrValue.value);
+   }
+   
+   /**
+    * @brief
+    * Set subset of Pin Control Register Attributes associated with output direction
+    *
+    * Mux value is set appropriately for the pin function being used. Other attributes are cleared.
+    * The clock to the port will be enabled before changing the PCR.
+    *
+    * @param pinDriveStrength Pin drive strength of digital outputs
+    * @param pinDriveMode     Pin drive mode (push-pull/open-drain) of digital outputs
+    * @param pinSlewRate      Pin slew rate of digital outputs
+    */
+   static void setOutput(
+         PinDriveStrength pinDriveStrength,
+         PinDriveMode     pinDriveMode     = PinDriveMode_PushPull,
+         PinSlewRate      pinSlewRate      = PinSlewRate_Fast)  {
+   
+      setOutput(pinDriveStrength|pinDriveMode|pinSlewRate);
+   }
+
 
    /*                                                             CmpFilterSamples cmpFilterSamplePeriod
     *                                        CR1.EN CR1.WE CR1.SE CR0.FILTER_CNT   FPR.FILT_PER
@@ -507,18 +436,18 @@ public:
     */
    static void configure(
          CmpPower       cmpPower       = CmpPower_HighSpeed,
-         CmpHysteresis  cmpHysteresis  = CmpHysteresis_2,
-         CmpPolarity    cmpPolarity    = CmpPolarity_Noninverted
+         CmpHysteresis  cmpHysteresis  = CmpHysteresis_Level_2,
+         CmpPolarity    cmpPolarity    = CmpPolarity_Normal
          ) {
       enable();
 
       // Initialise hardware
-      cmp->CR1   = CmpMode_Enabled|cmpPower|cmpPolarity;
+      cmp->CR1   = CmpEnable_Enabled|cmpPower|cmpPolarity;
       cmp->CR0   = CMP_CR0_FILTER_CNT(0)|cmpHysteresis;
       cmp->FPR   = 0;
       cmp->SCR   = CMP_SCR_IER(0)|CMP_SCR_IEF(0);
       cmp->DACCR = (CMP_DACCR_VOSEL_MASK>>1)&CMP_DACCR_VOSEL_MASK;
-      cmp->MUXCR = Info::muxcr;
+      cmp->MUXCR = Cmp0Info::DefaultInitValue.muxcr;//Info::muxcr;
    }
 
    /**
@@ -529,32 +458,60 @@ public:
     */
    static void setInputContinous() {
       cmp->CR0 = (cmp->CR0&~CMP_CR0_FILTER_CNT_MASK)|CMP_CR0_FILTER_CNT(0);
-      cmp->CR1 = (cmp->CR1&~(CMP_CR1_SE_MASK|CMP_CR1_WE_MASK))|CmpFilterClockSource_Internal|CmpWindow_Disabled;
+      cmp->CR1 = (cmp->CR1&~(CMP_CR1_SE_MASK|CMP_CR1_WE_MASK))|CmpMode_Direct;
       cmp->FPR = 0;
+   }
+
+   /**
+    * Converts time in seconds to time in ticks
+    *
+    * @param[in] ticks Time interval in ticks
+    *
+    * @return Time in ticks
+    */
+   static Seconds convertTicksToSeconds(const Ticks &ticks) {
+
+      return (float)ticks/Cmp0Info::getClockFrequency();
+   }
+
+   /**
+    * Converts time in seconds to time in ticks
+    *
+    * @param[in] seconds Time interval in seconds
+    *
+    * @return Time in ticks
+    */
+   static Ticks convertSecondsToTicks(const Seconds &seconds) {
+
+      uint32_t res = roundf((float)seconds*Cmp0Info::getClockFrequency());
+      if (res >= 256) {
+         setErrorCode(E_TOO_LARGE);
+      }
+      return res;
    }
 
    /**
     * Set Sampled, Non-Filtered input - Modes 3a/3b.
     *
     * Assumes basic configuration done
-    * The TRGMUX is used as the CmpFilterClockSource_External source.
+    * The TRGMUX is used as the CmpSampleEnable_External source.
     *
     *                                                          CmpFilterSamples cmpFilterSamplePeriod
     *                                        CR1.EN CR1.WE CR1.SE CR0.FILTER_CNT FPR.FILT_PER
     * 3a   Sampled, Non-Filtered, external     1      0      1      1              X     COUTA combinational, COUT sampled by external clk pin
     * 3b   Sampled, Non-Filtered, internal     1      0      0      1             >=1    COUTA combinational, COUT sampled by busclk/PFR
     *
-    * @param[in] cmpFilterClockSource     Filter clock source
+    * @param[in] CmpSampleEnable          Filter clock source
     * @param[in] cmpFilterSamplePeriod    Period of internal sample filter (1..255). \n
-    *                                     Only applicable if CmpFilterClockSource=CmpFilterClockSource_Internal
+    *                                     Only applicable if CmpSampleEnable=CmpSampleEnable_Internal
     */
    static void setInputSampled(
-         CmpFilterClockSource  cmpFilterClockSource,
-         int                   cmpFilterSamplePeriod=1
+         CmpSampleEnable  CmpSampleEnable,
+         int              cmpFilterSamplePeriod=1
          ) {
-      usbdm_assert((cmpFilterClockSource == CmpFilterClockSource_External) || (cmpFilterSamplePeriod>=1), "Illegal parameters");
+      usbdm_assert((CmpSampleEnable == CmpSampleEnable_External) || (cmpFilterSamplePeriod>=1), "Illegal parameters");
       cmp->CR0 = (cmp->CR0&~CMP_CR0_FILTER_CNT_MASK)|CMP_CR0_FILTER_CNT(1);
-      cmp->CR1 = (cmp->CR1&~(CMP_CR1_SE_MASK|CMP_CR1_WE_MASK))|cmpFilterClockSource|CmpWindow_Disabled;
+      cmp->CR1 = (cmp->CR1&~(CMP_CR1_SE_MASK|CMP_CR1_WE_MASK))|CmpSampleEnable|CmpWindowEnable_Disabled;
       cmp->FPR = cmpFilterSamplePeriod;
    }
 
@@ -562,7 +519,7 @@ public:
     * Set Sampled, Filtered input - Modes 4a/4b.
     *
     * Assumes basic configuration done
-    * The TRGMUX is used as the CmpFilterClockSource_External source.
+    * The TRGMUX is used as the CmpSampleEnable_External source.
     *
     *                                                          CmpFilterSamples cmpFilterSamplePeriod
     *                                        CR1.EN CR1.WE CR1.SE CR0.FILTER_CNT FPR.FILT_PER
@@ -570,19 +527,19 @@ public:
     * 4b   Sampled, Filtered, internal         1      0      0     >=2            >=1    COUTA combinational, COUT filtered by busclk/PFR
     *
     * @param[in] cmpFilterSamples         Number samples that must agree before COUT changes (>=2)
-    * @param[in] cmpFilterClockSource     Filter clock source
+    * @param[in] cmpSampleEnable          Filter clock source
     * @param[in] cmpFilterSamplePeriod    Period of internal sample filter (1..255). \n
-    *                                     Only applicable if CmpFilterClockSource_Internal
+    *                                     Only applicable if CmpSampleEnable_Internal
     */
    static void setInputFiltered(
          CmpFilterSamples      cmpFilterSamples,
-         CmpFilterClockSource  cmpFilterClockSource=CmpFilterClockSource_Internal,
+         CmpSampleEnable       cmpSampleEnable=CmpSampleEnable_Internal,
          uint8_t               cmpFilterSamplePeriod=1
          ) {
-      usbdm_assert((cmpFilterClockSource == CmpFilterClockSource_External) || (cmpFilterSamplePeriod>=1), "Illegal parameters");
+      usbdm_assert((cmpSampleEnable == CmpSampleEnable_External) || (cmpFilterSamplePeriod>=1), "Illegal parameters");
       usbdm_assert((cmpFilterSamples>1) , "Illegal parameter combination");
       cmp->CR0 = (cmp->CR0&~CMP_CR0_FILTER_CNT_MASK)|cmpFilterSamples;
-      cmp->CR1 = (cmp->CR1&~(CMP_CR1_SE_MASK|CMP_CR1_WE_MASK))|cmpFilterClockSource|CmpWindow_Disabled;
+      cmp->CR1 = (cmp->CR1&~(CMP_CR1_SE_MASK|CMP_CR1_WE_MASK))|cmpSampleEnable|CmpWindowEnable_Disabled;
       cmp->FPR = cmpFilterSamplePeriod;
    }
 
@@ -598,7 +555,7 @@ public:
     */
    static void setInputWindowed() {
       cmp->CR0 = (cmp->CR0&~CMP_CR0_FILTER_CNT_MASK)|0;
-      cmp->CR1 = (cmp->CR1&~(CMP_CR1_SE_MASK|CMP_CR1_WE_MASK))|CmpFilterClockSource_Internal|CmpWindow_Enabled;
+      cmp->CR1 = (cmp->CR1&~(CMP_CR1_SE_MASK|CMP_CR1_WE_MASK))|CmpSampleEnable_Internal|CmpWindowEnable_Enabled;
       cmp->FPR = 0;
    }
 
@@ -616,7 +573,7 @@ public:
          ) {
       usbdm_assert(cmpFilterSamplePeriod>=1, "Illegal parameters");
       cmp->CR0 = (cmp->CR0&~CMP_CR0_FILTER_CNT_MASK)|CMP_CR0_FILTER_CNT(1);
-      cmp->CR1 = (cmp->CR1&~(CMP_CR1_SE_MASK|CMP_CR1_WE_MASK))|CmpFilterClockSource_Internal|CmpWindow_Enabled;
+      cmp->CR1 = (cmp->CR1&~(CMP_CR1_SE_MASK|CMP_CR1_WE_MASK))|CmpSampleEnable_Internal|CmpWindowEnable_Enabled;
       cmp->FPR = cmpFilterSamplePeriod;
    }
 
@@ -637,7 +594,7 @@ public:
          ) {
       usbdm_assert(cmpFilterSamplePeriod>=1, "Illegal parameters");
       cmp->CR0 = (cmp->CR0&~CMP_CR0_FILTER_CNT_MASK)|cmpFilterSamples;
-      cmp->CR1 = (cmp->CR1&~(CMP_CR1_SE_MASK|CMP_CR1_WE_MASK))|CmpFilterClockSource_Internal|CmpWindow_Enabled;
+      cmp->CR1 = (cmp->CR1&~(CMP_CR1_SE_MASK|CMP_CR1_WE_MASK))|CmpSampleEnable_Internal|CmpWindowEnable_Enabled;
       cmp->FPR = cmpFilterSamplePeriod;
    }
 
@@ -723,10 +680,10 @@ public:
    /**
     * Enable/disable edge interrupts
     *
-    * @param[in]  cmpInterrupt Controls edge selection
+    * @param[in]  cmpEvent Controls edge selection
     */
-   static void enableInterrupts(CmpInterrupt cmpInterrupt) {
-      cmp->SCR = (cmp->SCR&~(CMP_SCR_IER_MASK|CMP_SCR_IEF_MASK))|cmpInterrupt;
+   static void enableInterrupts(CmpEvent cmpEvent) {
+      cmp->SCR = (cmp->SCR&~(CMP_SCR_IER_MASK|CMP_SCR_IEF_MASK))|cmpEvent;
    }
 
    /**
@@ -788,7 +745,7 @@ public:
     */
    static void configureDac(
          uint8_t       level,
-         CmpDacSource  cmpDacSource) {
+         CmpDacrefSel  cmpDacSource) {
       cmp->DACCR = CMP_DACCR_DACEN_MASK|cmpDacSource|CMP_DACCR_VOSEL(level);
    }
 
@@ -820,21 +777,6 @@ public:
    }
 
 protected:
-   /**
-    * Configure Comparator input sources
-    *
-    * @param[in]  positiveInput (0..7) (7 => DAC)
-    * @param[in]  negativeInput (0..7) (7 => DAC)
-    */
-   static void selectInputs(unsigned positiveInput, unsigned negativeInput) {
-      usbdm_assert((positiveInput<=7)&&(negativeInput<=7),"Illegal comparator input");
-
-      //! MUX Control Register
-      cmp->MUXCR =
-         CMP_MUXCR_PSEL(positiveInput)| // Plus Input Mux Control
-         CMP_MUXCR_MSEL(negativeInput); // Minus Input Mux Control
-   }
-
    /**
     * Class representing a Comparator 0 pin
     *
@@ -871,281 +813,41 @@ protected:
    };
 };
 
-template<class Info> CmpCallbackFunction CmpBase_T<Info>::sCallback = CmpBase_T<Info>::unhandledCallback;
+template<class Info> typename Info::CallbackFunction CmpBase_T<Info>::sCallback = CmpBase_T<Info>::unhandledCallback;
 
-#if defined(USBDM_CMP_IS_DEFINED)
-using Cmp = CmpBase_T<CmpInfo>;
-#endif
+// Pin mapping for CMP0
+constexpr Cmp0InputPlus  Cmp0InputPlus_Ptc7        = Cmp0InputPlus_1;     ///< Mapped pin PTC7(p52)
+constexpr Cmp0InputMinus Cmp0InputMinus_Ptc7       = Cmp0InputMinus_1;    ///< Mapped pin PTC7(p52)
+constexpr Cmp0InputPlus  Cmp0InputPlus_VrefOut     = Cmp0InputPlus_5;     ///< Fixed pin  VREF_OUT(p17)
+constexpr Cmp0InputMinus Cmp0InputMinus_VrefOut    = Cmp0InputMinus_5;    ///< Fixed pin  VREF_OUT(p17)
+constexpr Cmp0InputPlus  Cmp0InputPlus_Bandgap     = Cmp0InputPlus_6;     ///< Fixed pin  BANDGAP(Internal)
+constexpr Cmp0InputMinus Cmp0InputMinus_Bandgap    = Cmp0InputMinus_6;    ///< Fixed pin  BANDGAP(Internal)
+constexpr Cmp0InputPlus  Cmp0InputPlus_CmpDac      = Cmp0InputPlus_7;     ///< Fixed pin  CMP_DAC(Internal)
+constexpr Cmp0InputMinus Cmp0InputMinus_CmpDac     = Cmp0InputMinus_7;    ///< Fixed pin  CMP_DAC(Internal)
 
-#if defined(USBDM_CMP0_IS_DEFINED)
-class Cmp0 : public CmpBase_T<Cmp0Info> {
+// Pin mapping for CMP1
+constexpr Cmp1InputPlus  Cmp1InputPlus_Dac0Out     = Cmp1InputPlus_3;     ///< Fixed pin  DAC0_OUT(p18)
+constexpr Cmp1InputMinus Cmp1InputMinus_Dac0Out    = Cmp1InputMinus_3;    ///< Fixed pin  DAC0_OUT(p18)
+constexpr Cmp1InputPlus  Cmp1InputPlus_VrefOut     = Cmp1InputPlus_5;     ///< Fixed pin  VREF_OUT(p17)
+constexpr Cmp1InputMinus Cmp1InputMinus_VrefOut    = Cmp1InputMinus_5;    ///< Fixed pin  VREF_OUT(p17)
+constexpr Cmp1InputPlus  Cmp1InputPlus_Bandgap     = Cmp1InputPlus_6;     ///< Fixed pin  BANDGAP(Internal)
+constexpr Cmp1InputMinus Cmp1InputMinus_Bandgap    = Cmp1InputMinus_6;    ///< Fixed pin  BANDGAP(Internal)
+constexpr Cmp1InputPlus  Cmp1InputPlus_CmpDac      = Cmp1InputPlus_7;     ///< Fixed pin  CMP_DAC(Internal)
+constexpr Cmp1InputMinus Cmp1InputMinus_CmpDac     = Cmp1InputMinus_7;    ///< Fixed pin  CMP_DAC(Internal)
 
-public:
-   /**
-    * Select CMP0 inputs
-    */
-   enum Input {
-      // Mapped inputs
-      Input_0          = 0, //!< CMP0 input 0
-      Input_1          = 1, //!< CMP0 input 1
-      Input_2          = 2, //!< CMP0 input 2
-      Input_3          = 3, //!< CMP0 input 3
-      Input_4          = 4, //!< CMP0 input 4
-      Input_5          = 5, //!< CMP0 input 5
-      Input_6          = 6, //!< CMP0 input 6
-      Input_7          = 7, //!< CMP0 input 7
-      
-      Input_Ptc7                = Input_1, ///< Mapped pin PTC7(p52)
-      Input_TVdd_Mon            = Input_1, ///< Mapped pin PTC7(p52)
-      Input_VrefOut             = Input_5, ///< Fixed pin  VREF_OUT(p17)
-      Input_Bandgap             = Input_6, ///< Fixed pin  BANDGAP(Internal)
-      Input_CmpDac              = Input_7, ///< Fixed pin  CMP_DAC(Internal)
+/**
+* Class representing CMP0
+*/
+class Cmp0 : public CmpBase_T<Cmp0Info> {};
 
-   };
-
-   /**
-    * Configure Comparator input sources
-    *
-    * @param[in]  positiveInput (0..7) (7 => DAC)
-    * @param[in]  negativeInput (0..7) (7 => DAC)
-    */
-   static __attribute__((always_inline)) void selectInputs(Input positiveInput, Input negativeInput) {
-      CmpBase_T::selectInputs((unsigned)positiveInput, (unsigned)negativeInput);
-   }
-
-   template <class T>
-   static __attribute__((always_inline)) void selectInputs(Input input, T &) {
-      CmpBase_T::selectInputs((unsigned)input, (unsigned)T::pinNum);
-   }
-
-   template <class T>
-   static __attribute__((always_inline)) void selectInputs(T &, Input input) {
-      CmpBase_T::selectInputs((unsigned)T::pinNum, (unsigned)input);
-   }
-
-   template <class T1, class T2>
-   static __attribute__((always_inline)) void selectInputs(T1 &, T2&) {
-      CmpBase_T::selectInputs((unsigned)T1::pinNum, (unsigned)T2::pinNum);
-   }
-
-   /**
-    * Class representing a Comparator pin
-    *
-    * @tparam cmpInput Number of comparator input (0-7) for associated pin.
-    */
-   template<int cmpInput>
-   class Pin {
-      using Pcr = PcrTable_T<Cmp0Info, (Input)cmpInput>;
-   public:
-      static constexpr Input pinNum = (Input)cmpInput;
-
-      constexpr Pin() {}
-      static void setInput() {
-         Pcr::setPCR();
-      }
-   };
-};
-#endif
-
-#if defined(USBDM_CMP1_IS_DEFINED)
-class Cmp1 : public CmpBase_T<Cmp1Info> {
-
-public:
-   /**
-    * Select CMP1 inputs
-    */
-   enum Input {
-      // Mapped inputs
-      Input_0          = 0, //!< CMP1 input 0
-      Input_1          = 1, //!< CMP1 input 1
-      Input_2          = 2, //!< CMP1 input 2
-      Input_3          = 3, //!< CMP1 input 3
-      Input_4          = 4, //!< CMP1 input 4
-      Input_5          = 5, //!< CMP1 input 5
-      Input_6          = 6, //!< CMP1 input 6
-      Input_7          = 7, //!< CMP1 input 7
-      
-      Input_Dac0Out             = Input_3, ///< Fixed pin  DAC0_OUT(p18)
-      Input_VrefOut             = Input_5, ///< Fixed pin  VREF_OUT(p17)
-      Input_Bandgap             = Input_6, ///< Fixed pin  BANDGAP(Internal)
-      Input_CmpDac              = Input_7, ///< Fixed pin  CMP_DAC(Internal)
-
-   };
+/**
+* Class representing CMP1
+*/
+class Cmp1 : public CmpBase_T<Cmp1Info> {};
 
 
-   /**
-    * Configure Comparator input sources
-    *
-    * @param[in]  positiveInput (0..7) (7 => DAC)
-    * @param[in]  negativeInput (0..7) (7 => DAC)
-    */
-   static __attribute__((always_inline)) void selectInputs(Input positiveInput, Input negativeInput) {
-      CmpBase_T::selectInputs((unsigned)positiveInput, (unsigned)negativeInput);
-   }
 
-   template <class T>
-   static __attribute__((always_inline)) void selectInputs(Input input, T &) {
-      CmpBase_T::selectInputs((unsigned)input, (unsigned)T::pinNum);
-   }
 
-   template <class T>
-   static __attribute__((always_inline)) void selectInputs(T &, Input input) {
-      CmpBase_T::selectInputs((unsigned)T::pinNum, (unsigned)input);
-   }
-
-   template <class T1, class T2>
-   static __attribute__((always_inline)) void selectInputs(T1 &, T2&) {
-      CmpBase_T::selectInputs((unsigned)T1::pinNum, (unsigned)T2::pinNum);
-   }
-
-   /**
-    * Class representing a Comparator pin
-    *
-    * @tparam cmpInput Number of comparator input (0-7) for associated pin.
-    */
-   template<int cmpInput>
-   class Pin {
-      using Pcr = PcrTable_T<Cmp1Info, (Input)cmpInput>;
-   public:
-      static constexpr Input pinNum = (Input)cmpInput;
-
-      constexpr Pin() {}
-      static void setInput() {
-         Pcr::setPCR();
-      }
-   };
-};
-#endif
-
-#if defined(USBDM_CMP2_IS_DEFINED)
-class Cmp2 : public CmpBase_T<Cmp2Info> {
-
-public:
-   /**
-    * Select CMP2 inputs
-    */
-   enum Input {
-      // Mapped inputs
-      Input_0          = 0, //!< CMP2 input 0
-      Input_1          = 1, //!< CMP2 input 1
-      Input_2          = 2, //!< CMP2 input 2
-      Input_3          = 3, //!< CMP2 input 3
-      Input_4          = 4, //!< CMP2 input 4
-      Input_5          = 5, //!< CMP2 input 5
-      Input_6          = 6, //!< CMP2 input 6
-      Input_7          = 7, //!< CMP2 input 7
-      
-// None Found
-   };
-
-   /**
-    * Configure Comparator input sources
-    *
-    * @param[in]  positiveInput (0..7) (7 => DAC)
-    * @param[in]  negativeInput (0..7) (7 => DAC)
-    */
-   static __attribute__((always_inline)) void selectInputs(Input positiveInput, Input negativeInput) {
-      CmpBase_T::selectInputs((unsigned)positiveInput, (unsigned)negativeInput);
-   }
-
-   template <class T>
-   static __attribute__((always_inline)) void selectInputs(Input input, T &) {
-      CmpBase_T::selectInputs((unsigned)input, (unsigned)T::pinNum);
-   }
-
-   template <class T>
-   static __attribute__((always_inline)) void selectInputs(T &, Input input) {
-      CmpBase_T::selectInputs((unsigned)T::pinNum, (unsigned)input);
-   }
-
-   template <class T1, class T2>
-   static __attribute__((always_inline)) void selectInputs(T1 &, T2&) {
-      CmpBase_T::selectInputs((unsigned)T1::pinNum, (unsigned)T2::pinNum);
-   }
-
-   /**
-    * Class representing a Comparator pin
-    *
-    * @tparam cmpInput Number of comparator input (0-7) for associated pin.
-    */
-   template<int cmpInput>
-   class Pin {
-      using Pcr = PcrTable_T<Cmp2Info, (Input)cmpInput>;
-   public:
-      static constexpr Input pinNum = (Input)cmpInput;
-
-      constexpr Pin() {}
-      static void setInput() {
-         Pcr::setPCR();
-      }
-   };
-};
-#endif
-
-#if defined(USBDM_CMP3_IS_DEFINED)
-class Cmp3 : public CmpBase_T<Cmp3Info> {
-
-public:
-   /**
-    * Select CMP3 inputs
-    */
-   enum Input {
-      // Mapped inputs
-      Input_0          = 0, //!< CMP3 input 0
-      Input_1          = 1, //!< CMP3 input 1
-      Input_2          = 2, //!< CMP3 input 2
-      Input_3          = 3, //!< CMP3 input 3
-      Input_4          = 4, //!< CMP3 input 4
-      Input_5          = 5, //!< CMP3 input 5
-      Input_6          = 6, //!< CMP3 input 6
-      Input_7          = 7, //!< CMP3 input 7
-      
-// None Found
-   };
-
-   /**
-    * Configure Comparator input sources
-    *
-    * @param[in]  positiveInput (0..7) (7 => DAC)
-    * @param[in]  negativeInput (0..7) (7 => DAC)
-    */
-   static __attribute__((always_inline)) void selectInputs(Input positiveInput, Input negativeInput) {
-      CmpBase_T::selectInputs((unsigned)positiveInput, (unsigned)negativeInput);
-   }
-
-   template <class T>
-   static __attribute__((always_inline)) void selectInputs(Input input, T &) {
-      CmpBase_T::selectInputs((unsigned)input, (unsigned)T::pinNum);
-   }
-
-   template <class T>
-   static __attribute__((always_inline)) void selectInputs(T &, Input input) {
-      CmpBase_T::selectInputs((unsigned)T::pinNum, (unsigned)input);
-   }
-
-   template <class T1, class T2>
-   static __attribute__((always_inline)) void selectInputs(T1 &, T2&) {
-      CmpBase_T::selectInputs((unsigned)T1::pinNum, (unsigned)T2::pinNum);
-   }
-
-   /**
-    * Class representing a Comparator pin
-    *
-    * @tparam cmpInput Number of comparator input (0-7) for associated pin.
-    */
-   template<int cmpInput>
-   class Pin {
-      using Pcr = PcrTable_T<Cmp3Info, (Input)cmpInput>;
-   public:
-      static constexpr Input pinNum = (Input)cmpInput;
-
-      constexpr Pin() {}
-      static void setInput() {
-         Pcr::setPCR();
-      }
-   };
-};
-#endif
 /**
  * End CMP_Group
  * @}

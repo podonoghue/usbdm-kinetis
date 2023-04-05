@@ -43,6 +43,7 @@
    <item key="$signal$ADC1_DP0_descriptionSetting"         value="N/C" />
    <item key="$signal$CMP0_IN1_codeIdentifier"             value="TVdd_Mon" />
    <item key="$signal$CMP0_IN1_descriptionSetting"         value="Vbdm" />
+   <item key="$signal$CMP0_IN7_codeIdentifier"             value="TVdd_DacRef" />
    <item key="$signal$DAC0_OUT_descriptionSetting"         value="N/C" />
    <item key="$signal$EXTAL0_descriptionSetting"           value="N/C" />
    <item key="$signal$EXTAL32_descriptionSetting"          value="N/C" />
@@ -117,74 +118,55 @@
    <item key="$signal$XTAL32_descriptionSetting"           value="N/C" />
    <item key="/CMP0/cmp_cr0_filter_cnt"                    value="4" />
    <item key="/CMP0/cmp_cr0_hystctr"                       value="3" />
-   <item key="/CMP0/cmp_daccr_vrsel"                       value="true" />
-   <item key="/CMP0/cmp_fpr_filt_per"                      value="20" />
-   <item key="/CMP0/cmp_muxcr_msel"                        value="7" />
-   <item key="/CMP0/cmp_muxcr_psel"                        value="1" />
-   <item key="/CMP0/cmp_scr_ief"                           value="true" />
-   <item key="/CMP0/cmp_scr_ier"                           value="true" />
+   <item key="/CMP0/cmp_fpr_filt_per"                      value="0" />
    <item key="/CMP0/irqHandlingMethod"                     value="$ClassMethod" />
+   <item key="/CMP1/cmp_fpr_filt_per"                      value="0" />
    <item key="/GPIOA/irqHandlingMethod"                    value="$ClassMethod" />
    <item key="/GPIOC/irqHandlingMethod"                    value="$ClassMethod" />
    <item key="/GPIOD/irqHandlingMethod"                    value="$ClassMethod" />
-   <item key="/HARDWARE/lockMappedPins"                    value="false" />
    <item key="/HARDWARE/useTypeSystemForTimers"            value="true" />
    <item key="/HARDWARE/warnMultipleSignalsOnPin"          value="true" />
-   <item key="/LLWU/device_list"                           value="LPTMR0;CMP0;CMP1;;;RTC_Alarm;;RTC_Seconds" />
-   <item key="/LPTMR0/lptmr_cmr"                           value="0" />
-   <item key="/MCG/ClockConfig[0]"                         value="ClockConfig_PEE_60MHz" />
+   <item key="/LINKER/heapSize"                            value="32768" />
+   <item key="/LINKER/stackSize"                           value="32768" />
+   <item key="/LLWU/llwu_filt1_filtsel"                    value="0" />
+   <item key="/LLWU/llwu_filt2_filtsel"                    value="0" />
+   <item key="/MCG/ClockConfig[0]"                         value="ClockConfig_FEE_IRC48MHz" />
    <item key="/MCG/ClockConfig[1]"                         value="ClockConfig_BLPE_4MHz" />
    <item key="/MCG/ClockConfig[2]"                         value="ClockConfig_PEE_120MHz" />
-   <item key="/MCG/clock_mode[0]"                          value="ClockMode_PEE" />
-   <item key="/MCG/clock_mode[1]"                          value="ClockMode_BLPE" />
-   <item key="/MCG/clock_mode[2]"                          value="ClockMode_PEE" />
-   <item key="/MCG/mcg_c2_erefs0"                          value="false" />
+   <item key="/MCG/ClockConfig[3]"                         value="ClockConfig_3" />
+   <item key="/MCG/mcgClockMode[0]"                        value="1" />
+   <item key="/MCG/mcg_c1_frdiv[0]"                        value="6" />
+   <item key="/MCG/mcg_c2_range0[0]"                       value="1" />
    <item key="/MCG/mcg_c7_oscsel[0]"                       value="2" />
    <item key="/MCG/mcg_c7_oscsel[1]"                       value="2" />
    <item key="/MCG/mcg_c7_oscsel[2]"                       value="2" />
+   <item key="/MCG/oscMode"                                value="0" />
+   <item key="/MCG/system_mcgfllclk_clock[0]"              value="48000000" />
    <item key="/OSC0/mapPinsOnEnable"                       value="false" />
    <item key="/OSC0/osc_cr_erclken"                        value="false" />
    <item key="/OSC0/osc_cr_scp"                            value="0" />
    <item key="/OSC0/osc_input_freq"                        value="0" />
-   <item key="/OSC0/oscer_undiv_clock"                     value="0" />
+   <item key="/PDB0/pdb_ch0_dly0"                          value="0" />
+   <item key="/PDB0/pdb_ch0_dly1"                          value="0" />
+   <item key="/PDB0/pdb_ch1_dly0"                          value="0" />
+   <item key="/PDB0/pdb_ch1_dly1"                          value="0" />
+   <item key="/PIT/pit_ldval_tsv[0]"                       value="0" />
+   <item key="/PIT/pit_ldval_tsv[1]"                       value="0" />
+   <item key="/PIT/pit_ldval_tsv[2]"                       value="0" />
+   <item key="/PIT/pit_ldval_tsv[3]"                       value="0" />
    <item key="/RTC/rtc_cr_osce"                            value="false" />
-   <item key="/SIM/busFreq"                                value="60MHz" />
-   <item key="/SIM/coreFreq"                               value="120MHz" />
-   <item key="/SIM/flashFreq"                              value="25MHz" />
-   <item key="/SIM/flexFreq"                               value="50MHz" />
-   <item key="/SIM/sim_clkdiv2_usb"                        value="9" />
-   <item key="/SIM/sim_sopt1_osc32ksel"                    value="3" />
-   <item key="/SIM/sim_sopt2_clkoutsel"                    value="6" />
-   <item key="/SIM/sim_sopt2_lpuartsrc"                    value="2" />
-   <item key="/SIM/sim_sopt2_pllfllsel[0]"                 value="1" />
+   <item key="/SIM/sim_clkdiv1_outdiv1[0]"                 value="0" />
+   <item key="/SIM/sim_clkdiv1_outdiv2[0]"                 value="0" />
+   <item key="/SIM/sim_sopt2_pllfllsel[0]"                 value="3" />
    <item key="/SIM/sim_sopt2_pllfllsel[1]"                 value="3" />
    <item key="/SIM/sim_sopt2_pllfllsel[2]"                 value="3" />
-   <item key="/SIM/system_bus_clock[0]"                    value="60000000" />
-   <item key="/SIM/system_bus_clock[1]"                    value="4000000" />
-   <item key="/SIM/system_bus_clock[2]"                    value="60000000" />
-   <item key="/SIM/system_core_clock[0]"                   value="60000000" />
-   <item key="/SIM/system_core_clock[1]"                   value="8000000" />
-   <item key="/SIM/system_core_clock[2]"                   value="120000000" />
-   <item key="/SIM/system_flash_clock[0]"                  value="20000000" />
-   <item key="/SIM/system_flash_clock[1]"                  value="4000000" />
-   <item key="/SIM/system_flash_clock[2]"                  value="24000000" />
-   <item key="/SIM/system_flexbus_clock[0]"                value="30000000" />
-   <item key="/SIM/system_flexbus_clock[1]"                value="4000000" />
-   <item key="/SIM/system_flexbus_clock[2]"                value="30000000" />
    <item key="/SMC/smc_pmprot_alls"                        value="false" />
-   <item key="/SMC/smc_stopctrl_llsm"                      value="0" />
-   <item key="/SPI0/speed"                                 value="100000" />
-   <item key="/SPI0/spi_mode"                              value="1" />
-   <item key="/SPI1/speed"                                 value="100000" />
-   <item key="/SPI1/spi_mode"                              value="1" />
    <item key="/UART0/irqHandlingMethod"                    value="$ClassMethod" />
    <item key="/UART0/receiveBufferSize"                    value="20" />
    <item key="/UART0/transmitBufferSize"                   value="1000" />
    <item key="/UART0/uartClass"                            value="true" />
    <item key="/UART1/irqHandlingMethod"                    value="$ClassMethod" />
-   <item key="/USB0/clk_recovery_ctrl_reset_resume_rough_en" value="true" />
-   <item key="/USB0/clk_recovery_ctrl_restart_ifttrim_en"  value="true" />
    <item key="/USB0/irqHandlingMethod"                     value="$ClassMethod" />
-   <item key="/USB0/irqLevel"                              value="NvicPriority_High" />
-   <item key="/USB0/usb_clk_recovery_irc_en_en"            value="true" />
+   <item key="/USB0/usb_clk_enable"                        value="USB_CLK_RECOVER_IRC_EN_IRC_EN(1)|USB_CLK_RECOVER_IRC_EN_REG_EN(1)" />
+   <item key="/USB0/usb_clk_tracking_mode"                 value="USB_CLK_RECOVER_CTRL_CLOCK_RECOVER_EN(1)|USB_CLK_RECOVER_CTRL_RESET_RESUME_ROUGH_EN(1)" />
 </section>

@@ -2,8 +2,8 @@
  * @file     gpio.h (180.ARM_Peripherals/Project_Headers/gpio.h)
  * @brief    General Purpose Input/Output
  *
- * @version  V4.12.1.270
- * @date     5 December 2021
+ * @version  V4.12.1.300
+ * @date     7 July 2022
  */
 
 #ifndef HEADER_GPIO_H
@@ -385,7 +385,7 @@ private:
    Gpio_T(const Gpio_T&) = delete;
    Gpio_T(Gpio_T&&) = delete;
 
-   static constexpr PcrValueClass defaultPcrValue = gpioPcrValue(defPcrValue);
+   static constexpr PcrInit defaultPcrValue = gpioPcrValue(defPcrValue);
 
 protected:
    constexpr Gpio_T() : Gpio(gpioAddress, bitNum, polarity) {};
@@ -429,8 +429,28 @@ public:
       setIn();
       // Set inactive pin state (if later made output)
       setInactive();
-      Pcr::setPCR(defaultPcrValue);
+      Pcr::setPCR(defaultPcrValue.value);
    }
+
+//   /**
+//    * Set pin as digital I/O.
+//    * Pin is initially set as an input.
+//    * Use SetIn() and SetOut() to change direction.
+//    *
+//    * @note Resets the Pin Control Register value (PCR value).
+//    * @note Resets the pin output value to the inactive state
+//    *
+//    * @param[in] pcrValue PCR value to use in configuring pin (excluding MUX value). See pcrValue()
+//    */
+//   static void setInOut(PcrValue pcrValue) {
+//      // Make input initially
+//      setIn();
+//      // Set inactive pin state (if later made output)
+//      setInactive();
+//      // Configure PCR
+//      Pcr::setPCR(pcrValue);
+//   }
+
    /**
     * Set pin as digital I/O.
     * Pin is initially set as an input.
@@ -439,32 +459,17 @@ public:
     * @note Resets the Pin Control Register value (PCR value).
     * @note Resets the pin output value to the inactive state
     *
-    * @param[in] pcrValue PCR value to use in configuring pin (excluding MUX value). See pcrValue()
+    * @param[in] pcrInit PCR value to use in configuring pin (excluding MUX value). See pcrValue()
     */
-   static void setInOut(PcrValue pcrValue) {
+   static void setInOut(const PcrInit &pcrInit) {
       // Make input initially
       setIn();
       // Set inactive pin state (if later made output)
       setInactive();
-      Pcr::setPCR(pcrValue);
+      // Configure PCR
+      Pcr::setPCR(pcrInit.value);
    }
-   /**
-    * Set pin as digital I/O.
-    * Pin is initially set as an input.
-    * Use SetIn() and SetOut() to change direction.
-    *
-    * @note Resets the Pin Control Register value (PCR value).
-    * @note Resets the pin output value to the inactive state
-    *
-    * @param[in] pcrValue PCR value to use in configuring pin (excluding MUX value). See pcrValue()
-    */
-   static void setInOut(PcrValueClass pcrValue) {
-      // Make input initially
-      setIn();
-      // Set inactive pin state (if later made output)
-      setInactive();
-      Pcr::setPCR(pcrValue.pcrValue());
-   }
+
    /**
     * Set pin as digital I/O.
     * Pin is initially set as an input.
@@ -474,28 +479,29 @@ public:
     * @note Resets the Pin Control Register value (PCR value).
     * @note Resets the pin output value to the inactive state
     *
-    * @param[in] pinPull          One of PinPull_None, PinPull_Up, PinPull_Down
-    * @param[in] pinDriveStrength One of PinDriveStrength_Low, PinDriveStrength_High (defaults to PinDriveLow)
-    * @param[in] pinDriveMode     One of PinDriveMode_PushPull, PinDriveMode_OpenDrain (defaults to PinPushPull)
-    * @param[in] pinAction        One of PinAction_None, etc (defaults to PinAction_None)
-    * @param[in] pinFilter        One of PinFilter_None, PinFilter_Passive (defaults to PinFilter_None)
-    * @param[in] pinSlewRate      One of PinSlewRate_Slow, PinSlewRate_Fast (defaults to PinSlewRate_Fast)
+    * @param pinPull          Pin pull device (up/down/none) on digital inputs
+    * @param pinDriveStrength Pin drive strength of digital outputs
+    * @param pinDriveMode     Pin drive mode (push-pull/open-drain) of digital outputs
+    * @param pinAction        DMA and/or interrupt actions to happen on pin change or level
+    * @param pinFilter        Pin filtering on digital inputs
+    * @param pinSlewRate      Pin slew rate of digital outputs
     */
    static void setInOut(
-         PinPull           pinPull,
-         PinDriveStrength  pinDriveStrength  = defaultPcrValue,
-         PinDriveMode      pinDriveMode      = defaultPcrValue,
-         PinAction         pinAction         = defaultPcrValue,
-         PinFilter         pinFilter         = defaultPcrValue,
-         PinSlewRate       pinSlewRate       = defaultPcrValue
-   ) {
+         PinPull          pinPull,
+         PinDriveStrength pinDriveStrength = PinDriveStrength_Low,
+         PinDriveMode     pinDriveMode     = PinDriveMode_PushPull,
+         PinAction        pinAction        = PinAction_None,
+         PinFilter        pinFilter        = PinFilter_None,
+         PinSlewRate      pinSlewRate      = PinSlewRate_Fast)  {
+   
       // Make input initially
       setIn();
       // Set inactive pin state (if later made output)
       setInactive();
       // Configure PCR
       Pcr::setPCR(pinPull|pinDriveStrength|pinDriveMode|pinAction|pinFilter|pinSlewRate);
-      }
+   }
+   
    /**
     * Set pin as digital output
     *
@@ -509,6 +515,7 @@ public:
       gpio->PDDR = gpio->PDDR | Pcr::BITMASK;
 #endif
    }
+
    /**
     * Enable pin as digital output with initial inactive level.\n
     * Configures all Pin Control Register (PCR) values
@@ -524,26 +531,27 @@ public:
       // Make pin an output
       setOut();
       // Configure pin
-      Pcr::setPCR(defaultPcrValue.pcrValue());
+      Pcr::setPCR(defaultPcrValue.value);
    }
-   /**
-    * Enable pin as digital output with initial inactive level.\n
-    * Configures all Pin Control Register (PCR) values
-    *
-    * @note Resets the Pin Control Register value (PCR value).
-    * @note Resets the pin value to the inactive state
-    * @note Use setOut() for a lightweight change of direction without affecting other pin settings.
-    *
-    * @param[in] pcrValue PCR value to use in configuring port (excluding MUX value). See pcrValue()
-    */
-   static void setOutput(PcrValue pcrValue) {
-      // Set initial level before enabling pin drive
-      setInactive();
-      // Make pin an output
-      setOut();
-      // Configure pin
-      Pcr::setPCR(pcrValue);
-   }
+
+//   /**
+//    * Enable pin as digital output with initial inactive level.\n
+//    * Configures all Pin Control Register (PCR) values
+//    *
+//    * @note Resets the Pin Control Register value (PCR value).
+//    * @note Resets the pin value to the inactive state
+//    * @note Use setOut() for a lightweight change of direction without affecting other pin settings.
+//    *
+//    * @param[in] pcrValue PCR value to use in configuring port (excluding MUX value). See pcrValue()
+//    */
+//   static void setOutput(PcrValue pcrValue) {
+//      // Set initial level before enabling pin drive
+//      setInactive();
+//      // Make pin an output
+//      setOut();
+//      // Configure pin
+//      Pcr::setPCR(pcrValue);
+//   }
 
    /**
     * Enable pin as digital output with initial inactive level.\n
@@ -553,63 +561,47 @@ public:
     * @note Resets the pin value to the inactive state
     * @note Use setOut() for a lightweight change of direction without affecting other pin settings.
     *
-    * @param[in] pcrValue PCR value to use in configuring port (excluding MUX value). See pcrValue()
+    * @param[in] pcrInit PCR value to use in configuring port (excluding MUX value). See pcrValue()
     */
-   static void setOutput(PcrValueClass pcrValue) {
+   static void setOutput(const PcrInit &pcrInit) {
       // Set initial level before enabling pin drive
       setInactive();
       // Make pin an output
       setOut();
       // Configure pin
-      Pcr::setPCR(pcrValue.pcrValue());
+      Pcr::setPCR(pcrInit.value);
    }
 
-   /**
-    * Enable pin as digital output with initial inactive level.\n
-    * Configures all Pin Control Register (PCR) values
-    *
-    * @note Resets the Pin Control Register value (PCR value).
-    * @note Resets the pin value to the inactive state
-    * @note Use setOut() for a lightweight change of direction without affecting other pin settings.
-    *
-    * @param[in] args list of pin control values such as pinDriveStrength, pinDriveMode, pinSlewRate
-    */
-   template<typename... Args>
-   static void setOutput(Args... args) {
-      // Set initial level before enabling pin drive
-      setInactive();
-      // Make pin an output
-      setOut();
-      // Configure pin
-      Pcr::setPCR(pcrOr(args...));
-   }
+
 
    /**
     * @brief
-    * Enable pin as digital output with initial inactive level.\n
-    * Configures <b>all</b> Pin Control Register (PCR) values\n
+    * Enable pin as digital output with initial inactive level
+    * Configures <b>all</b> Pin Control Register (PCR) values
+
     * Unreferenced fields are cleared.
     *
     * @note Resets the Pin Control Register value (PCR value).
     * @note Resets the pin value to the inactive state
     * @note Use setOut() for a lightweight change of direction without affecting other pin settings.
     *
-    * @param[in] pinDriveStrength One of PinDriveStrength_Low, PinDriveStrength_High
-    * @param[in] pinDriveMode     One of PinDriveMode_PushPull, PinDriveMode_OpenDrain (defaults to PinPushPull)
-    * @param[in] pinSlewRate      One of PinSlewRate_Slow, PinSlewRate_Fast (defaults to PinSlewRate_Slow)
+    * @param pinDriveStrength Pin drive strength of digital outputs
+    * @param pinDriveMode     Pin drive mode (push-pull/open-drain) of digital outputs
+    * @param pinSlewRate      Pin slew rate of digital outputs
     */
    static void setOutput(
-         PinDriveStrength  pinDriveStrength,
-         PinDriveMode      pinDriveMode      = defaultPcrValue,
-         PinSlewRate       pinSlewRate       = defaultPcrValue
-   ) {
+         PinDriveStrength pinDriveStrength,
+         PinDriveMode     pinDriveMode     = PinDriveMode_PushPull,
+         PinSlewRate      pinSlewRate      = PinSlewRate_Fast)  {
+   
       // Set initial level before enabling pin drive
       setInactive();
       // Make pin an output
       setOut();
-      // Configure pin
+      // Configure PCR
       Pcr::setPCR(pinDriveStrength|pinDriveMode|pinSlewRate);
-      }
+   }
+   
    /**
     * Set pin as digital input
     *
@@ -635,80 +627,67 @@ public:
    static void setInput() {
       // Make pin an input
       setIn();
-      Pcr::setPCR(defaultPcrValue.pcrValue());
-   }
-   /**
-    * @brief
-    * Enable pin as digital input.\n
-    * Configures all Pin Control Register (PCR) values
-    *
-    * @note Resets the Pin Control Register value (PCR value).
-    * @note Use setIn() for a lightweight change of direction without affecting other pin settings.
-    *
-    * @param[in] pcrValue PCR value to use in configuring port (excluding MUX value)
-    */
-   static void setInput(PcrValue pcrValue) {
-      // Make pin an input
-      setIn();
-      Pcr::setPCR(pcrValue);
-   }
-   /**
-    * @brief
-    * Enable pin as digital input.\n
-    * Configures all Pin Control Register (PCR) values
-    *
-    * @note Resets the Pin Control Register value (PCR value).
-    * @note Use setIn() for a lightweight change of direction without affecting other pin settings.
-    *
-    * @param[in] pcrValue PCR value to use in configuring port (excluding MUX value)
-    */
-   static void setInput(PcrValueClass pcrValue) {
-      // Make pin an input
-      setIn();
-      Pcr::setPCR(pcrValue.pcrValue());
-   }
-
-   /**
-    * Enable pin as digital output with initial inactive level.\n
-    * Configures all Pin Control Register (PCR) values
-    *
-    * @note Resets the Pin Control Register value (PCR value).
-    * @note Resets the pin value to the inactive state
-    * @note Use setOut() for a lightweight change of direction without affecting other pin settings.
-    *
-    * @param[in] args list of pin control values such as pinPull, pinAction, pinFilter
-    */
-   template<typename... Args>
-   static void setInput(Args... args) {
-      // Make pin an input
-      setIn();
-
       // Configure pin
-      Pcr::setPCR(pcrOr(args...));
+      Pcr::setPCR(defaultPcrValue.value);
    }
+
+//   /**
+//    * @brief
+//    * Enable pin as digital input.\n
+//    * Configures all Pin Control Register (PCR) values
+//    *
+//    * @note Resets the Pin Control Register value (PCR value).
+//    * @note Use setIn() for a lightweight change of direction without affecting other pin settings.
+//    *
+//    * @param[in] pcrValue PCR value to use in configuring port (excluding MUX value)
+//    */
+//   static void setInput(PcrValue pcrValue) {
+//      // Make pin an input
+//      setIn();
+//      // Configure pin
+//      Pcr::setPCR(pcrValue);
+//   }
 
    /**
     * @brief
     * Enable pin as digital input.\n
-    * Configures <b>all</b> Pin Control Register (PCR) values\n
+    * Configures all Pin Control Register (PCR) values
+    *
+    * @note Resets the Pin Control Register value (PCR value).
+    * @note Use setIn() for a lightweight change of direction without affecting other pin settings.
+    *
+    * @param[in] pcrInit PCR value to use in configuring port (excluding MUX value)
+    */
+   static void setInput(const PcrInit &pcrInit) {
+      // Make pin an input
+      setIn();
+      // Configure pin
+      Pcr::setPCR(pcrInit.value);
+   }
+
+   /**
+    * Enable pin as digital input.
+    * Configures <b>all</b> Pin Control Register (PCR) values
     * Unreferenced fields are cleared.
     *
-    * @note Reset the Pin Control Register value (PCR value).
+    * @note Resets the Pin Control Register value (PCR value).
     * @note Use setIn() for a lightweight change of direction without affecting other pin settings.
     *
-    * @param[in] pinPull          One of PinPull_None, PinPull_Up, PinPull_Down
-    * @param[in] pinAction        One of PinAction_None, etc (defaults to PinAction_None)
-    * @param[in] pinFilter        One of PinFilter_None, PinFilter_Passive (defaults to PinFilter_None)
+    * @param pinPull   Pin pull device (up/down/none) on digital inputs
+    * @param pinAction DMA and/or interrupt actions to happen on pin change or level
+    * @param pinFilter Pin filtering on digital inputs
     */
    static void setInput(
-         PinPull           pinPull,
-         PinAction         pinAction         = defaultPcrValue,
-         PinFilter         pinFilter         = defaultPcrValue
-   ) {
-      // Make pin an input
+         PinPull   pinPull,
+         PinAction pinAction = PinAction_None,
+         PinFilter pinFilter = PinFilter_None)  {
+   
+      // Make input
       setIn();
+      // Configure PCR
       Pcr::setPCR(pinPull|pinAction|pinFilter);
-      }
+   }
+   
    /**
     * Set pin. Pin will be high if configured as an output.
     *
@@ -1159,7 +1138,7 @@ private:
     */
    GpioField_T(const GpioField_T&) = delete;
    GpioField_T(GpioField_T&&) = delete;
-   static constexpr PcrValueClass defaultPcrValue = gpioPcrValue(defPcrValue);
+   static constexpr PcrInit defaultPcrValue = gpioPcrValue(defPcrValue);
 
 public:
    constexpr GpioField_T() : GpioField(gpioAddress, BITMASK, Right, FLIP_MASK) {}
@@ -1259,14 +1238,14 @@ public:
       uint32_t pcr  = static_cast<uint32_t>(pcrValue);
 
 #ifdef PORT_DFCR_CS_MASK
-      if (pcr&PinFilter_Digital) {
+      if (pcr&PORT_PCR_DIGITALFILTER_MASK) {
          Port::port->DFER |= BITMASK;
       }
       else {
          Port::port->DFER &= ~BITMASK;
       }
       // Make sure MUX value is correct and clear PinFilter_Digital
-      pcr = (pcr & ~(PORT_PCR_MUX_MASK|PinFilter_Digital)) | PinMux_Gpio;
+      pcr = (pcr & ~(PORT_PCR_MUX_MASK|PORT_PCR_DIGITALFILTER_MASK)) | PinMux_Gpio;
 #else
       // Make sure MUX value is correct
       pcr = (pcr & ~PORT_PCR_MUX_MASK) | PinMux_Gpio;
@@ -1279,32 +1258,33 @@ public:
          Port::port->PCR[bitNum] = pcr;
       }
    }
-
    /**
-    * Set field as digital I/O.
-    * Pins are initially set as an input.
+    * Set pin as digital I/O.
+    * Pins are initially set as inputs.
     * Use setIn(), setOut() and setDirection() to change pin directions.
+    * If open-drain then input function may meaningfully be used while set as output
     *
-    * @note Resets the Pin Control Register values (PCR value).
+    * @note Resets the Pin Control Register value (PCR value).
     * @note Resets the pin output value to the inactive state
     *
-    * @param[in] pinPull          One of PinPull_None, PinPull_Up, PinPull_Down (defaults to PinPull_None)
-    * @param[in] pinDriveStrength One of PinDriveStrength_Low, PinDriveStrength_High (defaults to PinDriveLow)
-    * @param[in] pinDriveMode     One of PinDriveMode_PushPull, PinDriveMode_OpenDrain (defaults to PinPushPull)
-    * @param[in] pinAction        One of PinAction_None, etc (defaults to PinAction_None)
-    * @param[in] pinFilter        One of PinFilter_None, PinFilter_Passive (defaults to PinFilter_None)
-    * @param[in] pinSlewRate      One of PinSlewRate_Slow, PinSlewRate_Fast (defaults to PinSlewRate_Fast)
+    * @param pinPull          Pin pull device (up/down/none) on digital inputs
+    * @param pinDriveStrength Pin drive strength of digital outputs
+    * @param pinDriveMode     Pin drive mode (push-pull/open-drain) of digital outputs
+    * @param pinAction        DMA and/or interrupt actions to happen on pin change or level
+    * @param pinFilter        Pin filtering on digital inputs
+    * @param pinSlewRate      Pin slew rate of digital outputs
     */
    static void setInOut(
-         PinPull           pinPull,
-         PinDriveStrength  pinDriveStrength  = PinDriveStrength_Low,
-         PinDriveMode      pinDriveMode      = PinDriveMode_PushPull,
-         PinAction         pinAction         = PinAction_None,
-         PinFilter         pinFilter         = PinFilter_None,
-         PinSlewRate       pinSlewRate       = PinSlewRate_Fast
-   ) {
+         PinPull          pinPull,
+         PinDriveStrength pinDriveStrength = PinDriveStrength_Low,
+         PinDriveMode     pinDriveMode     = PinDriveMode_PushPull,
+         PinAction        pinAction        = PinAction_None,
+         PinFilter        pinFilter        = PinFilter_None,
+         PinSlewRate      pinSlewRate      = PinSlewRate_Fast)  {
+   
       setInOut(pinPull|pinDriveStrength|pinDriveMode|pinAction|pinFilter|pinSlewRate);
    }
+
    /**
     * Set all pins as digital outputs.
     *
@@ -1339,23 +1319,28 @@ public:
       gpio->PDDR = gpio->PDDR | BITMASK;
    }
    /**
-    * Sets all pin as digital outputs.
-    * Configures all Pin Control Register (PCR) values
+    * @brief
+    * Set all pins as digital outputs with initial inactive level
+    * Configures <b>all</b> Pin Control Register (PCR) values
+
+    * Unreferenced PCR fields are cleared.
     *
-    * @note This will also reset the Pin Control Register value (PCR value).
+    * @note Resets the Pin Control Register value (PCR value).
+    * @note Resets the pin value to the inactive state
     * @note Use setOut(), setIn() or setDirection() for a lightweight change of direction without affecting other pin settings.
     *
-    * @param[in] pinDriveStrength One of PinDriveStrength_Low, PinDriveStrength_High (defaults to PinDriveLow)
-    * @param[in] pinDriveMode     One of PinDriveMode_PushPull, PinDriveMode_OpenDrain (defaults to PinPushPull)
-    * @param[in] pinSlewRate      One of PinSlewRate_Slow, PinSlewRate_Fast (defaults to PinSlewRate_Fast)
+    * @param pinDriveStrength Pin drive strength of digital outputs
+    * @param pinDriveMode     Pin drive mode (push-pull/open-drain) of digital outputs
+    * @param pinSlewRate      Pin slew rate of digital outputs
     */
    static void setOutput(
-         PinDriveStrength  pinDriveStrength,
-         PinDriveMode      pinDriveMode      = PinDriveMode_PushPull,
-         PinSlewRate       pinSlewRate       = PinSlewRate_Fast
-   ) {
+         PinDriveStrength pinDriveStrength,
+         PinDriveMode     pinDriveMode     = PinDriveMode_PushPull,
+         PinSlewRate      pinSlewRate      = PinSlewRate_Fast)  {
+   
       setOutput(pinDriveStrength|pinDriveMode|pinSlewRate);
    }
+
    /**
     * Set all pins as digital inputs.
     *
@@ -1388,24 +1373,27 @@ public:
    static void setInput(PcrValue pcrValue) {
       setInOut(pcrValue);
    }
+
    /**
-    * Set all pins as digital inputs.
-    * Configures all Pin Control Register (PCR) values
+    * Set all pins as digital inputs
+    * Configures <b>all</b> Pin Control Register (PCR) values
+    * Unreferenced fields are cleared.
     *
-    * @note This will also reset the Pin Control Register value (PCR value).
-    * @note Use setOut(), setIn() or setDirection() for a lightweight change of direction without affecting other pin settings.
+    * @note Resets the Pin Control Register value (PCR value).
+    * @note Use setIn() for a lightweight change of direction without affecting other pin settings.
     *
-    * @param[in] pinPull          One of PinPull_None, PinPull_Up, PinPull_Down (defaults to PinPull_None)
-    * @param[in] pinAction        One of PinAction_None, etc (defaults to PinAction_None)
-    * @param[in] pinFilter        One of PinFilter_None, PinFilter_Passive (defaults to PinFilter_None)
+    * @param pinPull   Pin pull device (up/down/none) on digital inputs
+    * @param pinAction DMA and/or interrupt actions to happen on pin change or level
+    * @param pinFilter Pin filtering on digital inputs
     */
    static void setInput(
-         PinPull           pinPull,
-         PinAction         pinAction         = PinAction_None,
-         PinFilter         pinFilter         = PinFilter_None
-   ) {
+         PinPull   pinPull,
+         PinAction pinAction = PinAction_None,
+         PinFilter pinFilter = PinFilter_None)  {
+   
       setInOut(pinPull|pinAction|pinFilter);
    }
+
    /**
     * Set individual pin directions
     *
@@ -1592,420 +1580,411 @@ class GpioFieldTable_T :
       static_assert(Test3, "GPIO bit doesn't exist in this device/package - Check Configure.usbdm for available channels");
 };
 
-#ifdef USBDM_GPIOA_IS_DEFINED
-/**
- * @brief Convenience template for GpioA. See @ref Gpio_T
- *
- * <b>Usage</b>
- * @code
- * using namespace USBDM;
- *
- * // Instantiate for bit 3 of GpioA
- * GpioA<3, ActiveHigh> GpioA3;
- *
- * // Set as digital output
- * GpioA3::setOutput();
- *
- * // Set pin high
- * GpioA3::set();
- *
- * // Set pin low
- * GpioA3::clear();
- *
- * // Toggle pin
- * GpioA3::toggle();
- *
- * // Set pin to boolean value
- * GpioA3::write(true);
- *
- * // Set pin to boolean value
- * GpioA3::write(false);
- *
- * // Set as digital input
- * GpioA3::setInput();
- *
- * // Read pin as boolean value
- * bool x = GpioA3::read();
- * @endcode
- *
- * @tparam bitNum        Bit number in the port
- * @tparam polarity      Polarity of pin. Either ActiveHigh or ActiveLow
- */
-template<unsigned bitNum, Polarity polarity=ActiveHigh> class GpioA :
-      public Gpio_T<PortAInfo.clockInfo, PortAInfo.portAddress, PortAInfo.irqNum, PortAInfo.gpioAddress, GPIO_DEFAULT_PCR, PortAInfo.irqLevel, bitNum, polarity> {};
-typedef PcrBase_T<PortAInfo.portAddress, PortAInfo.irqNum, PortAInfo.irqLevel> PortA;
+   /**
+    * @brief Convenience template for GpioA. See @ref Gpio_T
+    *
+    * <b>Usage</b>
+    * @code
+    * using namespace USBDM;
+    *
+    * // Instantiate for bit 3 of GpioA
+    * using GpioA3 = GpioA<3, ActiveHigh>;
+    *
+    * // Set as digital output
+    * GpioA3::setOutput();
+    *
+    * // Set pin high
+    * GpioA3::set();
+    *
+    * // Set pin low
+    * GpioA3::clear();
+    *
+    * // Toggle pin
+    * GpioA3::toggle();
+    *
+    * // Set pin to boolean value
+    * GpioA3::write(true);
+    *
+    * // Set pin to boolean value
+    * GpioA3::write(false);
+    *
+    * // Set as digital input
+    * GpioA3::setInput();
+    *
+    * // Read pin as boolean value
+    * bool x = GpioA3::read();
+    * @endcode
+    *
+    * @tparam bitNum        Bit number in the port
+    * @tparam polarity      Polarity of pin. Either ActiveHigh or ActiveLow
+    */
+   template<unsigned bitNum, Polarity polarity=ActiveHigh> class GpioA :
+         public Gpio_T<PortAInfo.clockInfo, PortAInfo.portAddress, PortAInfo.irqNum, PortAInfo.gpioAddress, GPIO_DEFAULT_PCR, PortAInfo.irqLevel, bitNum, polarity> {};
+   typedef PcrBase_T<PortAInfo.portAddress, PortAInfo.irqNum, PortAInfo.irqLevel> PortA;
 
-/**
- * @brief Convenience template for GpioA fields. See @ref GpioField_T
- *
- * <b>Usage</b>
- * @code
- * using namespace USBDM;
- *
- * // Instantiate for bit 6 down to 3 of GpioA
- * using GpioA6_3 = GpioAField<6,3>;
- *
- * // Set as digital output
- * GpioA6_3::setOutput();
- *
- * // Write value to field
- * GpioA6_3::write(0x53);
- *
- * // Clear all of field
- * GpioA6_3::bitClear();
- *
- * // Clear lower two bits of field
- * GpioA6_3::bitClear(0x3);
- *
- * // Set lower two bits of field
- * GpioA6_3::bitSet(0x3);
- *
- * // Set as digital input
- * GpioA6_3::setInput();
- *
- * // Read pin as int value
- * int x = GpioA6_3::read();
- * @endcode
- *
- * @tparam left          Bit number of leftmost bit in port (inclusive)
- * @tparam right         Bit number of rightmost bit in port (inclusive)
- * @tparam polarity       Polarity of all pins. Either ActiveHigh, ActiveLow or a bitmask (0=>bit active-high, 1=>bit active-low)
- */
-template<unsigned left, unsigned right, uint32_t polarity=ActiveHigh>
-class GpioAField : public GpioField_T<PortAInfo.portAddress, PortAInfo.clockInfo, PortAInfo.irqNum, PortAInfo.gpioAddress, GPIO_DEFAULT_PCR, PortAInfo.irqLevel, left, right, polarity> {};
-#endif
+   /**
+    * @brief Convenience template for GpioA fields. See @ref GpioField_T
+    *
+    * <b>Usage</b>
+    * @code
+    * using namespace USBDM;
+    *
+    * // Instantiate for bit 6 down to 3 of GpioA
+    * using GpioA6_3 = GpioAField<6,3>;
+    *
+    * // Set as digital output
+    * GpioA6_3::setOutput();
+    *
+    * // Write value to field
+    * GpioA6_3::write(0x53);
+    *
+    * // Clear all of field
+    * GpioA6_3::bitClear();
+    *
+    * // Clear lower two bits of field
+    * GpioA6_3::bitClear(0x3);
+    *
+    * // Set lower two bits of field
+    * GpioA6_3::bitSet(0x3);
+    *
+    * // Set as digital input
+    * GpioA6_3::setInput();
+    *
+    * // Read pin as int value
+    * int x = GpioA6_3::read();
+    * @endcode
+    *
+    * @tparam left          Bit number of leftmost bit in port (inclusive)
+    * @tparam right         Bit number of rightmost bit in port (inclusive)
+    * @tparam polarity      Polarity of all pins. Either ActiveHigh, ActiveLow or a bitmask (0=>bit active-high, 1=>bit active-low)
+    */
+   template<unsigned left, unsigned right, uint32_t polarity=ActiveHigh>
+   class GpioAField : public GpioField_T<PortAInfo.portAddress, PortAInfo.clockInfo, PortAInfo.irqNum, PortAInfo.gpioAddress, GPIO_DEFAULT_PCR, PortAInfo.irqLevel, left, right, polarity> {};
 
-#ifdef USBDM_GPIOB_IS_DEFINED
-/**
- * @brief Convenience template for GpioB. See @ref Gpio_T
- *
- * <b>Usage</b>
- * @code
- * using namespace USBDM;
- *
- * // Instantiate for bit 3 of GpioB
- * using GpioB3 = GpioB<3, ActiveHigh>;
- *
- * // Set as digital output
- * GpioB3::setOutput();
- *
- * // Set pin high
- * GpioB3::set();
- *
- * // Set pin low
- * GpioB3::clear();
- *
- * // Toggle pin
- * GpioB3::toggle();
- *
- * // Set pin to boolean value
- * GpioB3::write(true);
- *
- * // Set pin to boolean value
- * GpioB3::write(false);
- *
- * // Set as digital input
- * GpioB3::setInput();
- *
- * // Read pin as boolean value
- * bool x = GpioB3::read();
- * @endcode
- *
- * @tparam bitNum        Bit number in the port
- * @tparam polarity      Polarity of pin. Either ActiveHigh or ActiveLow
- */
-template<unsigned bitNum, Polarity polarity=ActiveHigh> class GpioB :
-      public Gpio_T<PortBInfo.clockInfo, PortBInfo.portAddress, PortBInfo.irqNum, PortBInfo.gpioAddress, GPIO_DEFAULT_PCR, PortBInfo.irqLevel, bitNum, polarity> {};
-typedef PcrBase_T<PortBInfo.portAddress, PortBInfo.irqNum, PortBInfo.irqLevel> PortB;
+   /**
+    * @brief Convenience template for GpioB. See @ref Gpio_T
+    *
+    * <b>Usage</b>
+    * @code
+    * using namespace USBDM;
+    *
+    * // Instantiate for bit 3 of GpioB
+    * using GpioB3 = GpioB<3, ActiveHigh>;
+    *
+    * // Set as digital output
+    * GpioB3::setOutput();
+    *
+    * // Set pin high
+    * GpioB3::set();
+    *
+    * // Set pin low
+    * GpioB3::clear();
+    *
+    * // Toggle pin
+    * GpioB3::toggle();
+    *
+    * // Set pin to boolean value
+    * GpioB3::write(true);
+    *
+    * // Set pin to boolean value
+    * GpioB3::write(false);
+    *
+    * // Set as digital input
+    * GpioB3::setInput();
+    *
+    * // Read pin as boolean value
+    * bool x = GpioB3::read();
+    * @endcode
+    *
+    * @tparam bitNum        Bit number in the port
+    * @tparam polarity      Polarity of pin. Either ActiveHigh or ActiveLow
+    */
+   template<unsigned bitNum, Polarity polarity=ActiveHigh> class GpioB :
+         public Gpio_T<PortBInfo.clockInfo, PortBInfo.portAddress, PortBInfo.irqNum, PortBInfo.gpioAddress, GPIO_DEFAULT_PCR, PortBInfo.irqLevel, bitNum, polarity> {};
+   typedef PcrBase_T<PortBInfo.portAddress, PortBInfo.irqNum, PortBInfo.irqLevel> PortB;
 
-/**
- * @brief Convenience template for GpioB fields. See @ref GpioField_T
- *
- * <b>Usage</b>
- * @code
- * using namespace USBDM;
- *
- * // Instantiate for bit 6 down to 3 of GpioB
- * using GpioB6_3 = GpioBField<6,3>;
- *
- * // Set as digital output
- * GpioB6_3::setOutput();
- *
- * // Write value to field
- * GpioB6_3::write(0x53);
- *
- * // Clear all of field
- * GpioB6_3::bitClear();
- *
- * // Clear lower two bits of field
- * GpioB6_3::bitClear(0x3);
- *
- * // Set lower two bits of field
- * GpioB6_3::bitSet(0x3);
- *
- * // Set as digital input
- * GpioB6_3::setInput();
- *
- * // Read pin as int value
- * int x = GpioB6_3::read();
- * @endcode
- *
- * @tparam left          Bit number of leftmost bit in port (inclusive)
- * @tparam right         Bit number of rightmost bit in port (inclusive)
- * @tparam polarity      Polarity of all pins. Either ActiveHigh, ActiveLow or a bitmask (0=>bit active-high, 1=>bit active-low)
- */
-template<unsigned left, unsigned right, uint32_t polarity=ActiveHigh>
-class GpioBField : public GpioField_T<PortBInfo.portAddress, PortBInfo.clockInfo, PortBInfo.irqNum, PortBInfo.gpioAddress, GPIO_DEFAULT_PCR, PortBInfo.irqLevel, left, right, polarity> {};
-#endif
+   /**
+    * @brief Convenience template for GpioB fields. See @ref GpioField_T
+    *
+    * <b>Usage</b>
+    * @code
+    * using namespace USBDM;
+    *
+    * // Instantiate for bit 6 down to 3 of GpioB
+    * using GpioB6_3 = GpioBField<6,3>;
+    *
+    * // Set as digital output
+    * GpioB6_3::setOutput();
+    *
+    * // Write value to field
+    * GpioB6_3::write(0x53);
+    *
+    * // Clear all of field
+    * GpioB6_3::bitClear();
+    *
+    * // Clear lower two bits of field
+    * GpioB6_3::bitClear(0x3);
+    *
+    * // Set lower two bits of field
+    * GpioB6_3::bitSet(0x3);
+    *
+    * // Set as digital input
+    * GpioB6_3::setInput();
+    *
+    * // Read pin as int value
+    * int x = GpioB6_3::read();
+    * @endcode
+    *
+    * @tparam left          Bit number of leftmost bit in port (inclusive)
+    * @tparam right         Bit number of rightmost bit in port (inclusive)
+    * @tparam polarity      Polarity of all pins. Either ActiveHigh, ActiveLow or a bitmask (0=>bit active-high, 1=>bit active-low)
+    */
+   template<unsigned left, unsigned right, uint32_t polarity=ActiveHigh>
+   class GpioBField : public GpioField_T<PortBInfo.portAddress, PortBInfo.clockInfo, PortBInfo.irqNum, PortBInfo.gpioAddress, GPIO_DEFAULT_PCR, PortBInfo.irqLevel, left, right, polarity> {};
 
-#ifdef USBDM_GPIOC_IS_DEFINED
-/**
- * @brief Convenience template for GpioC. See @ref Gpio_T
- *
- * <b>Usage</b>
- * @code
- * using namespace USBDM;
- *
- * // Instantiate for bit 3 of GpioC
- * using GpioC3 = GpioC<3, ActiveHigh>;
- *
- * // Set as digital output
- * GpioC3::setOutput();
- *
- * // Set pin high
- * GpioC3::set();
- *
- * // Set pin low
- * GpioC3::clear();
- *
- * // Toggle pin
- * GpioC3::toggle();
- *
- * // Set pin to boolean value
- * GpioC3::write(true);
- *
- * // Set pin to boolean value
- * GpioC3::write(false);
- *
- * // Set as digital input
- * GpioC3::setInput();
- *
- * // Read pin as boolean value
- * bool x = GpioC3::read();
- * @endcode
- *
- * @tparam bitNum        Bit number in the port
- * @tparam polarity      Polarity of pin. Either ActiveHigh or ActiveLow
- */
-template<unsigned bitNum, Polarity polarity=ActiveHigh> class GpioC :
-      public Gpio_T<PortCInfo.clockInfo, PortCInfo.portAddress, PortCInfo.irqNum, PortCInfo.gpioAddress, GPIO_DEFAULT_PCR, PortCInfo.irqLevel, bitNum, polarity> {};
-typedef PcrBase_T<PortCInfo.portAddress, PortCInfo.irqNum, PortCInfo.irqLevel> PortC;
+   /**
+    * @brief Convenience template for GpioC. See @ref Gpio_T
+    *
+    * <b>Usage</b>
+    * @code
+    * using namespace USBDM;
+    *
+    * // Instantiate for bit 3 of GpioC
+    * using GpioC3 = GpioC<3, ActiveHigh>;
+    *
+    * // Set as digital output
+    * GpioC3::setOutput();
+    *
+    * // Set pin high
+    * GpioC3::set();
+    *
+    * // Set pin low
+    * GpioC3::clear();
+    *
+    * // Toggle pin
+    * GpioC3::toggle();
+    *
+    * // Set pin to boolean value
+    * GpioC3::write(true);
+    *
+    * // Set pin to boolean value
+    * GpioC3::write(false);
+    *
+    * // Set as digital input
+    * GpioC3::setInput();
+    *
+    * // Read pin as boolean value
+    * bool x = GpioC3::read();
+    * @endcode
+    *
+    * @tparam bitNum        Bit number in the port
+    * @tparam polarity      Polarity of pin. Either ActiveHigh or ActiveLow
+    */
+   template<unsigned bitNum, Polarity polarity=ActiveHigh> class GpioC :
+         public Gpio_T<PortCInfo.clockInfo, PortCInfo.portAddress, PortCInfo.irqNum, PortCInfo.gpioAddress, GPIO_DEFAULT_PCR, PortCInfo.irqLevel, bitNum, polarity> {};
+   typedef PcrBase_T<PortCInfo.portAddress, PortCInfo.irqNum, PortCInfo.irqLevel> PortC;
 
-/**
- * @brief Convenience template for GpioC fields. See @ref GpioField_T
- *
- * <b>Usage</b>
- * @code
- * using namespace USBDM;
- *
- * // Instantiate for bit 6 down to 3 of GpioC
- * using GpioC6_3 = GpioCField<6,3>;
- *
- * // Set as digital output
- * GpioC6_3::setOutput();
- *
- * // Write value to field
- * GpioC6_3::write(0x53);
- *
- * // Clear all of field
- * GpioC6_3::bitClear();
- *
- * // Clear lower two bits of field
- * GpioC6_3::bitClear(0x3);
- *
- * // Set lower two bits of field
- * GpioC6_3::bitSet(0x3);
- *
- * // Set as digital input
- * GpioC6_3::setInput();
- *
- * // Read pin as int value
- * int x = GpioC6_3::read();
- * @endcode
- *
- * @tparam left          Bit number of leftmost bit in port (inclusive)
- * @tparam right         Bit number of rightmost bit in port (inclusive)
- * @tparam polarity      Polarity of all pins. Either ActiveHigh, ActiveLow or a bitmask (0=>bit active-high, 1=>bit active-low)
- */
-template<unsigned left, unsigned right, uint32_t polarity=ActiveHigh>
-class GpioCField : public GpioField_T<PortCInfo.portAddress, PortCInfo.clockInfo, PortCInfo.irqNum, PortCInfo.gpioAddress, GPIO_DEFAULT_PCR, PortCInfo.irqLevel, left, right, polarity> {};
-#endif
+   /**
+    * @brief Convenience template for GpioC fields. See @ref GpioField_T
+    *
+    * <b>Usage</b>
+    * @code
+    * using namespace USBDM;
+    *
+    * // Instantiate for bit 6 down to 3 of GpioC
+    * using GpioC6_3 = GpioCField<6,3>;
+    *
+    * // Set as digital output
+    * GpioC6_3::setOutput();
+    *
+    * // Write value to field
+    * GpioC6_3::write(0x53);
+    *
+    * // Clear all of field
+    * GpioC6_3::bitClear();
+    *
+    * // Clear lower two bits of field
+    * GpioC6_3::bitClear(0x3);
+    *
+    * // Set lower two bits of field
+    * GpioC6_3::bitSet(0x3);
+    *
+    * // Set as digital input
+    * GpioC6_3::setInput();
+    *
+    * // Read pin as int value
+    * int x = GpioC6_3::read();
+    * @endcode
+    *
+    * @tparam left          Bit number of leftmost bit in port (inclusive)
+    * @tparam right         Bit number of rightmost bit in port (inclusive)
+    * @tparam polarity      Polarity of all pins. Either ActiveHigh, ActiveLow or a bitmask (0=>bit active-high, 1=>bit active-low)
+    */
+   template<unsigned left, unsigned right, uint32_t polarity=ActiveHigh>
+   class GpioCField : public GpioField_T<PortCInfo.portAddress, PortCInfo.clockInfo, PortCInfo.irqNum, PortCInfo.gpioAddress, GPIO_DEFAULT_PCR, PortCInfo.irqLevel, left, right, polarity> {};
 
-#ifdef USBDM_GPIOD_IS_DEFINED
-/**
- * @brief Convenience template for GpioD. See @ref Gpio_T
- *
- * <b>Usage</b>
- * @code
- * using namespace USBDM;
- *
- * // Instantiate for bit 3 of GpioD
- * using GpioD3 = GpioD<3, ActiveHigh>;
- *
- * // Set as digital output
- * GpioD3::setOutput();
- *
- * // Set pin high
- * GpioD3::set();
- *
- * // Set pin low
- * GpioD3::clear();
- *
- * // Toggle pin
- * GpioD3::toggle();
- *
- * // Set pin to boolean value
- * GpioD3::write(true);
- *
- * // Set pin to boolean value
- * GpioD3::write(false);
- *
- * // Set as digital input
- * GpioD3::setInput();
- *
- * // Read pin as boolean value
- * bool x = GpioD3::read();
- * @endcode
- *
- * @tparam bitNum        Bit number in the port
- * @tparam polarity      Polarity of pin. Either ActiveHigh or ActiveLow
- */
-template<unsigned bitNum, Polarity polarity=ActiveHigh> class GpioD :
-      public Gpio_T<PortDInfo.clockInfo, PortDInfo.portAddress, PortDInfo.irqNum, PortDInfo.gpioAddress, GPIO_DEFAULT_PCR, PortDInfo.irqLevel, bitNum, polarity> {};
-typedef PcrBase_T<PortDInfo.portAddress, PortDInfo.irqNum, PortDInfo.irqLevel> PortD;
+   /**
+    * @brief Convenience template for GpioD. See @ref Gpio_T
+    *
+    * <b>Usage</b>
+    * @code
+    * using namespace USBDM;
+    *
+    * // Instantiate for bit 3 of GpioD
+    * using GpioD3 = GpioD<3, ActiveHigh>;
+    *
+    * // Set as digital output
+    * GpioD3::setOutput();
+    *
+    * // Set pin high
+    * GpioD3::set();
+    *
+    * // Set pin low
+    * GpioD3::clear();
+    *
+    * // Toggle pin
+    * GpioD3::toggle();
+    *
+    * // Set pin to boolean value
+    * GpioD3::write(true);
+    *
+    * // Set pin to boolean value
+    * GpioD3::write(false);
+    *
+    * // Set as digital input
+    * GpioD3::setInput();
+    *
+    * // Read pin as boolean value
+    * bool x = GpioD3::read();
+    * @endcode
+    *
+    * @tparam bitNum        Bit number in the port
+    * @tparam polarity      Polarity of pin. Either ActiveHigh or ActiveLow
+    */
+   template<unsigned bitNum, Polarity polarity=ActiveHigh> class GpioD :
+         public Gpio_T<PortDInfo.clockInfo, PortDInfo.portAddress, PortDInfo.irqNum, PortDInfo.gpioAddress, GPIO_DEFAULT_PCR, PortDInfo.irqLevel, bitNum, polarity> {};
+   typedef PcrBase_T<PortDInfo.portAddress, PortDInfo.irqNum, PortDInfo.irqLevel> PortD;
 
-/**
- * @brief Convenience template for GpioD fields. See @ref GpioField_T
- *
- * <b>Usage</b>
- * @code
- * using namespace USBDM;
- *
- * // Instantiate for bit 6 down to 3 of GpioD
- * using GpioD6_3 = GpioDField<6,3>;
- *
- * // Set as digital output
- * GpioD6_3::setOutput();
- *
- * // Write value to field
- * GpioD6_3::write(0x53);
- *
- * // Clear all of field
- * GpioD6_3::bitClear();
- *
- * // Clear lower two bits of field
- * GpioD6_3::bitClear(0x3);
- *
- * // Set lower two bits of field
- * GpioD6_3::bitSet(0x3);
- *
- * // Set as digital input
- * GpioD6_3::setInput();
- *
- * // Read pin as int value
- * int x = GpioD6_3::read();
- * @endcode
- *
- * @tparam left          Bit number of leftmost bit in port (inclusive)
- * @tparam right         Bit number of rightmost bit in port (inclusive)
- * @tparam polarity      Polarity of all pins. Either ActiveHigh, ActiveLow or a bitmask (0=>bit active-high, 1=>bit active-low)
- */
-template<unsigned left, unsigned right, uint32_t polarity=ActiveHigh>
-class GpioDField : public  GpioField_T<PortDInfo.portAddress, PortDInfo.clockInfo, PortDInfo.irqNum, PortDInfo.gpioAddress, GPIO_DEFAULT_PCR, PortDInfo.irqLevel, left, right, polarity> {};
-#endif
+   /**
+    * @brief Convenience template for GpioD fields. See @ref GpioField_T
+    *
+    * <b>Usage</b>
+    * @code
+    * using namespace USBDM;
+    *
+    * // Instantiate for bit 6 down to 3 of GpioD
+    * using GpioD6_3 = GpioDField<6,3>;
+    *
+    * // Set as digital output
+    * GpioD6_3::setOutput();
+    *
+    * // Write value to field
+    * GpioD6_3::write(0x53);
+    *
+    * // Clear all of field
+    * GpioD6_3::bitClear();
+    *
+    * // Clear lower two bits of field
+    * GpioD6_3::bitClear(0x3);
+    *
+    * // Set lower two bits of field
+    * GpioD6_3::bitSet(0x3);
+    *
+    * // Set as digital input
+    * GpioD6_3::setInput();
+    *
+    * // Read pin as int value
+    * int x = GpioD6_3::read();
+    * @endcode
+    *
+    * @tparam left          Bit number of leftmost bit in port (inclusive)
+    * @tparam right         Bit number of rightmost bit in port (inclusive)
+    * @tparam polarity      Polarity of all pins. Either ActiveHigh, ActiveLow or a bitmask (0=>bit active-high, 1=>bit active-low)
+    */
+   template<unsigned left, unsigned right, uint32_t polarity=ActiveHigh>
+   class GpioDField : public GpioField_T<PortDInfo.portAddress, PortDInfo.clockInfo, PortDInfo.irqNum, PortDInfo.gpioAddress, GPIO_DEFAULT_PCR, PortDInfo.irqLevel, left, right, polarity> {};
 
-#ifdef USBDM_GPIOE_IS_DEFINED
-/**
- * @brief Convenience template for GpioE. See @ref Gpio_T
- *
- * <b>Usage</b>
- * @code
- * using namespace USBDM;
- *
- * // Instantiate for bit 3 of GpioE
- * using GpioE3 = GpioE<3, ActiveHigh>;
- *
- * // Set as digital output
- * GpioE3::setOutput();
- *
- * // Set pin high
- * GpioE3::set();
- *
- * // Set pin low
- * GpioE3::clear();
- *
- * // Toggle pin
- * GpioE3::toggle();
- *
- * // Set pin to boolean value
- * GpioE3::write(true);
- *
- * // Set pin to boolean value
- * GpioE3::write(false);
- *
- * // Set as digital input
- * GpioE3::setInput();
- *
- * // Read pin as boolean value
- * bool x = GpioE3::read();
- * @endcode
- *
- * @tparam bitNum        Bit number in the port
- * @tparam polarity      Polarity of pin. Either ActiveHigh or ActiveLow
- */
-template<unsigned bitNum, Polarity polarity=ActiveHigh> class GpioE :
-      public Gpio_T<PortEInfo.clockInfo, PortEInfo.portAddress, PortEInfo.irqNum, PortEInfo.gpioAddress, GPIO_DEFAULT_PCR, PortEInfo.irqLevel, bitNum, polarity> {};
-typedef PcrBase_T<PortEInfo.portAddress, PortEInfo.irqNum, PortEInfo.irqLevel> PortE;
+   /**
+    * @brief Convenience template for GpioE. See @ref Gpio_T
+    *
+    * <b>Usage</b>
+    * @code
+    * using namespace USBDM;
+    *
+    * // Instantiate for bit 3 of GpioE
+    * using GpioE3 = GpioE<3, ActiveHigh>;
+    *
+    * // Set as digital output
+    * GpioE3::setOutput();
+    *
+    * // Set pin high
+    * GpioE3::set();
+    *
+    * // Set pin low
+    * GpioE3::clear();
+    *
+    * // Toggle pin
+    * GpioE3::toggle();
+    *
+    * // Set pin to boolean value
+    * GpioE3::write(true);
+    *
+    * // Set pin to boolean value
+    * GpioE3::write(false);
+    *
+    * // Set as digital input
+    * GpioE3::setInput();
+    *
+    * // Read pin as boolean value
+    * bool x = GpioE3::read();
+    * @endcode
+    *
+    * @tparam bitNum        Bit number in the port
+    * @tparam polarity      Polarity of pin. Either ActiveHigh or ActiveLow
+    */
+   template<unsigned bitNum, Polarity polarity=ActiveHigh> class GpioE :
+         public Gpio_T<PortEInfo.clockInfo, PortEInfo.portAddress, PortEInfo.irqNum, PortEInfo.gpioAddress, GPIO_DEFAULT_PCR, PortEInfo.irqLevel, bitNum, polarity> {};
+   typedef PcrBase_T<PortEInfo.portAddress, PortEInfo.irqNum, PortEInfo.irqLevel> PortE;
 
-/**
- * @brief Convenience template for GpioE fields. See @ref GpioField_T
- *
- * <b>Usage</b>
- * @code
- * using namespace USBDM;
- *
- * // Instantiate for bit 6 down to 3 of GpioE
- * using GpioE6_3 = GpioEField<6,3>;
- *
- * // Set as digital output
- * GpioE6_3::setOutput();
- *
- * // Write value to field
- * GpioE6_3::write(0x53);
- *
- * // Clear all of field
- * GpioE6_3::bitClear();
- *
- * // Clear lower two bits of field
- * GpioE6_3::bitClear(0x3);
- *
- * // Set lower two bits of field
- * GpioE6_3::bitSet(0x3);
- *
- * // Set as digital input
- * GpioE6_3::setInput();
- *
- * // Read pin as int value
- * int x = GpioE6_3::read();
- * @endcode
- *
- * @tparam left          Bit number of leftmost bit in port (inclusive)
- * @tparam right         Bit number of rightmost bit in port (inclusive)
- * @tparam polarity      Polarity of all pins. Either ActiveHigh, ActiveLow or a bitmask (0=>bit active-high, 1=>bit active-low)
- */
-template<unsigned left, unsigned right, uint32_t polarity=ActiveHigh>
-class GpioEField : public GpioField_T<PortEInfo.portAddress, PortEInfo.clockInfo, PortEInfo.irqNum, PortEInfo.gpioAddress, GPIO_DEFAULT_PCR, PortEInfo.irqLevel, left, right, polarity> {};
-#endif
+   /**
+    * @brief Convenience template for GpioE fields. See @ref GpioField_T
+    *
+    * <b>Usage</b>
+    * @code
+    * using namespace USBDM;
+    *
+    * // Instantiate for bit 6 down to 3 of GpioE
+    * using GpioE6_3 = GpioEField<6,3>;
+    *
+    * // Set as digital output
+    * GpioE6_3::setOutput();
+    *
+    * // Write value to field
+    * GpioE6_3::write(0x53);
+    *
+    * // Clear all of field
+    * GpioE6_3::bitClear();
+    *
+    * // Clear lower two bits of field
+    * GpioE6_3::bitClear(0x3);
+    *
+    * // Set lower two bits of field
+    * GpioE6_3::bitSet(0x3);
+    *
+    * // Set as digital input
+    * GpioE6_3::setInput();
+    *
+    * // Read pin as int value
+    * int x = GpioE6_3::read();
+    * @endcode
+    *
+    * @tparam left          Bit number of leftmost bit in port (inclusive)
+    * @tparam right         Bit number of rightmost bit in port (inclusive)
+    * @tparam polarity      Polarity of all pins. Either ActiveHigh, ActiveLow or a bitmask (0=>bit active-high, 1=>bit active-low)
+    */
+   template<unsigned left, unsigned right, uint32_t polarity=ActiveHigh>
+   class GpioEField : public GpioField_T<PortEInfo.portAddress, PortEInfo.clockInfo, PortEInfo.irqNum, PortEInfo.gpioAddress, GPIO_DEFAULT_PCR, PortEInfo.irqLevel, left, right, polarity> {};
+
 
 /**
  * End GPIO_Group

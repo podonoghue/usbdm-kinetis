@@ -277,16 +277,10 @@ public:
 
 template<class Info> RNGACallbackFunction RngaBase_T<Info>::callback = RngaBase_T<Info>::unhandledCallback;
 
-#if defined(USBDM_RNGA_IS_DEFINED)
-class Rnga : public RngaBase_T<RngaInfo> {};
-// No declarations Found
-#endif
-
-#if defined(USBDM_RNGA0_IS_DEFINED)
-class Rnga0 : public RngaBase_T<Rnga0Info> {};
-// No declarations Found
-#endif
-
+   /**
+    * Class representing RNGA
+    */
+   class Rnga : public RngaBase_T<RngaInfo> {};
 /**
  * End RNGA_Group
  * @}

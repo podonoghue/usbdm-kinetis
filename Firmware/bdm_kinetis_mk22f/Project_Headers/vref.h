@@ -23,54 +23,6 @@
 namespace USBDM {
 
 /**
- * Regulator enable
- * This bit is used to enable the internal 1.75 V regulator to produce a constant internal voltage supply in
- * order to reduce the sensitivity to external supply noise and variation. \n
- * If it is desired to keep the regulator enabled in very low power modes see @ref PmcBandgapLowPowerEnable.
- */
-enum VrefReg {
-   VrefReg_Disable = VREF_SC_REGEN(0), /**< Regulator Disabled */
-   VrefReg_Enable  = VREF_SC_REGEN(1), /**< Regulator Enabled */
-};
-
-#if defined(VREF_SC_ICOMPEN)
-/**
- *  Second order curvature compensation enable
- *  This bit should be written to 1 to achieve the performance stated in the data sheet.
- */
-enum VrefIcomp {
-   VrefIcomp_Disable = VREF_SC_ICOMPEN(0), /**< Compensation Disabled */
-   VrefIcomp_Enable  = VREF_SC_ICOMPEN(1), /**< Compensation Enabled */
-};
-#endif
-
-/**
- * Buffer Mode selection
- * These bits select the buffer modes for the Voltage Reference module.
- */
-enum VrefBuffer {
-   VrefBuffer_Bandgap   = VREF_SC_MODE_LV(0), /**< Bandgap on only, for stabilisation and startup */
-   VrefBuffer_HighPower = VREF_SC_MODE_LV(1), /**< High power buffer mode enabled */
-   VrefBuffer_LowPower  = VREF_SC_MODE_LV(2), /**< Low power buffer mode enabled */
-};
-
-#if defined(VREF_TRM_CHOPEN)
-/**
- * Chop oscillator enable.
- *
- * Controls the internal chopping operation to minimise the internal analogue offset.
- * This option is enabled during factory trimming of the VREF voltage.
- * This should be enabled to achieve the performance stated in the data sheet.
- * If the chop oscillator is to be used in very low power modes, the system (bandgap)
- * voltage reference must also be enabled. See @ref PmcBandgapLowPowerEnable.
- */
-enum VrefChop {
-   VrefChop_Disable = VREF_TRM_CHOPEN(0), /**< Chop Disabled *//**< VrefChop_Disable */
-   VrefChop_Enable  = VREF_TRM_CHOPEN(1), /**< Chop Enabled */ /**< VrefChop_Enable */
-};
-#endif
-
-/**
  * @addtogroup VREF_Group VREF, Voltage Reference
  * @brief C++ Class allowing access to Voltage Reference
  * @{
@@ -89,7 +41,7 @@ enum VrefChop {
  * @endcode
  */
 template<class Info>
-class VrefBase_T {
+class VrefBase_T : public Info {
 
    /** Class to static check output is mapped to a pin - Assumes existence */
    template<int output> class CheckOutputIsMapped {
@@ -119,6 +71,75 @@ public:
    };
 
 public:
+   /**
+    * Configure VREF from values specified in init
+   
+    * @param init Class containing initialisation values
+    */
+   static void configure(const typename Info::Init &init) {
+   
+      enable();
+   
+      vref->TRM = (vref->TRM&~VREF_TRM_CHOPEN_MASK)|init.trm;
+      vref->SC = init.sc & ~VREF_SC_REGEN_MASK;
+   
+      // Regulator must be enabled >300ns after other settings
+      waitUS(1);
+      vref->SC = init.sc;
+   
+      while ((vref->SC & VREF_SC_VREFST_MASK) == 0) {
+         // Wait until stable
+      }
+   }
+
+   /**
+    * Configure VREF with default settings
+    */
+   static void defaultConfigure() {
+   
+      configure(Info::DefaultInitValue);
+   }
+
+   /**
+    * Configure VREF from values specified
+    *
+    * @param vrefBuffer This selects the buffer modes for the Voltage Reference module
+    * @param vrefReg    This controls the internal 1.75 V regulator which produce a constant
+    *        internal voltage supply in order to reduce the sensitivity to external supply noise and variation
+    *        If it is desired to keep the regulator enabled in very low power modes see PmcBandgapLowPowerEnable
+    * @param vrefIcomp  This should be enabled to achieve the performance stated in the data sheet
+    * @param vrefChop   Controls the internal chopping operation to minimise the internal analogue offset
+    *        This option is enabled during factory trimming of the VREF voltage.
+    *        This should be enabled to achieve the performance stated in the data sheet.
+    *        If the chop oscillator is to be used in very low power modes, the system (bandgap)
+    *        voltage reference must also be enabled. See PmcBandgapLowPowerEnable
+    */
+   static void configure(
+         VrefBuffer vrefBuffer,
+         VrefReg    vrefReg    = VrefReg_Enabled,
+         VrefIcomp  vrefIcomp  = VrefIcomp_Enabled,
+         VrefChop   vrefChop   = VrefChop_Enabled) {
+
+
+      enable();
+   
+      if (vrefReg) {
+         // Chop must be enabled if regulator enabled
+         vrefChop = VrefChop_Enabled;
+      }
+      vref->TRM = (vref->TRM&~VREF_TRM_CHOPEN_MASK)|vrefChop;
+      vref->SC = vrefBuffer|vrefIcomp;
+   
+      // Regulator must be enabled >300ns after other settings
+      waitUS(1);
+      vref->SC = vrefBuffer|vrefReg|vrefIcomp;
+   
+      while ((vref->SC & VREF_SC_VREFST_MASK) == 0) {
+         // Wait until stable
+      }
+   }
+
+
    // Template _mapPinsOption.xml
 
    /**
@@ -129,7 +150,7 @@ public:
    static void configureAllPins() {
    
       // Configure pins if selected and not already locked
-      if constexpr (Info::mapPinsOnEnable && !(MapAllPinsOnStartup && (ForceLockedPins == PinLock_Locked))) {
+      if constexpr (Info::mapPinsOnEnable) {
          Info::initPCRs();
       }
    }
@@ -144,7 +165,7 @@ public:
    static void disableAllPins() {
    
       // Disable pins if selected and not already locked
-      if constexpr (Info::mapPinsOnEnable && !(MapAllPinsOnStartup && (ForceLockedPins == PinLock_Locked))) {
+      if constexpr (Info::mapPinsOnEnable) {
          Info::clearPCRs();
       }
    }
@@ -183,71 +204,6 @@ public:
       Pcr::setPCR();
    }
 
-   /**
-    * Enable the voltage reference with default settings
-    */
-   static void defaultConfigure() {
-      enable();
-
-      // Initialise hardware
-      vref->TRM = (vref->TRM & VREF_TRM_TRIM_MASK)| Info::vref_trm;
-      vref->SC   = Info::vref_sc|VREF_SC_VREFEN_MASK;
-
-      while ((vref->SC & VREF_SC_VREFST_MASK) == 0) {
-         // Wait until stable
-      }
-   }
-
-#if defined(VREF_SC_ICOMPEN) && defined(VREF_TRM_CHOPEN)
-   /**
-    * Configures the voltage reference
-    *
-    * @param vrefBuffer    Buffer Mode selection
-    * @param vrefReg       Regulator enable
-    * @param VrefIcomp     Second order curvature compensation enable
-    * @param vrefChop      Chop oscillator enable
-    */
-   static void configure(
-         VrefBuffer  vrefBuffer =  VrefBuffer_HighPower,
-         VrefReg     vrefReg    =  VrefReg_Enable,
-         VrefIcomp   VrefIcomp  =  VrefIcomp_Enable,
-         VrefChop    vrefChop   =  VrefChop_Enable ) {
-      enable();
-
-      if (vrefReg) {
-         // Chop must be enabled
-         vrefChop = VrefChop_Enable;
-      }
-      vref->TRM = (vref->TRM & ~VREF_TRM_CHOPEN_MASK) | vrefChop;
-      vref->SC  = VREF_SC_VREFEN_MASK|vrefBuffer|VrefIcomp;
-      if (vrefReg) {
-         // Regulator must be enabled >300ns after Vref
-         waitUS(1);
-         vref->SC  = VREF_SC_VREFEN_MASK|VREF_SC_REGEN(1)|vrefBuffer|VrefIcomp;
-      }
-   }
-#else
-   /**
-    * Configures the voltage reference
-    *
-    * @param vrefBuffer    Buffer Mode selection
-    * @param vrefReg       Regulator enable
-    */
-   static void configure(
-         VrefBuffer  vrefBuffer =  VrefBuffer_HighPower,
-         VrefReg     vrefReg    =  VrefReg_Enable
-         ) {
-      enable();
-
-      vref->TRM = 0;
-      vref->SC  = VREF_SC_VREFEN(1)|vrefBuffer;
-      if (vrefReg) {
-         // Regulator must be enabled >300ns after Vref
-         waitUS(1);
-         vref->SC  = VREF_SC_VREFEN(1)|vrefBuffer|VREF_SC_REGEN(1);
-      }
-   }
-#endif
 
    /**
     * Sets the voltage reference mode
@@ -260,13 +216,11 @@ public:
 
 };
 
-#if defined(USBDM_VREF_IS_DEFINED)
-class Vref : public VrefBase_T<VrefInfo> {};
-#endif
+   /**
+    * Class representing VREF
+    */
+   class Vref : public VrefBase_T<VrefInfo> {};
 
-#if defined(USBDM_VREF0_IS_DEFINED)
-class Vref0 : public Vref<Vref0Info> {};
-#endif
 /**
  * End VREF_Group
  * @}

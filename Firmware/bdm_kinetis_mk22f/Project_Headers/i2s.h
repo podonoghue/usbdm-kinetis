@@ -127,7 +127,7 @@ public:
    static void configureAllPins() {
    
       // Configure pins if selected and not already locked
-      if constexpr (Info::mapPinsOnEnable && !(MapAllPinsOnStartup && (ForceLockedPins == PinLock_Locked))) {
+      if constexpr (Info::mapPinsOnEnable) {
          Info::initPCRs();
       }
    }
@@ -142,7 +142,7 @@ public:
    static void disableAllPins() {
    
       // Disable pins if selected and not already locked
-      if constexpr (Info::mapPinsOnEnable && !(MapAllPinsOnStartup && (ForceLockedPins == PinLock_Locked))) {
+      if constexpr (Info::mapPinsOnEnable) {
          Info::clearPCRs();
       }
    }
@@ -215,35 +215,10 @@ template<class Info> I2sCallbackFunction I2sBase_T<Info>::sCallback = I2s::unhan
 /** Used by ISR to obtain handle of object */
 template<class Info> I2S_Type *I2sBase_T<Info>::thisPtr = 0;
 
-#if defined(USBDM_I2S0_IS_DEFINED)
-/**
- * @brief Class representing the I2S0 interface
- *
- * <b>Example</b>\n
- * Refer @ref I2sBase_T
- */
-using I2s0 = I2sBase_T<I2s0Info>;
-#endif
-
-#if defined(USBDM_I2S1_IS_DEFINED)
-/**
- * @brief Class representing the I2S1 interface
- *
- * <b>Example</b>
- * Refer @ref I2sBase_T
- */
-using I2s1 = I2sBase_T<I2s1Info>;
-#endif
-
-#if defined(USBDM_I2S2_IS_DEFINED)
-/**
- * @brief Class representing the I2S2 interface
- *
- * <b>Example</b>
- * Refer @ref I2SBase_T
- */
-using I2s2 = I2sBase_T<I2s2Info>;
-#endif
+   /**
+    * Class representing I2S0
+    */
+   using I2s0 = I2sBase_T<I2s0Info>;
 
 /**
  * End I2S_Group

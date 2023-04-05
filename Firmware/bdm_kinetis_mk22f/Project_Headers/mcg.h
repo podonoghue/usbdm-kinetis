@@ -30,7 +30,7 @@ namespace USBDM {
  */
 
 /** MCGFFCLK - Fixed frequency clock (input to FLL) */
-extern volatile uint32_t SystemMcgffClock;
+extern volatile uint32_t SystemMcgFFClock;
 /** MCGOUTCLK - Primary output from MCG, various sources */
 extern volatile uint32_t SystemMcgOutClock;
 /** MCGFLLCLK - Output of FLL */
@@ -38,17 +38,70 @@ extern volatile uint32_t SystemMcgFllClock;
 /** MCGPLLCLK - Output of PLL */
 extern volatile uint32_t SystemMcgPllClock;
 
-extern void setSysDividersStub(uint32_t simClkDiv1);
-
 /**
  * Clock configurations
  */
 enum ClockConfig : uint8_t {
-   ClockConfig_PEE_60MHz,
-   ClockConfig_BLPE_4MHz,
-   ClockConfig_PEE_120MHz,
+   ClockConfig_FEE_IRC48MHz,
 
    ClockConfig_default = 0,
+};
+
+   /// Structure for clock configurations
+   struct ClockInfo {
+
+      /// SIM CLKDIV1 - System Clock Divider Register 1
+      const uint32_t clkdiv1;
+
+      /// SIM SOPT2 - Clock selectors for various peripherals
+      const uint32_t sopt2;
+
+      /// Clock Mode
+      const McgClockMode clockMode;
+
+      /// Run Mode
+      const SmcRunMode runMode; 
+
+      /// Control Register 1 - FRDIV, IRCLKEN, IREFSTEN, (-CLKS, -IREFS)
+      const uint8_t c1; 
+      /// Control Register 2 - LOCRE0, RANGE0, HGO0, EREFS0, IRCS, (-LP, -FCTRIM)
+      const uint8_t c2;
+      /// Control Register 4 - DMX32, DRST_DRS, (-FCTRIM, -SCFTRIM)
+      const uint8_t c4;
+      /// Control Register 5 - PLLCLKEN0, PLLSTEN0, PRDIV0
+      const uint8_t c5;
+      /// Control Register 6 - LOLIE0, CME0, VDIV0, (-PLLS)
+      const uint8_t c6;
+      /// Status and Control Register - FCRDIV
+      const uint8_t sc;
+      /// Control Register 7 - OSCSEL
+      const uint8_t c7;
+      /// Control Register 8 - LOCRE1, CME1, LOLRE
+      const uint8_t c8;
+   };
+
+
+
+class ClockChangeCallback {
+
+friend class Mcg;
+
+private:
+      // Pointer to next in chain
+      ClockChangeCallback *next = nullptr;
+
+public:
+      virtual ~ClockChangeCallback() = default;
+
+      /**
+       * This method is overridden to obtain notification before clock change
+       */
+      virtual void beforeClockChange(){}
+
+      /**
+       * This method is overridden to obtain notification after clock change
+       */
+      virtual void afterClockChange(){};
 };
 
 /**
@@ -67,26 +120,73 @@ typedef void (*MCGCallbackFunction)(void);
 class Mcg {
 
 private:
+   static ClockChangeCallback *clockChangeCallbackQueue;
+
+   static void notifyBeforeClockChange() {
+      ClockChangeCallback *p = clockChangeCallbackQueue;
+      while (p != nullptr) {
+         p->beforeClockChange();
+         p = p->next;
+      }
+   }
+   static void notifyAfterClockChange() {
+      ClockChangeCallback *p = clockChangeCallbackQueue;
+      while (p != nullptr) {
+         p->afterClockChange();
+         p = p->next;
+      }
+   }
+public:
+   /**
+    * Add callback for clock configuration changes
+    *
+    * @param callback Call-back class to notify on clock configuration changes
+    */
+   static void addClockChangeCallback(ClockChangeCallback &callback) {
+      callback.next = clockChangeCallbackQueue;
+      clockChangeCallbackQueue = &callback;
+   }
+
+private:
    /** Callback function for ISR */
    static MCGCallbackFunction callback;
 
    /** Hardware instance */
    static constexpr HardwarePtr<MCG_Type> mcg = McgInfo::baseAddress;
 
+// No private methods found
+
 public:
+
+// No public methods found
+
    /**
     * Table of clock settings
     */
-   static const McgInfo::ClockInfo clockInfo[];
+   static const ClockInfo clockInfo[];
 
    /**
     * Transition from current clock mode to mode given
     *
     * @param[in]  clockInfo Clock mode to transition to
     *
-    * @return E_NO_ERROR on success
+    * @return E_NO_ERROR          on success
+    * @return E_CLOCK_INIT_FAILED on failure
     */
-   static ErrorCode clockTransition(const McgInfo::ClockInfo &clockInfo);
+   static ErrorCode clockTransition(const ClockInfo &clockInfo);
+
+   /**
+    * Write main MCG registers from clockInfo
+    * - Clock monitors are masked out
+    * - PLL is not selected (C6.PLLS=0)
+    * - Not low power (C2.LP = 0 since clockInfo.C2 does not include LP)
+    * - TRIM bits are preserved (C2.FCFTRIM, C4.FCTRIM, C4.SCFTRIM)
+    * - Bugfix version: Errata e7993
+    *
+    * @param clockInfo  Clock settings information
+    * @param bugFix     Mask to flip MCG.C4 value
+    */
+   static void writeMainRegs(const ClockInfo &clockInfo, uint8_t bugFix);
 
    /**
     * Update SystemCoreClock variable
@@ -94,15 +194,6 @@ public:
     * Updates the SystemCoreClock variable with current core Clock retrieved from CPU registers.
     */
    static void SystemCoreClockUpdate(void);
-
-   /**
-    *  Change SIM->CLKDIV1 value
-    *
-    * @param[in]  simClkDiv1 - Value to write to SIM->CLKDIV1 register
-    */
-   static void setSysDividers(uint32_t simClkDiv1) {
-      SIM->CLKDIV1 = simClkDiv1;
-   }
 
    /**
     * Enable interrupts in NVIC
@@ -146,14 +237,14 @@ public:
    }
 
    /** Current clock mode (FEI out of reset) */
-   static McgInfo::ClockMode currentClockMode;
+   static McgClockMode currentClockMode;
 
    /**
     * Get current clock mode
     *
     * @return
     */
-   static McgInfo::ClockMode getClockMode() {
+   static McgClockMode getClockMode() {
       return currentClockMode;
    }
 
@@ -162,7 +253,7 @@ public:
     *
     * @return Pointer to static string
     */
-   static const char *getClockModeName(McgInfo::ClockMode);
+   static const char *getClockModeName(McgClockMode);
 
    /**
     * Get name for current clock mode

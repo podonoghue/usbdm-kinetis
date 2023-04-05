@@ -373,7 +373,7 @@ public:
    static void configureAllPins() {
    
       // Configure pins if selected and not already locked
-      if constexpr (Info::mapPinsOnEnable && !(MapAllPinsOnStartup && (ForceLockedPins == PinLock_Locked))) {
+      if constexpr (Info::mapPinsOnEnable) {
          Info::initPCRs();
       }
    }
@@ -388,7 +388,7 @@ public:
    static void disableAllPins() {
    
       // Disable pins if selected and not already locked
-      if constexpr (Info::mapPinsOnEnable && !(MapAllPinsOnStartup && (ForceLockedPins == PinLock_Locked))) {
+      if constexpr (Info::mapPinsOnEnable) {
          Info::clearPCRs();
       }
    }
@@ -686,107 +686,21 @@ template<class Info, int rxSize, int txSize> UartQueue<char, txSize> LpuartBuffe
 template<class Info, int rxSize, int txSize> volatile uint32_t   LpuartBuffered_T<Info, rxSize, txSize>::fReadLock  = 0;
 template<class Info, int rxSize, int txSize> volatile uint32_t   LpuartBuffered_T<Info, rxSize, txSize>::fWriteLock = 0;
 
-#ifdef USBDM_LPUART0_IS_DEFINED
-/**
- * @brief Class representing LPUART0 interface
- *
- * <b>Example</b>
- * @code
- *  // Instantiate interface
- *  USBDM::Lpuart0 lpuart;
- *
- *  for(int i=0; i++;) {
- *     lpuart->write("Hello world,").writeln(i)
- *  }
- *  @endcode
- */
-typedef  Lpuart_T<Lpuart0Info> Lpuart0;
-#endif
+   /**
+    * Class representing LPUART0 interface
+    *
+    * <b>Example</b>
+    * @code
+    *  // Instantiate interface
+    *  USBDM::Lpuart0 lpuart;
+    *
+    *  for(int i=0; i++;) {
+    *     lpuart.write("Hello world ", i);
+    *  }
+    *  @endcode
+    */
+   typedef  Lpuart_T<Lpuart0Info> Lpuart0;
 
-#ifdef USBDM_LPUART1_IS_DEFINED
-/**
- * @brief Class representing LPUART1 interface
- *
- * <b>Example</b>
- * @code
- *  // Instantiate interface
- *  USBDM::Lpuart1 lpuart;
- *
- *  for(int i=0; i++;) {
- *     lpuart->write("Hello world,").writeln(i)
- *  }
- *  @endcode
- */
-typedef  Lpuart_T<Lpuart1Info> Lpuart1;
-#endif
-
-#ifdef USBDM_LPUART2_IS_DEFINED
-/**
- * @brief Class representing LPUART2 interface
- *
- * <b>Example</b>
- * @code
- *  // Instantiate interface
- *  USBDM::Lpuart2 lpuart;
- *
- *  for(int i=0; i++;) {
- *     lpuart->write("Hello world,").writeln(i)
- *  }
- *  @endcode
- */
-typedef  Lpuart_T<Lpuart2Info> Lpuart2;
-#endif
-
-#ifdef USBDM_LPUART3_IS_DEFINED
-/**
- * @brief Class representing LPUART3 interface
- *
- * <b>Example</b>
- * @code
- *  // Instantiate interface
- *  USBDM::Lpuart3 lpuart;
- *
- *  for(int i=0; i++;) {
- *     lpuart->write("Hello world,").writeln(i)
- *  }
- *  @endcode
- */
-typedef  Lpuart_T<Lpuart3Info> Lpuart3;
-#endif
-
-#ifdef USBDM_LPUART4_IS_DEFINED
-/**
- * @brief Class representing LPUART4 interface
- *
- * <b>Example</b>
- * @code
- *  // Instantiate interface
- *  USBDM::Lpuart4 lpuart;
- *
- *  for(int i=0; i++;) {
- *     lpuart->write("Hello world,").writeln(i)
- *  }
- *  @endcode
- */
-typedef  Lpuart_T<Lpuart4Info> Lpuart4;
-#endif
-
-#ifdef USBDM_LPUART5_IS_DEFINED
-/**
- * @brief Class representing LPUART5 interface
- *
- * <b>Example</b>
- * @code
- *  // Instantiate interface
- *  USBDM::Lpuart5 lpuart;
- *
- *  for(int i=0; i++;) {
- *     lpuart->write("Hello world,").writeln(i)
- *  }
- *  @endcode
- */
-typedef  Lpuart_T<Lpuart5Info> Lpuart5;
-#endif
 
 /**
  * End LPUART_Group

@@ -363,7 +363,7 @@ public:
    static void configureAllPins() {
    
       // Configure pins if selected and not already locked
-      if constexpr (Info::mapPinsOnEnable && !(MapAllPinsOnStartup && (ForceLockedPins == PinLock_Locked))) {
+      if constexpr (Info::mapPinsOnEnable) {
          Info::initPCRs();
       }
    }
@@ -378,7 +378,7 @@ public:
    static void disableAllPins() {
    
       // Disable pins if selected and not already locked
-      if constexpr (Info::mapPinsOnEnable && !(MapAllPinsOnStartup && (ForceLockedPins == PinLock_Locked))) {
+      if constexpr (Info::mapPinsOnEnable) {
          Info::clearPCRs();
       }
    }
@@ -502,15 +502,10 @@ public:
    }
 };
 
-#if defined(USBDM_FLEXBUS_IS_DEFINED)
-/**
- * @brief Class representing the FLEXBUS0 interface
- *
- * <b>Example</b>\n
- * Refer @ref FlexbusBase_T
- */
-using Flexbus = FlexbusBase_T<FlexbusInfo>;
-#endif
+   /**
+    * Class representing FLEXBUS
+    */
+   using Flexbus = FlexbusBase_T<FlexbusInfo>;
 
 /**
  * End FLEXBUS_Group

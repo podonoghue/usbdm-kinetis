@@ -58,9 +58,9 @@ public:
       highZ();
 
       // IRQ on falling edge - reset detection
-      Data::setPinAction(USBDM::PinAction_IrqFalling);
+      Data::setPcrOption(USBDM::PinAction_IrqFalling);
       Data::setPinCallback(callback);
-      Data::enableNvicInterrupts(USBDM::NvicPriority_Normal);
+      Data::enableNvicPinInterrupts(USBDM::NvicPriority_Normal);
 
       fResetActivity = false;
    }

@@ -51,7 +51,7 @@ CheckSignalMapping<SpiInfo, 2> sout_chk;        // SWD_O pin
 CheckSignalMapping<SpiInfo, 5> enable_chk;      // SWD_DIR pin (automatic switching via SPI)
 
 // Masks for SPI CS which controls the SWDIO output drive
-static constexpr SpiPeripheralSelect SwdDriveEnable  = SwdSpi::Pcs_SwdDir;
+static constexpr SpiPeripheralSelect SwdDriveEnable  = SpiPeripheralSelect_SwdDir;
 static constexpr SpiPeripheralSelect SwdDriveDisable = SpiPeripheralSelect_None;
 
 /** Manual control of SWDIO */
@@ -297,11 +297,11 @@ static void tx32(const uint32_t data) {
 USBDM_ErrorCode setSpeed(uint32_t frequency) {
    const uint32_t ctarBase = Spi::calculateCtarTiming(SpiInfo::getClockFrequency(), frequency);
 
-   PreambleCtar = ctarBase|SpiPolarity_InactiveHigh|SpiPhase_LeadingChange |SpiFrameSize_8 |SpiOrder_MsbFirst;
-   AckCtar      = ctarBase|SpiPolarity_InactiveHigh|SpiPhase_LeadingCapture|SpiFrameSize_5 |SpiOrder_MsbFirst;
-   RxCtar       = ctarBase|SpiPolarity_InactiveHigh|SpiPhase_LeadingCapture|SpiFrameSize_16|SpiOrder_LsbFirst;
-   TxCtar       = ctarBase|SpiPolarity_InactiveHigh|SpiPhase_LeadingChange |SpiFrameSize_11|SpiOrder_LsbFirst;
-   Tx16Ctar     = ctarBase|SpiPolarity_InactiveHigh|SpiPhase_LeadingChange |SpiFrameSize_16|SpiOrder_LsbFirst;
+   PreambleCtar = ctarBase|SpiMode_3|SpiFrameSize_8_bits |SpiBitOrder_MsbFirst;
+   AckCtar      = ctarBase|SpiMode_2|SpiFrameSize_5_bits |SpiBitOrder_MsbFirst;
+   RxCtar       = ctarBase|SpiMode_2|SpiFrameSize_16_bits|SpiBitOrder_LsbFirst;
+   TxCtar       = ctarBase|SpiMode_3|SpiFrameSize_11_bits|SpiBitOrder_LsbFirst;
+   Tx16Ctar     = ctarBase|SpiMode_3|SpiFrameSize_16_bits|SpiBitOrder_LsbFirst;
 
 //   console.setPadding(Padding_LeadingZeroes).setWidth(32);
 //   console.writeln("PreambleCtar 0b", PreambleCtar, Radix_2);

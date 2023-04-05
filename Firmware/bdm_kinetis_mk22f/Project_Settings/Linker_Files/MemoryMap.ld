@@ -7,14 +7,14 @@
 /* <o> Stack Size
    <i> Required amount of stack space
    <i> In CMSIS this will determine the ISR stack size
-   <0x0-0x200000:4>  <constant>
+   <0x0-0x10000:4>  <constant>
 */
 __stack_size = 0x8000;
 
 /* <o> Minimum Heap Size 
    <i> This is the minimum allocated.  
    <i> Available heap may be larger.
-   <0x0-0x200000:4>  <constant>
+   <0x0-0x10000:4>  <constant>
 */
 __heap_size  = 0x8000;
 
@@ -46,6 +46,12 @@ FORCE_BOOT_LOADER = DEFINED(bootloaderInformation) ? 1 : 0;
     <i>  This value is used to automatically adjust the available flash area 
  */
 BOOT_LOADER_SIZE  = DEFINED(BOOT_LOADER_SIZE)  ? BOOT_LOADER_SIZE : 16384 * FORCE_BOOT_LOADER;
+/*
+    <o>  Bootloader information block size (usually 0x10 if used) <constant>
+    <i>  The bootloader information block is located at the top of the flash region
+    <i>  This value is used to automatically adjust the available flash area 
+ */
+BOOT_INFO_SIZE    = DEFINED(BOOT_INFO_SIZE)    ? BOOT_INFO_SIZE   : 0x10 * (BOOT_LOADER_SIZE > 0);
 /* </e> */
 
 /*
@@ -79,13 +85,9 @@ MEMORY
     <o1> bitband size    <constant>
  */
   bitband        (rwx) : ORIGIN = 0x22000000, LENGTH = 0x00200000
-/*
- * Guard region above stack for GDB 
- */
-  gdbGuard       (r)   : ORIGIN = 0x22200000, LENGTH = 0x00000020
-};
+}
 
-REGION_ALIAS("ram","bitband");
+REGION_ALIAS("ram","ram_low");
 
 
 /*
@@ -99,6 +101,7 @@ REGION_ALIAS("text_rom",         "flash");
 /*  <s1>  Read-only data  <constant> data_rom      */
 REGION_ALIAS("rodata_rom",       "flash");
 /* </h> */
+
 /*
   <h> Section placement in RAM
   <i> The RAM on Cortex-M4 Kinetis devices is divided into upper and lower memory regions.
@@ -126,5 +129,5 @@ REGION_ALIAS("bitband_ram",    "ram_high")
 /* </h> */
 
 
-INCLUDE "Linker-rom.ld"
+INCLUDE Linker-rom.ld
 

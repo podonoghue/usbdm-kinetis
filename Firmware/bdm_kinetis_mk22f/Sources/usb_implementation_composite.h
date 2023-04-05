@@ -79,7 +79,6 @@ static constexpr unsigned  CDC_NOTIFICATION_EP_MAXSIZE  = 16; //!< CDC notificat
 static constexpr unsigned  CDC_DATA_OUT_EP_MAXSIZE      = 16; //!< CDC data out
 static constexpr unsigned  CDC_DATA_IN_EP_MAXSIZE       = 16; //!< CDC data in
 
-#ifdef USBDM_USB0_IS_DEFINED
 /**
  * Class representing USB0
  */
@@ -219,27 +218,29 @@ public:
 
    /**
     * Initialises all end-points
+    *
+    * @param clearToggles Clear toggles on all end-points
     */
-   static void initialiseEndpoints(void) {
-      epBulkOut.initialise();
+   static void initialiseEndpoints(bool clearToggles) {
+      epBulkOut.initialise(clearToggles);
       addEndpoint(&epBulkOut);
       epBulkOut.setCallback(bulkOutTransactionCallback);
 
-      epBulkIn.initialise();
+      epBulkIn.initialise(clearToggles);
       addEndpoint(&epBulkIn);
       epBulkIn.setCallback(bulkInTransactionCallback);
 
-      epCdcNotification.initialise();
+      epCdcNotification.initialise(clearToggles);
       addEndpoint(&epCdcNotification);
 
-      epCdcDataOut.initialise();
+      epCdcDataOut.initialise(clearToggles);
       addEndpoint(&epCdcDataOut);
       epCdcDataOut.setCallback(cdcOutTransactionCallback);
 
       // Make sure epCdcDataOut is ready for polling (interrupt OUT)
       epCdcDataOut.startRxStage(EPDataOut, epCdcDataOut.getMaximumTransferSize());
 
-      epCdcDataIn.initialise();
+      epCdcDataIn.initialise(clearToggles);
       addEndpoint(&epCdcDataIn);
       epCdcDataIn.setCallback(cdcInTransactionCallback);
 
@@ -419,8 +420,6 @@ protected:
 };
 
 using UsbImplementation = Usb0;
-
-#endif // USBDM_USB0_IS_DEFINED
 
 } // End namespace USBDM
 

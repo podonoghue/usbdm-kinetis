@@ -342,7 +342,7 @@ protected:
    static void configureAllPins() {
    
       // Configure pins if selected and not already locked
-      if constexpr (Info::mapPinsOnEnable && !(MapAllPinsOnStartup && (ForceLockedPins == PinLock_Locked))) {
+      if constexpr (Info::mapPinsOnEnable) {
          Info::initPCRs();
       }
    }
@@ -357,7 +357,7 @@ protected:
    static void disableAllPins() {
    
       // Disable pins if selected and not already locked
-      if constexpr (Info::mapPinsOnEnable && !(MapAllPinsOnStartup && (ForceLockedPins == PinLock_Locked))) {
+      if constexpr (Info::mapPinsOnEnable) {
          Info::clearPCRs();
       }
    }
@@ -582,8 +582,10 @@ protected:
 
    /**
     * Initialises EP0 and clears other end-points
+    *
+    * @param clearToggles Clear Toggles on all end-points
     */
-   static void initialiseEndpoints(void);
+   static void initialiseEndpoints(bool clearToggles);
 
    /**
     * Handles SETUP Packet
@@ -1038,9 +1040,9 @@ void UsbBase_T<Info, EP0_SIZE>::handleUSBReset() {
    setUSBdefaultState();
 
    // Initialise control end-point
-   initialiseEndpoints();
+   initialiseEndpoints(true);
    UsbImplementation::clearPinPongToggle();
-   UsbImplementation::initialiseEndpoints();
+   UsbImplementation::initialiseEndpoints(true);
 
    // Enable various interrupts
    setInterruptMask(USB_INTMASKS|USB_INTEN_ERROREN_MASK);
@@ -1102,9 +1104,9 @@ void UsbBase_T<Info, EP0_SIZE>::handleUSBResume() {
    handleUserCallback(UserEvent_Resume);
 
    // Initialise all end-points
-   initialiseEndpoints();
+   initialiseEndpoints(false);
    UsbImplementation::clearPinPongToggle();
-   UsbImplementation::initialiseEndpoints();
+   UsbImplementation::initialiseEndpoints(false);
 
    // Enable the transmit or receive of packets
    fUsb->CTL = USB_CTL_USBENSOFEN_MASK;
@@ -1162,10 +1164,10 @@ void UsbBase_T<Info, EP0_SIZE>::initialise() {
 
 #ifdef USB_CLK_RECOVER_IRC_EN_IRC_EN
    // IRC clock enable
-   fUsb->CLK_RECOVER_IRC_EN = Usb0Info::clk_recovery_irc_en;
+   fUsb->CLK_RECOVER_IRC_EN = Usb0Info::usb_clk_recover_irc_en;
 
    // Clock recovery options
-   fUsb->CLK_RECOVER_CTRL = Usb0Info::clk_recovery_ctrl;
+   fUsb->CLK_RECOVER_CTRL = Usb0Info::usb_clk_recover_ctrl;
 #endif
 
 #if 0
@@ -1209,7 +1211,7 @@ void UsbBase_T<Info, EP0_SIZE>::initialise() {
    setUSBdefaultState();
 
    // Initialise control end-point
-   initialiseEndpoints();
+   initialiseEndpoints(true);
 
    // Enable USB interrupts
    enableNvicInterrupts(NvicPriority_Normal);
@@ -1226,11 +1228,12 @@ void UsbBase_T<Info, EP0_SIZE>::addEndpoint(Endpoint *endpoint) {
 }
 
 /**
- * Initialise control end-point.\n
- * Clears other end-points
+ * Initialises EP0 and clears other end-points
+ *
+ * @param clearToggles Clear Toggles on all end-points
  */
 template<class Info, int EP0_SIZE>
-void UsbBase_T<Info, EP0_SIZE>::initialiseEndpoints() {
+void UsbBase_T<Info, EP0_SIZE>::initialiseEndpoints(bool clearToggles) {
 
    //   console.WRITELN("initialiseEndpoints()");
 
@@ -1244,7 +1247,7 @@ void UsbBase_T<Info, EP0_SIZE>::initialiseEndpoints() {
    addEndpoint(&fControlEndpoint);
 
    fControlEndpoint.clearPinPongToggle();
-   fControlEndpoint.initialise();
+   fControlEndpoint.initialise(clearToggles);
    fControlEndpoint.setCallback(ep0DummyTransactionCallback);
 
    // Set up to receive SETUP transaction
@@ -1500,7 +1503,7 @@ void UsbBase_T<Info, EP0_SIZE>::handleSetConfiguration() {
 
    // Initialise non-control end-points
 //   console.WRITELN("RxOdd", (bool)UsbImplementation::epBulkOut.fRxOdd);
-   UsbImplementation::initialiseEndpoints();
+   UsbImplementation::initialiseEndpoints(true);
    fUserCallbackFunction(UserEvent::UserEvent_Configure);
 
    // Tx empty Status transaction

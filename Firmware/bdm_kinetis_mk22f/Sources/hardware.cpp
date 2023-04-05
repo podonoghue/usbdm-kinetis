@@ -90,6 +90,27 @@ void mapAllPins() {
  * End group USBDM_Group
  * @}
  */
+/*
+ *  Static objects
+ */
+   /**
+    * Callback to catch unhandled interrupt
+    */
+   void unhandledCallback() {
+      setAndCheckErrorCode(E_NO_HANDLER);
+   }
+   
+   /**
+    * Callback to catch unhandled channel interrupt
+    *
+    * @param mask Mask identifying channel
+    */
+   void timerUnhandledChannelCallback(uint8_t mask) {
+      (void)mask;
+      setAndCheckErrorCode(E_NO_HANDLER);
+   }
+
+
 
 } // End namespace USBDM
 

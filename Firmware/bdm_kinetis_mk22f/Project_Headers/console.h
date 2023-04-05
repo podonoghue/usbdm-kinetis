@@ -17,11 +17,11 @@
 #define INCLUDE_USBDM_CONSOLE_H_
 #include <derivative.h>
 
-#if defined(USBDM_UART0_IS_DEFINED) || defined(USBDM_UART1_IS_DEFINED) || defined(USBDM_UART2_IS_DEFINED) || defined(USBDM_UART3_IS_DEFINED) || defined(USBDM_UART4_IS_DEFINED)
-#include "uart.h"
-#endif
-#if defined(USBDM_LPUART0_IS_DEFINED) || defined(USBDM_LPUART1_IS_DEFINED) || defined(USBDM_LPUART2_IS_DEFINED)
+#if 0 || 1
 #include "lpuart.h"
+#endif
+#if 0 || 1 || 1 || 1
+#include "uart.h"
 #endif
 
 // The following macros allow the selective use of the console routines

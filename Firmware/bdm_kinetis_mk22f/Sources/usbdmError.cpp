@@ -21,10 +21,10 @@ static const char *messages[] {
       "Too small",
       "Too large",
       "Illegal parameter",
-      "Call-back not installed",
+      "Interrupt without call-back installed",
       "Flash initialisation failed",
       "ADC Calibration failed",
-      "Illegal processor run-mode transition",
+      "Illegal processor power-mode transition",
       "Failed communication",
       "I2C No acknowledge",
       "I2C Lost arbitration for bus",
@@ -32,6 +32,9 @@ static const char *messages[] {
       "Clock initialisation failed",
       "Callback already installed",
       "Failed resource allocation",
+      "Timeout occurred during operation",
+      "Interrupt occurred during operation",
+      "Device is busy",
 };
 #endif
 

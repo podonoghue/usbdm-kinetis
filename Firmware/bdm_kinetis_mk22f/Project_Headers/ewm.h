@@ -229,7 +229,7 @@ public:
    static void configureAllPins() {
    
       // Configure pins if selected and not already locked
-      if constexpr (Info::mapPinsOnEnable && !(MapAllPinsOnStartup && (ForceLockedPins == PinLock_Locked))) {
+      if constexpr (Info::mapPinsOnEnable) {
          Info::initPCRs();
       }
    }
@@ -244,7 +244,7 @@ public:
    static void disableAllPins() {
    
       // Disable pins if selected and not already locked
-      if constexpr (Info::mapPinsOnEnable && !(MapAllPinsOnStartup && (ForceLockedPins == PinLock_Locked))) {
+      if constexpr (Info::mapPinsOnEnable) {
          Info::clearPCRs();
       }
    }
@@ -402,9 +402,10 @@ public:
 
 template<class Info> EwmCallbackFunction EwmBase_T<Info>::sCallback = EwmBase_T<Info>::unhandledCallback;
 
-#if defined(USBDM_EWM_IS_DEFINED)
-class Ewm : public EwmBase_T<EwmInfo> {};
-#endif
+   /**
+    * Class representing EWM
+    */
+   class Ewm : public EwmBase_T<EwmInfo> {};
 
 /**
  * End EWM_Group

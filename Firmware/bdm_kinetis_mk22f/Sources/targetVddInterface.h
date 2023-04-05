@@ -137,8 +137,8 @@ public:
    /**
     * Monitors Target Vdd (Vbdm) level via comparator
     */
-   static void vddMonitorCallback(USBDM::CmpStatus status) {
-      if (status.event == USBDM::CmpEvent_Falling) {
+   static void vddMonitorCallback(const USBDM::CmpStatus &status) {
+      if (status.event == USBDM::CmpEventId_Falling) {
          // Falling edge
          switch(vddState) {
             case VddState_Overloaded:
@@ -157,7 +157,7 @@ public:
          Control::off();
          Led::off();
       }
-      if (status.event == USBDM::CmpEvent_Rising) {
+      if (status.event == USBDM::CmpEventId_Rising) {
          // Rising edge
          switch(vddState) {
             case VddState_Internal:
@@ -214,41 +214,42 @@ public:
     * @param[in] callback Callback for target Vdd state changes (may be null)
     */
    static void initialise(void (*callback)(VddState)) {
+      using namespace USBDM;
+
       Control::setOutput();
 
       // Do default calibration for 8-bits
       VddMeasure::OwningAdc::configure(
-            USBDM::AdcResolution_8bit_se,
-            USBDM::AdcClockSource_Bus,
-            USBDM::AdcSample_Normal,
-            USBDM::AdcPower_Normal);
+            AdcResolution_8bit_se,
+            AdcClockSource_Bus,
+            AdcSample_4);
       VddMeasure::OwningAdc::calibrate();
 
       Led::setOutput(
-            USBDM::PinDriveStrength_High,
-            USBDM::PinDriveMode_PushPull,
-            USBDM::PinSlewRate_Slow);
+            PinDriveStrength_High,
+            PinDriveMode_PushPull,
+            PinSlewRate_Slow);
 
       setCallback(callback);
 
       VddMonitor::setCallback(vddMonitorCallback);
       VddMonitor::configure(
-            USBDM::CmpPower_HighSpeed,
-            USBDM::CmpHysteresis_2,
-            USBDM::CmpPolarity_Noninverted);
+            CmpPower_HighSpeed,
+            CmpHysteresis_Level_2,
+            CmpPolarity_Normal);
       VddMonitor::configureDac(
             powerOnResetThresholdDac,
-            USBDM::CmpDacSource_Vdda);
-      VddMonitor::selectInputs(USBDM::TVdd_Monitor::Input_TVdd_Mon, USBDM::TVdd_Monitor::Input_CmpDac);
-      VddMonitor::enableInterrupts(USBDM::CmpInterrupt_Both);
-      VddMonitor::enableNvicInterrupts(USBDM::NvicPriority_Normal);
+            CmpDacrefSel_Vdd);
+      VddMonitor::selectInputs(TVdd_Mon::plusPin, TVdd_DacRef::minusPin);
+      VddMonitor::enableInterrupts(CmpEvent_OnEither);
+      VddMonitor::enableNvicInterrupts(NvicPriority_Normal);
 
       VddPowerFaultMonitor::setPinCallback(powerFaultCallback);
       VddPowerFaultMonitor::setInput(
-            USBDM::PinPull_Up,
-            USBDM::PinAction_IrqFalling,
-            USBDM::PinFilter_Passive);
-      VddPowerFaultMonitor::enableNvicInterrupts();
+            PinPull_Up,
+            PinAction_IrqFalling,
+            PinFilter_Passive);
+      VddPowerFaultMonitor::enableNvicPinInterrupts(NvicPriority_High);
 
       vddState = VddState_None;
       if (isVddOK_3V3()) {

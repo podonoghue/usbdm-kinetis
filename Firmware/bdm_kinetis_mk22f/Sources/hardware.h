@@ -52,7 +52,9 @@ typedef Adc0::Channel<19>                                    Identify;          
 typedef Cmp0                                                 TVdd_Monitor;                                 
 
 /// Vbdm
-typedef Cmp0::Pin<Cmp0::Input_Ptc7>                          TVdd_Mon;                                     // PTC7(p52)
+typedef Cmp0::Pin<Cmp0InputMinus_Ptc7>                       TVdd_Mon;                                     // PTC7(p52)
+
+typedef Cmp0::Pin<Cmp0InputMinus_CmpDac>                     TVdd_DacRef;                                  // CMP_DAC(Internal)
 
 /// BKGD/SWD_DIR output from FTM.CH2 (bdm)
 typedef Ftm0::Channel<2>                                     BkgdDir;                                      // PTC3(p46)

@@ -377,13 +377,10 @@ public:
    }
 };
 
-#if defined(USBDM_CRC_IS_DEFINED)
-class Crc : public CrcBase_T<CrcInfo> {};
-#endif
-
-#if defined(USBDM_CRC0_IS_DEFINED)
-class Crc0 : public CrcBase_T<Crc0Info> {};
-#endif
+   /**
+    * Class representing CRC0
+    */
+   class Crc0 : public CrcBase_T<Crc0Info> {};
 
 /**
  * End CRC_Group

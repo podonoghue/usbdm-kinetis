@@ -35,30 +35,6 @@ namespace USBDM {
  */
 
 /**
- * Enumeration selecting interrupt sources
- */
-enum UartInterrupt {
-   UartInterrupt_TxHoldingEmpty  = UART_C2_TIE(1),   //!< Interrupt request on Transmit holding register empty
-   UartInterrupt_TxComplete      = UART_C2_TCIE(1),  //!< Interrupt request on Transmit complete
-   UartInterrupt_RxFull          = UART_C2_RIE(1),   //!< Interrupt request on Receive holding full
-   UartInterrupt_IdleDetect      = UART_C2_ILIE(1),  //!< Interrupt request on Idle detection
-};
-
-/**
- * Enumeration selecting direct memory access sources
- */
-enum UartDma {
-#ifdef UART_C5_TDMAS
-   UartDma_TxHoldingEmpty  = UART_C5_TDMAS(1),   //!< DMA request on Transmit holding register empty
-   UartDma_RxFull          = UART_C5_RDMAS(1),   //!< DMA request on Receive holding full
-#endif
-#ifdef UART_C5_TDMAE
-   UartDma_TxHoldingEmpty  = UART_C5_TDMAE(1),   //!< DMA request on Transmit holding register empty
-   UartDma_RxFull          = UART_C5_RDMAE(1),   //!< DMA request on Receive holding full
-#endif
-};
-
-/**
  * @brief Virtual Base class for UART interface
  */
 class Uart : public FormattedIO {
@@ -271,50 +247,44 @@ public:
     * Clear UART error status
     */
    virtual void clearError() = 0;
-
    /**
-    * Enable/disable an interrupt source
+    * Set Transmit complete action
     *
-    * @param[in] uartInterrupt Interrupt source to modify
-    * @param[in] enable        True to enable, false to disable
-    *
-    * @note Changing the enabled interrupt functions may also affect the DMA settings
+    * @param uartTxCompleteAction Enable interrupt on transmission complete
     */
-   void enableInterrupt(UartInterrupt uartInterrupt, bool enable=true) {
-      if (enable) {
-#ifdef UART_C5_TDMAS
-         uart->C5 = uart->C5 & ~uartInterrupt; // DMA must be off to enable interrupts
-#endif
-         uart->C2 = uart->C2 | uartInterrupt;
-      }
-      else {
-         uart->C2 = uart->C2 & ~uartInterrupt; // May also disable DMA
-      }
+   void setTransmitCompleteAction(UartTxCompleteAction uartTxCompleteAction) const {
+      uart->C2 = (uart->C2 & ~UART_C2_TCIE_MASK) | uartTxCompleteAction;
    }
 
    /**
-    * Enable/disable a DMA source
+    * Set Idle line detect sction
     *
-    * @param[in] uartDma  DMA source to modify
-    * @param[in] enable   True to enable, false to disable
-    *
-    * @note Changing the enabled DMA functions may also affect the interrupt settings
+    * @param uartIdleLineDetectAction Enable interrupt on tidele line detect
     */
-   void enableDma(UartDma uartDma, bool enable=true) {
-      // Flags are in same positions in the C2 and C5
-      if (enable) {
-         uart->C5 = uart->C5 | uartDma;
-#ifdef UART_C5_TDMAS
-         uart->C2 = uart->C2 | uartDma; // Interrupts must be enable for DMA
-#endif
-      }
-      else {
-#ifdef UART_C5_TDMAS
-         uart->C2 = uart->C2 & ~uartDma; // Switching DMA off shouldn't enable interrupts!
-#endif
-         uart->C5 = uart->C5 & ~uartDma;
-      }
+   void setIdleLineDetectAction(UartIdleLineDetectAction uartIdleLineDetectAction) const {
+      uart->C2 = (uart->C2 & ~UART_C2_ILIE_MASK) | uartIdleLineDetectAction;
    }
+
+   /**
+    * Set Transmit empty DMA/Interrupt action
+    *
+    * @param uartTxEmptyAction Enable transmit holding register empty DMA/Interrupt action
+    */
+   void setTransmitEmptyAction(UartTxEmptyAction uartTxEmptyAction) const {
+      uart->C2 = (uart->C2 & ~UART_C2_TIE_MASK)   | uartTxEmptyAction; 
+      uart->C5 = (uart->C5 & ~UART_C5_TDMAS_MASK) | uartTxEmptyAction>>8; 
+   }
+
+   /**
+    * Set Receive full DMA/interrupt action
+    *
+    * @param uartRxFullAction Enable receive buffer full DMA/interrupt action
+    */
+   void setReceiveFullAction(UartRxFullAction uartRxFullAction) const {
+      uart->C2 = (uart->C2 & ~UART_C2_RIE_MASK)   | uartRxFullAction;
+      uart->C5 = (uart->C5 & ~UART_C5_RDMAS_MASK) | uartRxFullAction>>8;
+   }
+
 
    /**
     *  Flush output data
@@ -357,7 +327,7 @@ typedef void (*UARTCallbackFunction)(uint8_t status);
  *
  * @tparam Info   Class describing UART hardware
  */
-template<class Info> class Uart_T : public Uart {
+template<class Info> class Uart_T : public Uart, public Info {
 
 private:
    Uart_T(const Uart_T&) = delete;
@@ -448,7 +418,7 @@ public:
    static void configureAllPins() {
    
       // Configure pins if selected and not already locked
-      if constexpr (Info::mapPinsOnEnable && !(MapAllPinsOnStartup && (ForceLockedPins == PinLock_Locked))) {
+      if constexpr (Info::mapPinsOnEnable) {
          Info::initPCRs();
       }
    }
@@ -463,7 +433,7 @@ public:
    static void disableAllPins() {
    
       // Disable pins if selected and not already locked
-      if constexpr (Info::mapPinsOnEnable && !(MapAllPinsOnStartup && (ForceLockedPins == PinLock_Locked))) {
+      if constexpr (Info::mapPinsOnEnable) {
          Info::clearPCRs();
       }
    }
@@ -693,7 +663,7 @@ private:
    Uart_osr_T(Uart_osr_T&&) = delete;
 
 public:
-   using Uart_T<Info>::uart;
+   using Info::uart;
 
    /**
     * Construct UART interface
@@ -799,16 +769,16 @@ private:
    UartBuffered_T(UartBuffered_T&&) = delete;
 
 public:
-   using Uart_T<Info>::uart;
+   using Info::uart;
 
    UartBuffered_T() : Uart_T<Info>() {
-      Uart::enableInterrupt(UartInterrupt_RxFull);
+      Uart::setReceiveFullAction(UartRxFullAction_Interrupt);
       Uart_T<Info>::enableNvicInterrupts(Info::irqLevel);
    }
 
    virtual ~UartBuffered_T() {
-      Uart::enableInterrupt(UartInterrupt_RxFull,         false);
-      Uart::enableInterrupt(UartInterrupt_TxHoldingEmpty, false);
+      Uart::setReceiveFullAction(UartRxFullAction_None);
+      Uart::setTransmitEmptyAction(UartTxEmptyAction_None);
    }
 
 protected:
@@ -1065,107 +1035,51 @@ template<class Info, int rxSize, int txSize> UartQueue<char, txSize> UartBuffere
 template<class Info, int rxSize, int txSize> volatile uint32_t   UartBuffered_T<Info, rxSize, txSize>::fReadLock  = 0;
 template<class Info, int rxSize, int txSize> volatile uint32_t   UartBuffered_T<Info, rxSize, txSize>::fWriteLock = 0;
 
-#ifdef USBDM_UART0_IS_DEFINED
-/**
- * @brief Class representing UART0 interface
- *
- * <b>Example</b>
- * @code
- *  // Instantiate interface
- *  USBDM::Uart0 uart;
- *
- *  for(int i=0; i++;) {
- *     uart.write("Hello world,").writeln(i);
- *  }
- *  @endcode
- */
-typedef  UartBuffered_brfa_T<Uart0Info> Uart0;
-#endif
+   /**
+    * Class representing UART0 interface
+    *
+    * <b>Example</b>
+    * @code
+    *  // Instantiate interface
+    *  USBDM::Uart0 uart;
+    *
+    *  for(int i=0; i++;) {
+    *     uart.writeln("Hello world ", i);
+    *  }
+    *  @endcode
+    */
+   typedef  UartBuffered_brfa_T<Uart0Info> Uart0;
 
-#ifdef USBDM_UART1_IS_DEFINED
-/**
- * @brief Class representing UART1 interface
- *
- * <b>Example</b>
- * @code
- *  // Instantiate interface
- *  USBDM::Uart1 uart;
- *
- *  for(int i=0; i++;) {
- *     uart.write("Hello world,").writeln(i);
- *  }
- *  @endcode
- */
-typedef  Uart_brfa_T<Uart1Info> Uart1;
-#endif
+   /**
+    * Class representing UART1 interface
+    *
+    * <b>Example</b>
+    * @code
+    *  // Instantiate interface
+    *  USBDM::Uart1 uart;
+    *
+    *  for(int i=0; i++;) {
+    *     uart.writeln("Hello world ", i);
+    *  }
+    *  @endcode
+    */
+   typedef  Uart_brfa_T<Uart1Info> Uart1;
 
-#ifdef USBDM_UART2_IS_DEFINED
-/**
- * @brief Class representing UART2 interface
- *
- * <b>Example</b>
- * @code
- *  // Instantiate interface
- *  USBDM::Uart2 uart;
- *
- *  for(int i=0; i++;) {
- *     uart.write("Hello world,").writeln(i);
- *  }
- *  @endcode
- */
-typedef  Uart_brfa_T<Uart2Info> Uart2;
-#endif
+   /**
+    * Class representing UART2 interface
+    *
+    * <b>Example</b>
+    * @code
+    *  // Instantiate interface
+    *  USBDM::Uart2 uart;
+    *
+    *  for(int i=0; i++;) {
+    *     uart.writeln("Hello world ", i);
+    *  }
+    *  @endcode
+    */
+   typedef  Uart_brfa_T<Uart2Info> Uart2;
 
-#ifdef USBDM_UART3_IS_DEFINED
-/**
- * @brief Class representing UART3 interface
- *
- * <b>Example</b>
- * @code
- *  // Instantiate interface
- *  USBDM::Uart3 uart;
- *
- *  for(int i=0; i++;) {
- *     uart.write("Hello world,").writeln(i);
- *  }
- *  @endcode
- */
-typedef  Symbol '/UART3/uartClass' not found<Uart3Info> Uart3;
-#endif
-
-#ifdef USBDM_UART4_IS_DEFINED
-/**
- * @brief Class representing UART4 interface
- *
- * <b>Example</b>
- * @code
- *  // Instantiate interface
- *  USBDM::Uart4 uart;
- *
- *  for(int i=0; i++;) {
- *     uart.write("Hello world,").writeln(i);
- *  }
- *  @endcode
- */
-typedef  Symbol '/UART4/uartClass' not found<Uart4Info> Uart4;
-#endif
-
-#ifdef USBDM_UART5_IS_DEFINED
-/**
- * @brief Class representing UART5 interface
- *
- * <b>Example</b>
- * @code
- *  // Instantiate interface
- *  USBDM::Uart5 uart;
- *
- *  for(int i=0; i++;) {
- *     uart.write("Hello world,").writeln(i);
- *  }
- *  @endcode
- */
-typedef  Symbol '/UART5/uartClass' not found<Uart5Info> Uart5;
-#endif
 
 /**
  * End UART_Group

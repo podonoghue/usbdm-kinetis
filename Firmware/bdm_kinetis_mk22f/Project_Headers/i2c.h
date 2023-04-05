@@ -55,7 +55,7 @@ public:
    I2C_State           state;               //!< State of current transaction
 
 protected:
-   static constexpr unsigned TIMEOUT_LIMIT = 1000000;
+   static constexpr unsigned TIMEOUT_LIMIT = 100000;
 
    /** Callback to catch unhandled interrupt */
    static void unhandledCallback() {
@@ -187,8 +187,8 @@ public:
       }
       if (state != i2c_idle) {
          errorCode = E_TIMEOUT;
+         busHangReset();
       }
-      busHangReset();
    }
 
    /**
@@ -548,7 +548,7 @@ public:
    static void configureAllPins() {
    
       // Configure pins if selected and not already locked
-      if constexpr (Info::mapPinsOnEnable && !(MapAllPinsOnStartup && (ForceLockedPins == PinLock_Locked))) {
+      if constexpr (Info::mapPinsOnEnable) {
          Info::initPCRs();
       }
    }
@@ -563,7 +563,7 @@ public:
    static void disableAllPins() {
    
       // Disable pins if selected and not already locked
-      if constexpr (Info::mapPinsOnEnable && !(MapAllPinsOnStartup && (ForceLockedPins == PinLock_Locked))) {
+      if constexpr (Info::mapPinsOnEnable) {
          Info::clearPCRs();
       }
    }
@@ -601,7 +601,7 @@ public:
       static_assert(Info::info[Info::sclPin].gpioBit >= 0, "I2Cx_SCL has not been assigned to a pin - Modify Configure.usbdm");
       static_assert(Info::info[Info::sdaPin].gpioBit >= 0, "I2Cx_SDA has not been assigned to a pin - Modify Configure.usbdm");
 
-      busHangReset();
+//      busHangReset();
 
       init(myAddress);
       setBPS(bps);
@@ -656,11 +656,17 @@ public:
       if (i2cMode&I2C_C1_IICIE_MASK) {
          NVIC_EnableIRQ(Info::irqNums[0]);
       }
+
+      // Set slave address
+      i2c->C2  = I2C_C2_AD(myAddress>>8);
+
+      // Clear status
+      i2c->S  = I2C_S_ARBL_MASK|I2C_S_IICIF_MASK;
+
       // Enable I2C peripheral
       i2c->C1 = I2C_C1_IICEN_MASK|i2cMode;
 
       // Default options
-      i2c->C2  = I2C_C2_AD(myAddress>>8);
       i2c->A1  = myAddress&~1;
       i2c->FLT = I2C_FLT_FLT(2);
    }
@@ -672,6 +678,9 @@ public:
     * This is useful if a slave is part-way through a transaction when the master goes away!
     */
    virtual void busHangReset() {
+
+      // Disable I2C to clear some status flags
+      i2c->C1 = i2c->C1 & ~I2C_C1_IICEN_MASK;
 
       static auto delay = [] {
          for(int j=0; j<20; j++) {
@@ -713,8 +722,11 @@ public:
       sdaGpio::setIn();  // SCL=T, SDA=T
       delay();
 
+      // Enable I2C
+      i2c->C1 = i2c->C1 | ~I2C_C1_IICEN_MASK;
+
       // Restore pin mapping
-      configureAllPins();
+      Info::initPCRs();
    }
 
    static void irqHandler() {
@@ -730,55 +742,15 @@ template<class Info> I2cCallbackFunction I2cBase_T<Info>::sCallback = I2c::unhan
 /** Used by ISR to obtain handle of object */
 template<class Info> I2c *I2cBase_T<Info>::thisPtr = 0;
 
-#if defined(USBDM_I2C0_IS_DEFINED)
-/**
- * @brief Class representing the I2C0 interface
- *
- * <b>Example</b>\n
- * Refer @ref I2cBase_T
- */
-using I2c0 = I2cBase_T<I2c0Info>;
-#endif
+   /**
+    * Class representing I2C0
+    */
+   using I2c0 = I2cBase_T<I2c0Info>;
+   /**
+    * Class representing I2C1
+    */
+   using I2c1 = I2cBase_T<I2c1Info>;
 
-#if defined(USBDM_I2C1_IS_DEFINED)
-/**
- * @brief Class representing the I2C1 interface
- *
- * <b>Example</b>
- * Refer @ref I2cBase_T
- */
-using I2c1 = I2cBase_T<I2c1Info>;
-#endif
-
-#if defined(USBDM_I2C2_IS_DEFINED)
-/**
- * @brief Class representing the I2C2 interface
- *
- * <b>Example</b>
- * Refer @ref I2cBase_T
- */
-using I2c2 = I2cBase_T<I2c2Info>;
-#endif
-
-#if defined(USBDM_I2C3_IS_DEFINED)
-/**
- * @brief Class representing the I2C2 interface
- *
- * <b>Example</b>
- * Refer @ref I2cBase_T
- */
-using I2c3 = I2cBase_T<I2c3Info>;
-#endif
-
-#if defined(USBDM_I2C4_IS_DEFINED)
-/**
- * @brief Class representing the I2C4 interface
- *
- * <b>Example</b>
- * Refer @ref I2cBase_T
- */
-using I2c4 = I2cBase_T<I2c4Info>;
-#endif
 /**
  * End I2C_Group
  * @}
