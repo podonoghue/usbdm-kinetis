@@ -1124,6 +1124,7 @@ static void commandExec(void) {
       commandPtr = commonFunctionPtrs[(uint8_t)command];
    }
    else {
+      // Target specific command
       // Earlier check means we don't need to check if target set here
       int commandIndex = (uint8_t)command - currentFunctions->firstCommand;
       if ((commandIndex >= 0) && (commandIndex < currentFunctions->size))

@@ -341,7 +341,7 @@ void coldStart() {
 #endif
 
    // Wait for Vbdm stable
-   wait(10_ms);
+   waitMS(10);
 
    checkError();
 }
@@ -362,13 +362,10 @@ int main() {
 //   console.writeln("HardwareId = ", HardwareId::getId());
 //   console.writeln("Target Vdd = ", TargetVddInterface::readVoltage(), " V");
 
-   console.writeln("\n\nStarting");
+   console.WRITELN("\n\nStarting");
 
    UsbImplementation::initialise();
    checkError();
-
-//   const PcrValue x(23);
-//   PcrValue z(x+PinPull_Down);
 
    for(;;) {
       // Wait for USB connection

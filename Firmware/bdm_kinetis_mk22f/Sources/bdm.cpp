@@ -367,6 +367,25 @@ USBDM_ErrorCode sync(uint16_t &syncLength) {
          FTM_COMBINE_COMBINE0_MASK<<(bkgdOutChannel*4)|
          FTM_COMBINE_DECAPEN0_MASK<<(bkgdInChannel*4);
 
+   /*
+            100       +     syncPulseWidthInTicks  +  SPEEDUP_PULSE_WIDTH_ticks
+            v                                   v     v
+            +-----------------------------------------+
+OE          |                                         |
+      ------+                                         +---//---------------
+
+      ------+                                   +---------//---------------
+DRV         |                                   |
+            +-----------------------------------+
+                                                             ACK pulse driven by target
+PULSE            SYNC Pulse driven by BDM       +-----+~~~//~~~~+           +---~~~~~~
+       - - -+                                   |               |           |
+            +-----------------------------------+               +-----//----+
+                                                                ^           ^
+                                                               e1           e2
+
+    */
+
    // Positive pulse for buffer enable, 2nd edge delayed for speed-up pulse (bkgdEnChannel, bkgdEnChannel+1)
    ftm->CONTROLS[bkgdEnChannel].CnSC    = FtmChannelMode_CombinePositivePulse;
    ftm->CONTROLS[bkgdEnChannel].CnV     = TMR_SETUP_TIME;

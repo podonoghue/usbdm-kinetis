@@ -397,8 +397,8 @@ public:
     *
     * @return Clock frequency of SPI in Hz for these factors
     */
+    
    static uint32_t calculateSpeed(uint32_t clockFrequency, uint32_t spiCtarValue);
-
    /**
     * Calculate CTAR timing related values \n
     * Uses default delays
@@ -408,6 +408,7 @@ public:
     *
     * @return Combined masks for CTAR (BR, PBR, PCSSCK, CSSCK, PDT, DT, PCSSCK and CSSCK)
     */
+    
    static uint32_t calculateCtarTiming(uint32_t clockFrequency, Hertz frequency) {
 
       int bestPrescale, bestDivider;

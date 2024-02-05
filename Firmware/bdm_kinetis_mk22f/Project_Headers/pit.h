@@ -1220,7 +1220,7 @@ public:
    
       Ticks ldval = init.ldval;
       if (init.period != 0) {
-         ldval = convertSecondsToTicks(init.period);
+         ldval = convertSecondsToTicks(init.period)-1;
       }
       pit->CHANNEL[init.channelnumber].LDVAL = ldval;
    

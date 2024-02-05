@@ -344,7 +344,7 @@ public:
    /**
     * Gets result of hardware initiated conversion
     *
-    * @param preTrigger Pretrigger to use (identifies which SC1 register to access)
+    * @param pretrigger Pretrigger to use (identifies which SC1 register to access)
     *
     * @return The result of the conversion as an integer converted from 16-bit ADC value\n
     *         For single-ended conversions this will be zero extended\n

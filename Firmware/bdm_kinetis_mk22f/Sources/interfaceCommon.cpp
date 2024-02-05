@@ -28,8 +28,8 @@
  */
 
 #include <string.h>
-#include <targetVddInterface.h>
 #include "configure.h"
+#include "targetVddInterface.h"
 #include "interfaceCommon.h"
 #include "interface.h"
 #include "swd.h"
@@ -40,12 +40,6 @@
 #include "cmdProcessing.h"
 #include "commands.h"
 #include "console.h"
-
-/** How long to wait for Target Vdd rise */
-static constexpr uint32_t VDD_RISE_TIMEms = 100;
-
-/** How long to wait for Target Vdd fall */
-static constexpr uint32_t VDD_FALL_TIMEms = 500;
 
 #if HW_CAPABILITY & CAP_RST_IN
 /** How long to wait for Reset rise after Vdd on etc */
@@ -96,6 +90,12 @@ USBDM_ErrorCode checkTargetVdd(void) {
  * @return BDM_RC_VDD_NOT_PRESENT   => Target Vdd not present
  */
 USBDM_ErrorCode setTargetVdd(TargetVddSelect_t targetVdd) {
+
+   /** How long to wait for Target Vdd rise */
+   static constexpr uint32_t VDD_RISE_TIMEms = 100;
+
+   /** How long to wait for Target Vdd fall */
+   static constexpr uint32_t VDD_FALL_TIMEms = 500;
 
    if (targetVdd == BDM_TARGET_VDD_ENABLE) {
       // Enable at previously set level

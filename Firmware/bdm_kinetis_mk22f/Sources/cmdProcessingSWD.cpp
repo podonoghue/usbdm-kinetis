@@ -89,9 +89,9 @@ USBDM_ErrorCode f_CMD_SET_SPEED(void) {
  *  @return BDM_RC_OK => success, error otherwise
  */
 USBDM_ErrorCode f_CMD_GET_SPEED(void) {
-   uint32_t freq = (uint32_t)round(Swd::getSpeed()/1000.0);
-   commandBuffer[1] = (uint8_t)(freq>>8);
-   commandBuffer[2] = (uint8_t)(freq);
+   uint32_t freq = uint32_t((Swd::getSpeed()+500)/1000);
+   commandBuffer[1] = uint8_t(freq>>8);
+   commandBuffer[2] = uint8_t(freq);
    returnSize = 3;
    return BDM_RC_OK;
 }
@@ -230,7 +230,7 @@ USBDM_ErrorCode f_CMD_READ_MEM(void) {
 
 /** Maps register index into magic number for ARM device register */
 static const uint8_t regIndexMap[] = {
-      ARM_RegR0, ARM_RegR1, ARM_RegR2, ARM_RegR3, ARM_RegR4, ARM_RegR5, ARM_RegR6, ARM_RegR7,
+      ARM_RegR0, ARM_RegR1, ARM_RegR2,  ARM_RegR3,  ARM_RegR4,  ARM_RegR5, ARM_RegR6, ARM_RegR7,
       ARM_RegR8, ARM_RegR9, ARM_RegR10, ARM_RegR11, ARM_RegR12, ARM_RegSP, ARM_RegLR, ARM_RegPC,
       ARM_RegxPSR, ARM_RegMSP,  ARM_RegPSP, ARM_RegMISC,
       ARM_RegFPSCR,

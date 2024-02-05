@@ -15,6 +15,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <array>
 
 #include "derivative.h"
 #include "pcr.h"

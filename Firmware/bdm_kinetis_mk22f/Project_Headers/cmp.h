@@ -447,7 +447,7 @@ public:
       cmp->FPR   = 0;
       cmp->SCR   = CMP_SCR_IER(0)|CMP_SCR_IEF(0);
       cmp->DACCR = (CMP_DACCR_VOSEL_MASK>>1)&CMP_DACCR_VOSEL_MASK;
-      cmp->MUXCR = Cmp0Info::DefaultInitValue.muxcr;//Info::muxcr;
+      cmp->MUXCR = Info::DefaultInitValue.muxcr;
    }
 
    /**
@@ -478,6 +478,7 @@ public:
     * Converts time in seconds to time in ticks
     *
     * @param[in] seconds Time interval in seconds
+    * @param[in] scValue PDB SC register value for clock divider
     *
     * @return Time in ticks
     */
@@ -527,7 +528,7 @@ public:
     * 4b   Sampled, Filtered, internal         1      0      0     >=2            >=1    COUTA combinational, COUT filtered by busclk/PFR
     *
     * @param[in] cmpFilterSamples         Number samples that must agree before COUT changes (>=2)
-    * @param[in] cmpSampleEnable          Filter clock source
+    * @param[in] CmpSampleEnable          Filter clock source
     * @param[in] cmpFilterSamplePeriod    Period of internal sample filter (1..255). \n
     *                                     Only applicable if CmpSampleEnable_Internal
     */
