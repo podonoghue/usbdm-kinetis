@@ -27,6 +27,10 @@
 #include "bdm.h"
 #include "cmdProcessingHCS.h"
 #endif
+
+#include "BootInformation.h"
+
+
 using namespace USBDM;
 
 #if 0
@@ -306,6 +310,24 @@ void hcs08Testing () {
 
 }
 #endif
+
+static constexpr unsigned HARDWARE_VERSION = HW_USBDM_MK22F;
+
+__attribute__ ((section(".noinit")))
+static uint32_t magicNumber;
+
+#if defined(RELEASE_BUILD)
+// Triggers memory image relocation for bootloader
+extern BootInformation const bootloaderInformation;
+#endif
+
+__attribute__ ((section(".bootloaderInformation")))
+__attribute__((used))
+const BootInformation bootloaderInformation = {
+      &magicNumber,        // Magic number to force ICP on reboot
+      4,                   // Version of this software image
+      HARDWARE_VERSION,    // Hardware version for this image
+};
 
 /**
  *  Dummy callback function servicing the interrupt from Vdd changes

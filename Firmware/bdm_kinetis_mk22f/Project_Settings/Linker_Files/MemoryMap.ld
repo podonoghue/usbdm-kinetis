@@ -45,7 +45,7 @@ FORCE_BOOT_LOADER = DEFINED(bootloaderInformation) ? 1 : 0;
     <i>  The bootloader is located at the bottom of the flash region
     <i>  This value is used to automatically adjust the available flash area 
  */
-BOOT_LOADER_SIZE  = DEFINED(BOOT_LOADER_SIZE)  ? BOOT_LOADER_SIZE : 16384 * FORCE_BOOT_LOADER;
+BOOT_LOADER_SIZE  = DEFINED(BOOT_LOADER_SIZE)  ? BOOT_LOADER_SIZE : 0x4000 * FORCE_BOOT_LOADER;
 /*
     <o>  Bootloader information block size (usually 0x10 if used) <constant>
     <i>  The bootloader information block is located at the top of the flash region
@@ -98,10 +98,11 @@ REGION_ALIAS("ram","ram_low");
 */
 /*  <s1>  Text (main code apart from reset)  <constant> text_rom      */
 REGION_ALIAS("text_rom",         "flash");
-/*  <s1>  Read-only data  <constant> data_rom      */
+/*  <s1>  Read-only data                     <constant> rodata_rom    */
 REGION_ALIAS("rodata_rom",       "flash");
+/*  <s1>  Flash image for initialised data   <constant> data_rom      */
+REGION_ALIAS("data_rom",         "flash");
 /* </h> */
-
 /*
   <h> Section placement in RAM
   <i> The RAM on Cortex-M4 Kinetis devices is divided into upper and lower memory regions.

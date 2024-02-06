@@ -63,19 +63,19 @@ const ClockInfo Mcg::clockInfo[] = {
       SmcRunMode_Normal,  // (smc_pmctrl_runm[0]) Run mode - Normal RUN
 
       /// Control Register 1 - Excluding CLKS, IREFS 
-      McgFllPrescale_Disabled | // (mcg_c1_frdiv[0]) FLL External Reference Divider - Disabled
+      McgFllPrescale_LowDivBy64 | // (mcg_c1_frdiv[0]) FLL External Reference Divider - /64 (low)
       McgIrClkEn_Enabled | // (mcg_c1_irclken[0]) Internal Reference Clock [MCGIRCLK] - Enabled
       McgIrefs_DisabledInStop,  // (mcg_c1_irefsten[0]) Internal Reference [MCGIRCLK] Stop Enable - IR disabled in STOP
 
       /// Control Register 2 - Excluding LP, FCTRIM 
       McgOsc0LossOfClockAction_Interrupt | // (mcg_c2_locre0[0]) OSC0 Action on Loss of Clock - Interrupt request
-      McgRange0_Low | // (mcg_c2_range0[0]) Frequency Range Select - Low range
+      McgRange0_High | // (mcg_c2_range0[0]) Frequency Range Select - High range
       OscMode_NotConfigured | // (oscMode) OSC0 mode - OSC0 Not configured
       McgIrClkSrc_Fast,  // (mcg_c2_ircs[0]) Internal Reference Clock [MCGIRCLK] Source - Fast internal reference clock
 
       /// Control Register 4 - Excluding FCTRIM, SCFTRIM 
       McgFllLockRangeWidth_Wide | // (mcg_c4_dmx32[0]) DMX32 DCO lock range - Wide
-      McgFllLockRange_Low,  // (mcg_c4_drst_drs[0]) DCO Range Select - Low (x640/x732, 20-25/24 MHz)
+      McgFllLockRange_Mid,  // (mcg_c4_drst_drs[0]) DCO Range Select - Mid (x1280/x1464, 40-50/48 MHz)
 
       /// Control Register 5 
       McgPllEnable_AsNeeded | // (mcg_c5_pllclken0[0]) PLL0 Enable - PLL active as needed

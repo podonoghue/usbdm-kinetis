@@ -163,6 +163,7 @@
    <item key="/MCG/enablePeripheralSupport"                value="true" />
    <item key="/MCG/mcgClockMode[0]"                        value="7" />
    <item key="/MCG/mcg_c2_oscMode"                         value="0" />
+   <item key="/MCG/mcg_c2_range0[0]"                       value="1" />
    <item key="/MCG/mcg_c7_oscsel[0]"                       value="2" />
    <item key="/MCG/mcg_c7_oscsel[1]"                       value="2" />
    <item key="/MCG/mcg_c7_oscsel[2]"                       value="2" />
