@@ -344,7 +344,8 @@ void setSyncLength(uint16_t syncLength) {
    targetClocks64TimeUS   = convertTicksToMicroseconds((syncLength*64)/SYNC_RESPONSE_CYCLES);  // us
    targetClocks150TimeUS  = convertTicksToMicroseconds((syncLength*150)/SYNC_RESPONSE_CYCLES); // us
 
-   cable_status.sync_length = syncLength;
+   // Timer running @busclk/2 = 30MHz, BDM ticks @60MHz
+   cable_status.sync_length = 2*syncLength;
 }
 
 /**
@@ -499,6 +500,7 @@ PULSE            SYNC Pulse driven by BDM       +-----+~~~//~~~~+           +---
    ftm->COMBINE = 0;
 
    if (success) {
+      // SYNC length in timer ticks
       syncLength = e2 - e1;
       setSyncLength(syncLength);
       return BDM_RC_OK;
