@@ -42,6 +42,13 @@ void initialise();
 void disableInterface();
 
 /**
+ * Produce BDM signal pulses for Rx at the current interface speed
+ *
+ * @param length Number of pulses
+ */
+void testRx(int length);
+
+/**
  * Set pin state
  *
  * @param pins Pin control mask

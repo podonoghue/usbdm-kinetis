@@ -184,6 +184,27 @@ PinLevelMasks_t getPinState() {
    return static_cast<PinLevelMasks_t>(bkgdInGpio::isHigh()?PIN_BKGD_HIGH:PIN_BKGD_LOW);
 }
 
+/**
+ * Set up for transmission
+ */
+inline
+void transactionStart() {
+   ftm->SYNCONF = FTM_SYNCONF_SYNCMODE(1)|FTM_SYNCONF_SWWRBUF(1);
+
+   __disable_irq();
+   releasePins();
+}
+
+/**
+ * End transmission phase
+ */
+inline
+void transactionComplete() {
+//   disableFtmCounter();
+   forcePins();
+   __enable_irq();
+}
+
 inline
 static void enableFtmCounter() {
 //   ftm->SC =
@@ -328,24 +349,32 @@ void disableInterface() {
  */
 void setSyncLength(uint16_t syncLength) {
    constexpr int SYNC_RESPONSE_CYCLES = 128;    // Number of target clock cycles in the SYNC response
-   constexpr int HOST_1_CYCLES_LOW    = 4;      // Number of target clock cycles low for a 1
-   constexpr int HOST_0_CYCLES_LOW    = 13;     // Number of target clock cycles low for a 0
-   constexpr int HOST_SAMPLE_CYCLE    = 10;     // Number of target clock cycles for sample
+   constexpr int HOST_1_CYCLES_LOW    = 4;      // Number of target clock cycles low for a 1 (host release @4, target speedup @7 clocks)
+   constexpr int HOST_0_CYCLES_LOW    = 13;     // Number of target clock cycles low for a 0 (target drives low for 13 clocks)
+   constexpr int HOST_SAMPLE_CYCLE    = 10;     // Target clock cycles for sample point
    constexpr int HOST_MIN_CYCLES      = 16;     // Minimum number of target clock cycles for entire transfer
 
    targetSyncWidth   = syncLength;
 
    // Calculate communication parameters
-   oneBitTime        = ((syncLength*HOST_1_CYCLES_LOW)+(SYNC_RESPONSE_CYCLES-1))/SYNC_RESPONSE_CYCLES;  // Ticks (round up)
-   zeroBitTime       = ((syncLength*HOST_0_CYCLES_LOW)+(SYNC_RESPONSE_CYCLES/2))/SYNC_RESPONSE_CYCLES;  // Ticks (round)
-   sampleBitTime     = ((syncLength*HOST_SAMPLE_CYCLE)+(SYNC_RESPONSE_CYCLES/2))/SYNC_RESPONSE_CYCLES;  // Ticks (round)
-   minPeriod         = ((syncLength*HOST_MIN_CYCLES)+(SYNC_RESPONSE_CYCLES-1))/SYNC_RESPONSE_CYCLES;    // Ticks (round up)
+   oneBitTime        = ((syncLength*HOST_1_CYCLES_LOW)+(SYNC_RESPONSE_CYCLES-1))/SYNC_RESPONSE_CYCLES;      // Ticks (round up)
+   zeroBitTime       = ((syncLength*HOST_0_CYCLES_LOW)+(SYNC_RESPONSE_CYCLES/2))/SYNC_RESPONSE_CYCLES;      // Ticks (round)
+   sampleBitTime     = (((syncLength*HOST_SAMPLE_CYCLE)+(SYNC_RESPONSE_CYCLES/2))/SYNC_RESPONSE_CYCLES)+3;  // Ticks (round) + input sync delay
+   minPeriod         = (((syncLength*HOST_MIN_CYCLES)+(SYNC_RESPONSE_CYCLES-1))/SYNC_RESPONSE_CYCLES)+3;    // Ticks (round up) + input sync delay
 
    targetClocks64TimeUS   = convertTicksToMicroseconds((syncLength*64)/SYNC_RESPONSE_CYCLES);  // us
    targetClocks150TimeUS  = convertTicksToMicroseconds((syncLength*150)/SYNC_RESPONSE_CYCLES); // us
 
    // Timer running @busclk/2 = 30MHz, BDM ticks @60MHz
    cable_status.sync_length = 2*syncLength;
+
+#if DEBUG_SYNC
+   USBDM::console.writeln("syncLength =    ", syncLength);
+   USBDM::console.writeln("oneBitTime =    ", oneBitTime);
+   USBDM::console.writeln("zeroBitTime =   ", zeroBitTime);
+   USBDM::console.writeln("sampleBitTime = ", sampleBitTime);
+   USBDM::console.writeln("minPeriod =     ", minPeriod);
+#endif
 }
 
 /**
@@ -354,6 +383,8 @@ void setSyncLength(uint16_t syncLength) {
  *  @param [out] syncLength Sync length in timer ticks
  *
  *  @return Error code, BDM_RC_OK indicates success
+ *
+ *  @note The sync length record and derived values are updated on success
  */
 USBDM_ErrorCode sync(uint16_t &syncLength) {
 
@@ -589,8 +620,61 @@ void configureCombinedPwmMode(
    ftm->CONTROLS[ftmChannelNum+1].CnSC = oddEventTime;
 }
 
+void testRx(int length) {
+
+
+   /** Time to set up Timer - This varies with optimisation! */
+   static constexpr unsigned TMR_SETUP_TIME = 20;
+
+   transactionStart();
+
+   disableFtmCounter();
+
+   ftm->COMBINE =
+         FTM_COMBINE_COMBINE0_MASK<<(bkgdEnChannel*4)|
+         FTM_COMBINE_COMBINE0_MASK<<(bkgdOutChannel*4);
+
+   // Positive pulse for buffer enable
+   ftm->CONTROLS[bkgdEnChannel].CnSC    = FtmEvenChannelMode_CombinePositivePulse; //FTM_CnSC_ELS(2);
+   ftm->CONTROLS[bkgdEnChannel].CnV     = TMR_SETUP_TIME;
+   ftm->CONTROLS[bkgdEnChannel+1].CnV   = TMR_SETUP_TIME+oneBitTime;
+
+   // Negative pulse for BKGD out (must bracket enable pulse)
+   ftm->CONTROLS[bkgdOutChannel].CnSC   = FtmEvenChannelMode_CombineNegativePulse; //FTM_CnSC_ELS(1);
+   ftm->CONTROLS[bkgdOutChannel].CnV    = TMR_SETUP_TIME-4;
+   ftm->CONTROLS[bkgdOutChannel+1].CnV  = TMR_SETUP_TIME+oneBitTime+1;
+
+   // Capture rising edge of BKGD in
+   ftm->CONTROLS[bkgdInChannel].CnSC    = FtmChannelMode_InputCaptureRisingEdge;
+
+   ftm->CNT = 0;
+   enableFtmCounter();
+
+   unsigned value = 0;
+   while (length-->0) {
+
+      // Restart counter
+      ftm->CNT = 0;
+
+      // Clear channel flags
+      ftm->STATUS = ftm->STATUS & ~(
+            (1<<bkgdEnChannel) |(1<<(bkgdEnChannel+1))|
+            (1<<bkgdOutChannel)|(1<<(bkgdOutChannel+1))|
+            (1<<bkgdInChannel));
+
+      // Wait until end of bit
+      do {
+      } while (ftm->CNT <= TMR_SETUP_TIME+minPeriod);
+
+      // Use time of rise to determine bit value
+      value = (value<<1)|((ftm->CONTROLS[bkgdInChannel].CnV>=(TMR_SETUP_TIME+sampleBitTime))?0:1);
+   }
+
+   transactionComplete();
+}
+
 /**
- * Receive an value over BDM interface
+ * Receive a value over BDM interface
  *
  * @param [in]  length Number of bits to receive
  * @param [out] data   Data received
@@ -633,7 +717,7 @@ USBDM_ErrorCode rx(int length, unsigned &data) {
    // Positive pulse for buffer enable
    ftm->CONTROLS[bkgdEnChannel].CnSC    = FtmEvenChannelMode_CombinePositivePulse; //FTM_CnSC_ELS(2);
    ftm->CONTROLS[bkgdEnChannel].CnV     = TMR_SETUP_TIME;
-   ftm->CONTROLS[bkgdEnChannel+1].CnV   = TMR_SETUP_TIME+oneBitTime-SPEEDUP_PULSE_WIDTH_ticks;
+   ftm->CONTROLS[bkgdEnChannel+1].CnV   = TMR_SETUP_TIME+oneBitTime;
 
    // Negative pulse for BKGD out
    ftm->CONTROLS[bkgdOutChannel].CnSC   = FtmEvenChannelMode_CombineNegativePulse; //FTM_CnSC_ELS(1);
@@ -667,7 +751,7 @@ USBDM_ErrorCode rx(int length, unsigned &data) {
       success = success && ((ftm->CONTROLS[bkgdInChannel].CnSC & FTM_CnSC_CHF_MASK) != 0);
 
       // Use time of rise to determine bit value
-      value = (value<<1)|((ftm->CONTROLS[bkgdInChannel].CnV>(TMR_SETUP_TIME+sampleBitTime))?0:1);
+      value = (value<<1)|((ftm->CONTROLS[bkgdInChannel].CnV>=(TMR_SETUP_TIME+sampleBitTime))?0:1);
    }
    if (!success) {
       return BDM_RC_BKGD_TIMEOUT;
@@ -719,27 +803,6 @@ USBDM_ErrorCode rx32(uint8_t *data) {
    USBDM_ErrorCode rc = rx(32, value);
    unpack32BE(value, data);
    return rc;
-}
-
-/**
- * Set up for transmission
- */
-inline
-void transactionStart() {
-   ftm->SYNCONF = FTM_SYNCONF_SYNCMODE(1)|FTM_SYNCONF_SWWRBUF(1);
-
-   __disable_irq();
-   releasePins();
-}
-
-/**
- * End transmission phase
- */
-inline
-void transactionComplete() {
-//   disableFtmCounter();
-   forcePins();
-   __enable_irq();
 }
 
 /**

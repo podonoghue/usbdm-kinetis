@@ -261,24 +261,31 @@ USBDM_ErrorCode f_CMD_DEBUG(void) {
 
    switch ((uint8_t)subCommand) {
 #if (HW_CAPABILITY&CAP_BDM)
-      case BDM_DBG_ACKN: // try the ACKN feature
+      case BDM_DBG_ACKN:
+         // try the ACKN feature
+         // Returns Status
          Bdm::enableACKNMode();
          commandBuffer[1] = (uint8_t) makeStatusWord(); // return the status byte
          returnSize = 2;
          return BDM_RC_OK;
 
-      case BDM_DBG_SYNC: { // try the sync feature
+      case BDM_DBG_SYNC: {
+         // try the sync feature
+         // Returns Status, Sync length
          USBDM_ErrorCode rc = Bdm::sync();
          if (rc != BDM_RC_OK) {
             return rc;
          }
          commandBuffer[1] = (uint8_t)makeStatusWord(); // return the status byte
-
-         // ToDo - Consider conversion from timer ticks to standard HCS12 sync value. On this processor they are equal
-         (*(uint16_t*)(commandBuffer+2)) = cable_status.sync_length;
+         unpack16BE(cable_status.sync_length, commandBuffer+2);
          returnSize = 4;
       }
       return BDM_RC_OK;
+
+
+      case BDM_DBG_TESTPORT:
+         Bdm::testRx(20);
+         return BDM_RC_OK;
 #endif
 #if (HW_CAPABILITY & CAP_FLASH)
       case BDM_DBG_VPP_OFF: // Programming voltage off
@@ -1113,7 +1120,7 @@ static void commandExec(void) {
    BDMCommands command    = (BDMCommands)commandBuffer[1];  // Command is 1st byte
    FunctionPtr commandPtr = f_CMD_ILLEGAL;                  // Default to illegal command
 
-   USBDM::console.WRITE("Command = ").WRITELN(getCommandName(command));
+   USBDM::console.WRITELN("Command = ", getCommandName(command));
 
    if (((uint8_t)command >= CMD_USBDM_CONTROL_PINS) && (currentFunctions == nullptr)) {
       // Command greater than this require the interface to have been set up i.e.

@@ -281,7 +281,7 @@ void unpack32BE(uint32_t data, uint8_t ar[4]) {
 }
 
 /**
- * Unpack a 32-bit value into 4 bytes in LE order
+ * Unpack a 16-bit value into 2 bytes in LE order
  *
  * @param  data    Value to unpack
  * @param  ar      Buffer for data value in LITTLE-ENDIAN order
@@ -295,7 +295,7 @@ void unpack16LE(uint32_t data, uint8_t ar[2]) {
 }
 
 /**
- * Unpack a 32-bit value into 4 bytes in BE order
+ * Unpack a 16-bit value into 2 bytes in BE order
  *
  * @param  data    Value to unpack
  * @param  ar      Buffer for data value in BIG-ENDIAN order

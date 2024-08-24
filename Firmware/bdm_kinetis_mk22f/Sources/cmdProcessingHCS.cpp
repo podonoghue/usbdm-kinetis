@@ -158,9 +158,8 @@ USBDM_ErrorCode f_CMD_SET_SPEED(void) {
       return f_CMD_CONNECT();
    }
 
-   // ToDo - Consider conversion from timer ticks to standard HCS12 sync value. On this processor they are equal
-   cable_status.sync_length = syncValue;
-   setSyncLength(syncValue);
+   // Conversion from timer ticks to standard HCS12 sync value.
+   setSyncLength(syncValue/2);
 
    // User told us (even if it doesn't work!)
    cable_status.speed = SPEED_USER_SUPPLIED;
